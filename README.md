@@ -2,6 +2,8 @@
 
 A minimalist, modern, and native music player
 
+[Download Here](https://github.com/mfbulut/MusicPlayer/releases/latest)
+
 ## Features
 
 - **Auto-scans Music Folder**: By default, scans `C:\Users\{username}\Music\` for MP3 files.
