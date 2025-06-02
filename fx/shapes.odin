@@ -1,0 +1,385 @@
+package fx
+
+import "core:math"
+
+Color :: struct {
+	r : u8,
+	g : u8,
+	b : u8,
+	a : u8,
+}
+
+LIGHTGRAY  :: Color{ 200, 200, 200, 255 }
+GRAY       :: Color{ 130, 130, 130, 255 }
+DARKGRAY   :: Color{ 80, 80, 80, 255 }
+YELLOW     :: Color{ 253, 249, 0, 255 }
+GOLD       :: Color{ 255, 203, 0, 255 }
+ORANGE     :: Color{ 255, 161, 0, 255 }
+PINK       :: Color{ 255, 109, 194, 255 }
+RED        :: Color{ 230, 41, 55, 255 }
+MAROON     :: Color{ 190, 33, 55, 255 }
+GREEN      :: Color{ 0, 228, 48, 255 }
+LIME       :: Color{ 0, 158, 47, 255 }
+DARKGREEN  :: Color{ 0, 117, 44, 255 }
+SKYBLUE    :: Color{ 102, 191, 255, 255 }
+BLUE       :: Color{ 0, 121, 241, 255 }
+DARKBLUE   :: Color{ 0, 82, 172, 255 }
+PURPLE     :: Color{ 200, 122, 255, 255 }
+VIOLET     :: Color{ 135, 60, 190, 255 }
+DARKPURPLE :: Color{ 112, 31, 126, 255 }
+BEIGE      :: Color{ 211, 176, 131, 255 }
+BROWN      :: Color{ 127, 106, 79, 255 }
+DARKBROWN  :: Color{ 76, 63, 47, 255 }
+
+WHITE      :: Color{ 255, 255, 255, 255 }
+BLACK      :: Color{ 0, 0, 0, 255 }
+BLANK      :: Color{ 0, 0, 0, 0 }
+MAGENTA    :: Color{ 255, 0, 255, 255 }
+
+Vertex :: struct {
+	posision:    [2]f32,
+	texture:     [2]f32,
+	color:       Color,
+}
+
+MAX_VERTICIES :: 2048
+verticies : [MAX_VERTICIES]Vertex
+verticies_count : int
+
+draw_rect :: proc(x, y, w, h: f32, color: Color) {
+    if ctx.is_minimized do return
+
+    verts := []Vertex{
+        Vertex{{x    , y    },  {-1.0, 0.0},  color},
+        Vertex{{x    , y + h},  {-1.0, 0.0},  color},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color},
+        Vertex{{x    , y    },  {-1.0, 0.0},  color},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color},
+        Vertex{{x + w, y    },  {-1.0, 0.0},  color}
+    }
+
+    copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+    verticies_count += len(verts)
+}
+
+
+draw_texture :: proc(x, y, w, h : f32, color: Color) {
+    if ctx.is_minimized do return
+
+    verts := []Vertex{
+        Vertex{{x    , y    },  {0.0, 0.0},  color},
+        Vertex{{x    , y + h},  {0.0, 1.0},  color},
+        Vertex{{x + w, y + h},  {1.0, 1.0},  color},
+        Vertex{{x    , y    },  {0.0, 0.0},  color},
+        Vertex{{x + w, y + h},  {1.0, 1.0},  color},
+        Vertex{{x + w, y    },  {1.0, 0.0},  color}
+    }
+
+    copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+    verticies_count += len(verts)
+}
+
+
+draw_circle :: proc(center_x, center_y, radius: f32, color: Color, segments: int = 32) {
+    if ctx.is_minimized do return
+
+    center := Vertex{{center_x, center_y}, {-1.0, 0.0}, color}
+
+    angle_step := 2.0 * math.PI / f32(segments)
+
+    for i in 0..<segments {
+        angle1 := f32(i) * angle_step
+        angle2 := f32((i + 1) % segments) * angle_step
+
+        x1 := center_x + radius * math.cos(angle1)
+        y1 := center_y + radius * math.sin(angle1)
+        x2 := center_x + radius * math.cos(angle2)
+        y2 := center_y + radius * math.sin(angle2)
+
+        verts := []Vertex{
+            center,
+            Vertex{{x1, y1}, {-1.0, 0.0}, color},
+            Vertex{{x2, y2}, {-1.0, 0.0}, color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+        verticies_count += len(verts)
+    }
+}
+
+draw_rounded_rect :: proc(x, y, w, h, radius: f32, color: Color, corner_segments: int = 8) {
+    if ctx.is_minimized do return
+
+    max_radius := min(w, h) * 0.5
+    clamped_radius := min(radius, max_radius)
+
+    if clamped_radius <= 0 {
+        draw_rect(x, y, w, h, color)
+        return
+    }
+
+    // Corner centers
+    corners := [4][2]f32{
+        {x + clamped_radius, y + clamped_radius},         // top-left
+        {x + w - clamped_radius, y + clamped_radius},     // top-right
+        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
+        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+    }
+
+    // Corner angle ranges
+    corner_angles := [4][2]f32{
+        {math.PI, 3.0 * math.PI / 2.0},         // top-left
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
+        {0.0, math.PI / 2.0},                   // bottom-right
+        {math.PI / 2.0, math.PI}                // bottom-left
+    }
+
+    // Draw corner arcs
+    for corner_idx in 0..<4 {
+        corner_center := corners[corner_idx]
+        start_angle := corner_angles[corner_idx][0]
+        end_angle := corner_angles[corner_idx][1]
+
+        angle_step := (end_angle - start_angle) / f32(corner_segments)
+
+        for i in 0..<corner_segments {
+            angle1 := start_angle + f32(i) * angle_step
+            angle2 := start_angle + f32(i + 1) * angle_step
+
+            x1 := corner_center.x + clamped_radius * math.cos(angle1)
+            y1 := corner_center.y + clamped_radius * math.sin(angle1)
+            x2 := corner_center.x + clamped_radius * math.cos(angle2)
+            y2 := corner_center.y + clamped_radius * math.sin(angle2)
+
+            verts := []Vertex{
+                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, color}, // center of arc
+                Vertex{{x1, y1}, {-1.0, 0.0}, color},
+                Vertex{{x2, y2}, {-1.0, 0.0}, color}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+
+    // Calculate dimensions for rectangular sections
+    inner_w := w - 2.0 * clamped_radius
+    inner_h := h - 2.0 * clamped_radius
+
+    // Draw center rectangle (only if it has area)
+    if inner_w > 0 && inner_h > 0 {
+        center_verts := []Vertex{
+            Vertex{{x + clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(center_verts)], center_verts[:])
+        verticies_count += len(center_verts)
+    }
+
+    // Draw top and bottom rectangles (only if they have width)
+    if inner_w > 0 {
+        // Top rectangle
+        top_verts := []Vertex{
+            Vertex{{x + clamped_radius, y}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y}, {-1.0, 0.0}, color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
+        verticies_count += len(top_verts)
+
+        // Bottom rectangle
+        bottom_verts := []Vertex{
+            Vertex{{x + clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + h}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + h}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + h}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(bottom_verts)], bottom_verts[:])
+        verticies_count += len(bottom_verts)
+    }
+
+    // Draw left and right rectangles (only if they have height)
+    if inner_h > 0 {
+        // Left rectangle
+        left_verts := []Vertex{
+            Vertex{{x, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
+        verticies_count += len(left_verts)
+
+        // Right rectangle
+        right_verts := []Vertex{
+            Vertex{{x + w - clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w - clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w, y + h - clamped_radius}, {-1.0, 0.0}, color},
+            Vertex{{x + w, y + clamped_radius}, {-1.0, 0.0}, color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(right_verts)], right_verts[:])
+        verticies_count += len(right_verts)
+    }
+}
+
+
+//
+color_lerp :: proc(a, b: Color, t: f32) -> Color {
+    return Color{
+        r = u8(f32(a.r) + (f32(b.r) - f32(a.r)) * t),
+        g = u8(f32(a.g) + (f32(b.g) - f32(a.g)) * t),
+        b = u8(f32(a.b) + (f32(b.b) - f32(a.b)) * t),
+        a = u8(f32(a.a) + (f32(b.a) - f32(a.a)) * t),
+    }
+}
+
+
+draw_gradient_rect_horizontal :: proc(x, y, w, h: f32, color_left, color_right: Color) {
+    if ctx.is_minimized do return
+
+    verts := []Vertex{
+        Vertex{{x    , y    },  {-1.0, 0.0},  color_left},
+        Vertex{{x    , y + h},  {-1.0, 0.0},  color_left},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color_right},
+        Vertex{{x    , y    },  {-1.0, 0.0},  color_left},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color_right},
+        Vertex{{x + w, y    },  {-1.0, 0.0},  color_right}
+    }
+
+    copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+    verticies_count += len(verts)
+}
+
+
+draw_gradient_rect_vertical :: proc(x, y, w, h: f32, color_top, color_bottom: Color) {
+    if ctx.is_minimized do return
+
+    verts := []Vertex{
+        Vertex{{x    , y    },  {-1.0, 0.0},  color_top},
+        Vertex{{x    , y + h},  {-1.0, 0.0},  color_bottom},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color_bottom},
+        Vertex{{x    , y    },  {-1.0, 0.0},  color_top},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color_bottom},
+        Vertex{{x + w, y    },  {-1.0, 0.0},  color_top}
+    }
+
+    copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+    verticies_count += len(verts)
+}
+
+
+draw_gradient_rect_diagonal :: proc(x, y, w, h: f32, color_tl, color_tr, color_bl, color_br: Color) {
+    if ctx.is_minimized do return
+
+    verts := []Vertex{
+        Vertex{{x    , y    },  {-1.0, 0.0},  color_tl},
+        Vertex{{x    , y + h},  {-1.0, 0.0},  color_bl},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color_br},
+        Vertex{{x    , y    },  {-1.0, 0.0},  color_tl},
+        Vertex{{x + w, y + h},  {-1.0, 0.0},  color_br},
+        Vertex{{x + w, y    },  {-1.0, 0.0},  color_tr}
+    }
+
+    copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+    verticies_count += len(verts)
+}
+
+draw_gradient_circle_radial :: proc(center_x, center_y, radius: f32, color_center, color_edge: Color, segments: int = 32) {
+    if ctx.is_minimized do return
+
+    center := Vertex{{center_x, center_y}, {-1.0, 0.0}, color_center}
+    angle_step := 2.0 * math.PI / f32(segments)
+
+    for i in 0..<segments {
+        angle1 := f32(i) * angle_step
+        angle2 := f32((i + 1) % segments) * angle_step
+
+        x1 := center_x + radius * math.cos(angle1)
+        y1 := center_y + radius * math.sin(angle1)
+        x2 := center_x + radius * math.cos(angle2)
+        y2 := center_y + radius * math.sin(angle2)
+
+        verts := []Vertex{
+            center,
+            Vertex{{x1, y1}, {-1.0, 0.0}, color_edge},
+            Vertex{{x2, y2}, {-1.0, 0.0}, color_edge}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+        verticies_count += len(verts)
+    }
+}
+
+draw_gradient_rect_multistop :: proc(x, y, w, h: f32, colors: []Color, stops: []f32) {
+    if ctx.is_minimized do return
+    if len(colors) != len(stops) || len(colors) < 2 do return
+
+    segments := len(colors) - 1
+    for i in 0..<segments {
+        segment_start := stops[i] * w
+        segment_end := stops[i + 1] * w
+        segment_width := segment_end - segment_start
+
+        if segment_width > 0 {
+            segment_x := x + segment_start
+
+            verts := []Vertex{
+                Vertex{{segment_x, y}, {-1.0, 0.0}, colors[i]},
+                Vertex{{segment_x, y + h}, {-1.0, 0.0}, colors[i]},
+                Vertex{{segment_x + segment_width, y + h}, {-1.0, 0.0}, colors[i + 1]},
+                Vertex{{segment_x, y}, {-1.0, 0.0}, colors[i]},
+                Vertex{{segment_x + segment_width, y + h}, {-1.0, 0.0}, colors[i + 1]},
+                Vertex{{segment_x + segment_width, y}, {-1.0, 0.0}, colors[i + 1]}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+}
+
+draw_gradient_rect_multistop_vertical :: proc(x, y, w, h: f32, colors: []Color, stops: []f32) {
+    if ctx.is_minimized do return
+    if len(colors) != len(stops) || len(colors) < 2 do return
+
+    segments := len(colors) - 1
+    for i in 0..<segments {
+        segment_start := stops[i] * h
+        segment_end := stops[i + 1] * h
+        segment_height := segment_end - segment_start
+
+        if segment_height > 0 {
+            segment_y := y + segment_start
+
+            verts := []Vertex{
+                Vertex{{x, segment_y}, {-1.0, 0.0}, colors[i]},
+                Vertex{{x + w, segment_y}, {-1.0, 0.0}, colors[i]},
+                Vertex{{x + w, segment_y + segment_height}, {-1.0, 0.0}, colors[i + 1]},
+                Vertex{{x, segment_y}, {-1.0, 0.0}, colors[i]},
+                Vertex{{x + w, segment_y + segment_height}, {-1.0, 0.0}, colors[i + 1]},
+                Vertex{{x, segment_y + segment_height}, {-1.0, 0.0}, colors[i + 1]}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+}
