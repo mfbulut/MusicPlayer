@@ -11,46 +11,55 @@ draw_sidebar :: proc() {
 
     search_btn := Button{
         x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
-        text = "Search",
+        text = "  Search",
         color = ui_state.current_view == .SEARCH ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .SEARCH ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
     }
 
-    if draw_button(search_btn) {
+    if draw_button(search_btn, 40) {
         ui_state.current_view = .SEARCH
     }
+
+    fx.use_texture(search_icon)
+    fx.draw_texture(search_btn.x + 20, search_btn.y + search_btn.h/2 - 8, 16, 16, fx.WHITE)
 
     y_offset += 50
 
     now_playing_btn := Button{
         x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
-        text = "Now Playing",
+        text = "  Now Playing",
         color = ui_state.current_view == .NOW_PLAYING ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .NOW_PLAYING ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
     }
 
-    if draw_button(now_playing_btn) {
+    if draw_button(now_playing_btn, 40) {
         ui_state.current_view = .NOW_PLAYING
     }
+
+    fx.use_texture(play_icon)
+    fx.draw_texture(now_playing_btn.x + 20, now_playing_btn.y + now_playing_btn.h/2 - 8, 16, 16, fx.WHITE)
 
     y_offset += 50
 
     liked_btn := Button{
         x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
-        text = "Liked",
+        text = "  Liked",
         color = ui_state.current_view == .LIKED ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .LIKED ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
     }
 
-    if draw_button(liked_btn) {
+    if draw_button(liked_btn, 40) {
         get_all_liked_songs()
         ui_state.current_view = .LIKED
     }
 
-    y_offset += 50
+    fx.use_texture(liked_icon)
+    fx.draw_texture(liked_btn.x + 20, liked_btn.y + liked_btn.h/2 - 8, 16, 16, fx.WHITE)
+
+    y_offset += 60
 
     fx.draw_text_aligned("Your Playlists", sidebar_width / 2, y_offset, 16, UI_TEXT_SECONDARY, .CENTER)
     y_offset += 30
@@ -84,7 +93,7 @@ draw_sidebar :: proc() {
                 text_color = UI_TEXT_COLOR,
             }
 
-            if draw_button(playlist_btn) {
+            if draw_button(playlist_btn, 15) {
                 ui_state.selected_playlist = playlist.name
                 ui_state.current_view = .PLAYLIST_DETAIL
                 ui_state.playlist_scrollbar.scroll = 0

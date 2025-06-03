@@ -37,7 +37,7 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
     return string(truncated_text_buffer[:target_len])
 }
 
-draw_button :: proc(btn: Button) -> bool {
+draw_button :: proc(btn: Button, text_offset := 0) -> bool {
     mouse_x, mouse_y := fx.get_mouse()
     is_hovered := f32(mouse_x) >= btn.x && f32(mouse_x) <= btn.x + btn.w &&
                  f32(mouse_y) >= btn.y && f32(mouse_y) <= btn.y + btn.h
@@ -54,12 +54,19 @@ draw_button :: proc(btn: Button) -> bool {
 
     fx.draw_rect_rounded(btn.x, btn.y, btn.w, btn.h, 8, color)
 
-    text_width := fx.measure_text(btn.text, 16)
-    text_x := btn.x + btn.w / 2
+    text := truncate_text(btn.text, btn.w - 10, 16)
+    text_width := fx.measure_text(text, 16)
+    text_x := btn.x
     text_y := btn.y + btn.h / 2 - 10
 
-    text := truncate_text(btn.text, btn.w - 10, 16)
-    fx.draw_text_aligned(text, text_x, text_y, 16, btn.text_color, .CENTER)
+    if text_offset == 0 {
+        text_x += btn.w / 2
+        fx.draw_text_aligned(text, text_x, text_y, 16, btn.text_color, .CENTER)
+    } else {
+        text_x += f32(text_offset)
+        fx.draw_text(text, text_x, text_y, 16, btn.text_color)
+    }
+
 
     return is_clickled
 }
@@ -122,7 +129,7 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
     handle_x := x + (w - h) * value
 
     mouse_x, mouse_y := fx.get_mouse()
-    if is_hovering(x - 40, y - 20, w + 80, h + 40) {
+    if is_hovering(x - 50, y - 30, w + 100, h + 60) {
         fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
 
         if fx.mouse_held(.LEFT) {

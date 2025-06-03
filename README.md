@@ -7,8 +7,8 @@ A **minimalist**, **modern**, and **native** music player
 - **Auto-scans Music Folder**: By default, scans `C:\Users\{username}\Music\` for Music files.
 - **Playlist Discovery**: Any folder containing mp3, flac and wav files is treated as a playlist.
 - **Cover Art Support**:
-  - Attempts to load `cover.qoi` or `cover.png` if found in the folder.
-  - Extracts embedded PNG cover art from MP3 metadata if available otherview it uses playlist cover.
+  - Extracts embedded PNG cover art from metadata if available.
+  - Otherwise it attempts to load `cover.qoi` or `cover.png` if found in the folder.
 - Use right click adds songs to the **queue**
 - **Hide Sidebar** using Ctrl+B
 

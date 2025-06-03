@@ -13,7 +13,6 @@ SearchResult :: struct {
 
 search_tracks :: proc(query: string) {
     clear(&ui_state.search_results)
-
     if len(query) == 0 {
         for playlist in playlists {
             for track in playlist.tracks {
@@ -33,17 +32,18 @@ search_tracks :: proc(query: string) {
         for track in playlist.tracks {
             track_name_lower := strings.to_lower(track.name)
             playlist_name_lower := strings.to_lower(track.playlist)
-            defer delete(track_name_lower)
-            defer delete(playlist_name_lower)
 
-            track_score := calculate_fuzzy_score(track_name_lower, query_lower)
-            playlist_score := calculate_fuzzy_score(playlist_name_lower, query_lower) * 0.7
+            track_score := calculate_smart_score(track_name_lower, query_lower)
+            playlist_score := calculate_smart_score(playlist_name_lower, query_lower) * 0.8
 
             final_score := max(track_score, playlist_score)
 
-            if final_score > 0.1 {
+            if final_score > 0.01 {
                 append(&scored_results, SearchResult{track = track, score = final_score})
             }
+
+            delete(track_name_lower)
+            delete(playlist_name_lower)
         }
     }
 
@@ -56,73 +56,139 @@ search_tracks :: proc(query: string) {
     }
 }
 
-calculate_fuzzy_score :: proc(text: string, query: string) -> f32 {
-    if len(query) == 0 {
-        return 0
-    }
-    if len(text) == 0 {
-        return 0
+calculate_smart_score :: proc(text: string, query: string) -> f32 {
+    if len(query) == 0 do return 0
+    if len(text) == 0 do return 0
+
+    if text == query {
+        return 100.0
     }
 
+    if strings.has_prefix(text, query) {
+        return 90.0 + f32(len(query)) / f32(len(text)) * 10.0
+    }
+
+    query_words := strings.split(query, " ")
+    defer delete(query_words)
+
+    text_words := strings.split(text, " ")
+    defer delete(text_words)
+
+    word_match_score := calculate_word_matches(text_words, query_words)
+    if word_match_score > 0 {
+        return word_match_score
+    }
+
+    substring_score := calculate_substring_matches(text, query_words)
+    if substring_score > 0 {
+        return substring_score
+    }
+
+    char_score := calculate_character_fuzzy(text, query)
+
+    return char_score * 0.1
+}
+
+calculate_word_matches :: proc(text_words: []string, query_words: []string) -> f32 {
+    if len(query_words) == 0 do return 0
+
+    score: f32 = 0
+    matched_words := 0
+
+    for query_word in query_words {
+        if len(query_word) == 0 do continue
+
+        best_word_score: f32 = 0
+
+        for text_word in text_words {
+            if text_word == query_word {
+
+                best_word_score = max(best_word_score, 20.0)
+            } else if strings.has_prefix(text_word, query_word) {
+
+                prefix_score := 15.0 + f32(len(query_word)) / f32(len(text_word)) * 5.0
+                best_word_score = max(best_word_score, prefix_score)
+            } else if strings.contains(text_word, query_word) && len(query_word) > 2 {
+
+                substring_score := 10.0 + f32(len(query_word)) / f32(len(text_word)) * 3.0
+                best_word_score = max(best_word_score, substring_score)
+            }
+        }
+
+        if best_word_score > 0 {
+            matched_words += 1
+            score += best_word_score
+        }
+    }
+
+    if matched_words == 0 do return 0
+
+
+    match_ratio := f32(matched_words) / f32(len(query_words))
+    score *= (0.5 + match_ratio * 0.5)
+
+    return score
+}
+
+calculate_substring_matches :: proc(text: string, query_words: []string) -> f32 {
+    if len(query_words) == 0 do return 0
+
+    score: f32 = 0
+    matched_words := 0
+
+    for query_word in query_words {
+        if len(query_word) < 3 do continue
+
+        if strings.contains(text, query_word) {
+            position := strings.index(text, query_word)
+
+            position_bonus := 1.0 - (f32(position) / f32(len(text))) * 0.3
+            word_score := 8.0 * position_bonus + f32(len(query_word)) / f32(len(text)) * 2.0
+            score += word_score
+            matched_words += 1
+        }
+    }
+
+    if matched_words == 0 do return 0
+
+    match_ratio := f32(matched_words) / f32(len(query_words))
+    score *= (0.3 + match_ratio * 0.7)
+
+    return score
+}
+
+calculate_character_fuzzy :: proc(text: string, query: string) -> f32 {
     score: f32 = 0
     query_index := 0
     consecutive_matches := 0
-    start_bonus := false
-
-    if strings.has_prefix(text, query) {
-        return 1.0 + f32(len(query)) / f32(len(text))
-    }
-
-    words := strings.split(text, " ")
-    defer delete(words)
-
-    for word in words {
-        if strings.has_prefix(word, query) {
-            return 0.9 + f32(len(query)) / f32(len(word))
-        }
-    }
+    word_boundary_matches := 0
 
     for i in 0..<len(text) {
-        if query_index >= len(query) {
-            break
-        }
+        if query_index >= len(query) do break
 
         if text[i] == query[query_index] {
-            if query_index == 0 {
+            score += 1.0
 
-                if i == 0 || text[i-1] == ' ' || text[i-1] == '-' || text[i-1] == '_' {
-                    start_bonus = true
-                    score += 0.15
-                }
+            if i == 0 || text[i-1] == ' ' || text[i-1] == '-' || text[i-1] == '_' {
+                word_boundary_matches += 1
+                score += 2.0
             }
 
-            score += 0.1
-            consecutive_matches += 1
+            if i > 0 && query_index > 0 && text[i-1] == query[query_index-1] {
+                consecutive_matches += 1
+                score += 1.0
+            }
+
             query_index += 1
-
-            if consecutive_matches > 1 {
-                score += 0.05 * f32(consecutive_matches)
-            }
-        } else {
-            consecutive_matches = 0
         }
     }
 
-    if query_index == len(query) {
-        score += 0.2
+    if query_index < len(query) do return 0
 
-        match_density := f32(len(query)) / f32(len(text))
-        score += match_density * 0.3
+    normalized_score := score / f32(len(text))
+    boundary_bonus := f32(word_boundary_matches) / f32(len(query))
 
-        if start_bonus {
-            score += 0.2
-        }
-    } else {
-        completion_ratio := f32(query_index) / f32(len(query))
-        score *= completion_ratio
-    }
-
-    return score
+    return normalized_score + boundary_bonus
 }
 
 handle_char_input :: proc(char: u8) {
