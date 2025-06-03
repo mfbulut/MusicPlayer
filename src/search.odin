@@ -271,7 +271,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
             }
 
             if track_y + 60 > results_y {
-                draw_track_item(track, find_playlist_by_name(track.playlist), x + 20, track_y, w - 45, 60)
+                draw_track_item(track, find_playlist_by_name(track.playlist), x + 30, track_y, w - 70, 60)
             }
 
             track_y += track_height
@@ -280,7 +280,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
         fx.disable_scissor()
 
         if search_max_scroll > 0 {
-            indicator_x := x + w - 15
+            indicator_x := x + w - 20
             indicator_y := results_y + 5
             indicator_h := results_h - 10
 

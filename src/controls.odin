@@ -164,7 +164,7 @@ draw_player_controls :: proc() {
     fx.draw_texture(volume_x - 30, volume_y - 8, 24, 24, fx.WHITE)
 
     new_volume := draw_slider(volume_x, volume_y, 100, 6, player.volume, UI_ACCENT_COLOR, UI_TEXT_COLOR)
-    if new_volume != player.volume && !ui_state.is_dragging_time {
+    if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging{
         player.volume = new_volume
         fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
     }

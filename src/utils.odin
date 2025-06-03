@@ -188,7 +188,7 @@ draw_scrollbar :: proc(scrollbar: ^Scrollbar, x, y, w, h: f32, max_scroll: f32, 
     thumb_y := y + (h - thumb_size) * scroll_ratio
 
     mouse_x, mouse_y := fx.get_mouse()
-    is_over_thumb := is_inside(f32(mouse_x), f32(mouse_y), x, thumb_y, w, thumb_size)
+    is_over_thumb := is_inside(f32(mouse_x), f32(mouse_y), x - 10, thumb_y - 20, w + 20, thumb_size + 40)
 
     thumb_draw_color := thumb_color
     if is_over_thumb {

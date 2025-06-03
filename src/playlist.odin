@@ -56,13 +56,13 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
 draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
     if playlist.loaded {
         fx.use_texture(playlist.cover)
-        fx.draw_texture(x + 40, y + 10, 100, 100, fx.WHITE)
+        fx.draw_texture_rounded(x + 40, y + 10, 100, 100, 12, fx.WHITE)
 
-        fx.draw_text(playlist.name, x + 160, y + 40, 32, UI_TEXT_COLOR)
-        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 160, y + 80, 16, UI_TEXT_SECONDARY)
+        fx.draw_text(playlist.name, x + 160, y + 30, 32, UI_TEXT_COLOR)
+        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 160, y + 70, 16, UI_TEXT_SECONDARY)
     } else {
-        fx.draw_text(playlist.name, x + 30, y + 40, 32, UI_TEXT_COLOR)
-        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 32, y + 80, 16, UI_TEXT_SECONDARY)
+        fx.draw_text(playlist.name, x + 30, y + 30, 32, UI_TEXT_COLOR)
+        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 32, y + 70, 16, UI_TEXT_SECONDARY)
     }
 
     list_y := y + 120
@@ -93,7 +93,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
         }
 
         if track_y + 60 > list_y {
-            draw_track_item(track, playlist, x + 20, track_y, w - 45, 60)
+            draw_track_item(track, playlist, x + 30, track_y, w - 70, 60)
         }
 
         track_y += track_height
@@ -102,7 +102,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
     fx.disable_scissor()
 
     if playlist_max_scroll > 0 {
-        indicator_x := x + w - 15
+        indicator_x := x + w - 20
         indicator_y := list_y + 5
         indicator_h := list_h - 10
 

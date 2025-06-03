@@ -163,7 +163,7 @@ main :: proc() {
     search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
     liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
     blur_shader   = fx.load_shader(transmute([]u8)blur_shader_hlsl)
-    background    = fx.create_render_texture(512, 512, true)
+    background    = fx.create_render_texture(1024, 1024, false)
 
     fx.run_manual(proc() {
         frame(-5.0)

@@ -26,8 +26,10 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         if update_background {
             fx.begin_render_to_texture(&background, {0, 128, 0, 0})
             fx.use_texture(cover)
+            fx.set_scissor(0, 0, 1024, 1024)
             fx.use_shader(blur_shader)
-            fx.draw_texture(0, 0, 512, 512, fx.WHITE)
+            fx.draw_texture(0, 0, 1024, 1024, fx.WHITE)
+
             fx.end_render_to_texture()
             update_background = false
         }
@@ -58,6 +60,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     } else {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
+
 
     info_y := art_y + art_size + 30
     track_name := truncate_text(track.name, content_split - 50, 24)

@@ -13,7 +13,7 @@ float4 ps_main(Input input) : SV_TARGET
 {
     float2 uv = input.texcoord;
 
-    float angle = 0.1;
+    float angle = 0.08;
     float2 d = float2(sin(angle), cos(angle));
 
     float2 p = d * d.yx / 200.0;
@@ -38,10 +38,16 @@ float4 ps_main(Input input) : SV_TARGET
     return O;
 }
 
+
+
 /*
 
 // Gaussian version
 // I personally prefer bokeh blur
+
+
+// 16x acceleration of https://www.shadertoy.com/view/4tSyzy
+// by applying gaussian at intermediate MIPmap level.
 
 struct Input {
     float4 position : SV_POSITION;
@@ -53,7 +59,7 @@ Texture2D    mytexture : register(t0);
 SamplerState mysampler : register(s0);
 
 // Constants
-static const int samples = 35;
+static const int samples = 75;
 static const int LOD = 2;         // gaussian done on MIPmap at scale LOD
 static const int sLOD = 1 << LOD; // tile size = 2^LOD
 static const float sigma = float(samples) * 0.25;
@@ -87,4 +93,5 @@ float4 ps_main(Input input) : SV_TARGET
     float4 result = blur(mytexture, mysampler, uv, 1.0 / iChannelResolution);
     return result;
 }
+
 */

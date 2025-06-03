@@ -12,11 +12,11 @@ RenderTexture :: struct {
 }
 
 // Create render texture with specified dimensions
-create_render_texture :: proc(width, height: int,
-                             use_depth: bool = true) -> RenderTexture {
+create_render_texture :: proc(width, height: int, use_depth: bool = true) -> RenderTexture {
     rt := RenderTexture{}
     rt.width = width
     rt.height = height
+
 
     // Create the main texture (render target)
     texture_desc := D3D11.TEXTURE2D_DESC{
@@ -49,25 +49,6 @@ create_render_texture :: proc(width, height: int,
     }
     device->CreateShaderResourceView(rt.texture, &srv_desc, &rt.texture_view)
 
-    // Create depth stencil buffer if requested
-    if use_depth {
-        depth_desc := D3D11.TEXTURE2D_DESC{
-            Width      = u32(width),
-            Height     = u32(height),
-            MipLevels  = 1,
-            ArraySize  = 1,
-            Format     = .D24_UNORM_S8_UINT,
-            SampleDesc = {Count = 1, Quality = 0},
-            Usage      = .DEFAULT,
-            BindFlags  = {.DEPTH_STENCIL},
-            CPUAccessFlags = {},
-            MiscFlags  = {},
-        }
-
-        device->CreateTexture2D(&depth_desc, nil, &rt.depth_stencil)
-        device->CreateDepthStencilView(rt.depth_stencil, nil, &rt.depth_stencil_view)
-    }
-
     return rt
 }
 
@@ -99,11 +80,12 @@ begin_render_to_texture :: proc(rt: ^RenderTexture, clear_color: Color = {0, 0, 
     rt_viewport := D3D11.VIEWPORT{
         TopLeftX = 0,
         TopLeftY = 0,
-        Width    = f32(rt.width),
-        Height   = f32(rt.height),
+        Width    = 1024,
+        Height   = 1024,
         MinDepth = 0.0,
         MaxDepth = 1.0,
     }
+
     device_context->RSSetViewports(1, &rt_viewport)
 
     // Set render targets
@@ -116,6 +98,7 @@ begin_render_to_texture :: proc(rt: ^RenderTexture, clear_color: Color = {0, 0, 
         f32(clear_color.b) / 255.0,
         f32(clear_color.a) / 255.0,
     }
+
     device_context->ClearRenderTargetView(rt.render_target_view, &clear_color_f)
 
     // Clear depth stencil if it exists
@@ -145,6 +128,7 @@ end_render_to_texture :: proc() {
 // Helper to update constant buffer for render texture dimensions
 @(private)
 update_constant_buffer_for_rt :: proc(width, height: int, data: []f32 = {}) {
+
     constants: [3]f32
     constants[0] = 2.0 / f32(width)
     constants[1] = -2.0 / f32(height)
