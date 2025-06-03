@@ -20,7 +20,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_rounded_rect(x, y, w, h, 12, bg_color)
+    fx.draw_rect_rounded(x, y, w, h, 12, bg_color)
 
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY

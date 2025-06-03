@@ -69,12 +69,17 @@ ui_state := UIState {
     search_results = make([dynamic]Track),
 }
 
-draw_main_content :: proc() {
+draw_main_content :: proc(hide_sidebar : bool) {
     window_w, window_h := fx.window_size()
 
-    content_x := sidebar_width
-    content_w := f32(window_w) - sidebar_width
+    content_x := f32(0)
+    content_w := f32(window_w)
     content_h := f32(window_h) - player_height
+
+    if !hide_sidebar {
+        content_x += sidebar_width
+        content_w -= sidebar_width
+    }
 
     fx.draw_rect(content_x, 0, content_w, content_h, UI_PRIMARY_COLOR)
 
@@ -91,12 +96,21 @@ draw_main_content :: proc() {
 }
 
 all_covers_loaded_status: bool
+hide_sidebar: bool
 
 frame :: proc(dt: f64) {
+    if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
+        hide_sidebar = !hide_sidebar
+    }
+
     update_player(dt)
     update_smooth_scrolling(dt)
-    draw_sidebar()
-    draw_main_content()
+
+    if !hide_sidebar {
+        draw_sidebar()
+    }
+
+    draw_main_content(hide_sidebar)
     draw_player_controls()
 
     if !all_covers_loaded_status {

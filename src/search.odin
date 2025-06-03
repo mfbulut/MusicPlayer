@@ -146,7 +146,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
     }
 
     input_color := ui_state.search_focus ? UI_HOVER_COLOR : UI_SECONDARY_COLOR
-    fx.draw_rounded_rect(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
+    fx.draw_rect_rounded(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
 
     fx.use_texture(search_icon)
     fx.draw_texture(search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)

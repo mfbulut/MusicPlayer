@@ -107,7 +107,7 @@ draw_circle :: proc(center_x, center_y, radius: f32, color: Color, segments: int
     }
 }
 
-draw_rounded_rect :: proc(x, y, w, h, radius: f32, color: Color, corner_segments: int = 8) {
+draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments: int = 8) {
     if ctx.is_minimized do return
 
     max_radius := min(w, h) * 0.5
@@ -240,8 +240,179 @@ draw_rounded_rect :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
     }
 }
 
+draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments: int = 8) {
+    if ctx.is_minimized do return
 
-//
+    max_radius := min(w, h) * 0.5
+    clamped_radius := min(radius, max_radius)
+
+    if clamped_radius <= 0 {
+        draw_texture(x, y, w, h, color)
+        return
+    }
+
+    // Helper function to calculate texture coordinates
+    calc_tex_coord :: proc(px, py, rect_x, rect_y, rect_w, rect_h: f32) -> [2]f32 {
+        u := (px - rect_x) / rect_w
+        v := (py - rect_y) / rect_h
+        return {u, v}
+    }
+
+    // Corner centers
+    corners := [4][2]f32{
+        {x + clamped_radius, y + clamped_radius},         // top-left
+        {x + w - clamped_radius, y + clamped_radius},     // top-right
+        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
+        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+    }
+
+    // Corner angle ranges
+    corner_angles := [4][2]f32{
+        {math.PI, 3.0 * math.PI / 2.0},         // top-left
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
+        {0.0, math.PI / 2.0},                   // bottom-right
+        {math.PI / 2.0, math.PI}                // bottom-left
+    }
+
+    // Draw corner arcs with texture coordinates
+    for corner_idx in 0..<4 {
+        corner_center := corners[corner_idx]
+        start_angle := corner_angles[corner_idx][0]
+        end_angle := corner_angles[corner_idx][1]
+
+        angle_step := (end_angle - start_angle) / f32(corner_segments)
+
+        // Calculate texture coordinates for corner center
+        center_tex := calc_tex_coord(corner_center.x, corner_center.y, x, y, w, h)
+
+        for i in 0..<corner_segments {
+            angle1 := start_angle + f32(i) * angle_step
+            angle2 := start_angle + f32(i + 1) * angle_step
+
+            x1 := corner_center.x + clamped_radius * math.cos(angle1)
+            y1 := corner_center.y + clamped_radius * math.sin(angle1)
+            x2 := corner_center.x + clamped_radius * math.cos(angle2)
+            y2 := corner_center.y + clamped_radius * math.sin(angle2)
+
+            // Calculate texture coordinates for arc points
+            tex1 := calc_tex_coord(x1, y1, x, y, w, h)
+            tex2 := calc_tex_coord(x2, y2, x, y, w, h)
+
+            verts := []Vertex{
+                Vertex{{corner_center.x, corner_center.y}, center_tex, color}, // center of arc
+                Vertex{{x1, y1}, tex1, color},
+                Vertex{{x2, y2}, tex2, color}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+
+    // Calculate dimensions for rectangular sections
+    inner_w := w - 2.0 * clamped_radius
+    inner_h := h - 2.0 * clamped_radius
+
+    // Draw center rectangle (only if it has area)
+    if inner_w > 0 && inner_h > 0 {
+        center_x1 := x + clamped_radius
+        center_y1 := y + clamped_radius
+        center_x2 := x + w - clamped_radius
+        center_y2 := y + h - clamped_radius
+
+        center_verts := []Vertex{
+            Vertex{{center_x1, center_y1}, calc_tex_coord(center_x1, center_y1, x, y, w, h), color},
+            Vertex{{center_x1, center_y2}, calc_tex_coord(center_x1, center_y2, x, y, w, h), color},
+            Vertex{{center_x2, center_y2}, calc_tex_coord(center_x2, center_y2, x, y, w, h), color},
+            Vertex{{center_x1, center_y1}, calc_tex_coord(center_x1, center_y1, x, y, w, h), color},
+            Vertex{{center_x2, center_y2}, calc_tex_coord(center_x2, center_y2, x, y, w, h), color},
+            Vertex{{center_x2, center_y1}, calc_tex_coord(center_x2, center_y1, x, y, w, h), color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(center_verts)], center_verts[:])
+        verticies_count += len(center_verts)
+    }
+
+    // Draw top and bottom rectangles (only if they have width)
+    if inner_w > 0 {
+        // Top rectangle
+        top_x1 := x + clamped_radius
+        top_y1 := y
+        top_x2 := x + w - clamped_radius
+        top_y2 := y + clamped_radius
+
+        top_verts := []Vertex{
+            Vertex{{top_x1, top_y1}, calc_tex_coord(top_x1, top_y1, x, y, w, h), color},
+            Vertex{{top_x1, top_y2}, calc_tex_coord(top_x1, top_y2, x, y, w, h), color},
+            Vertex{{top_x2, top_y2}, calc_tex_coord(top_x2, top_y2, x, y, w, h), color},
+            Vertex{{top_x1, top_y1}, calc_tex_coord(top_x1, top_y1, x, y, w, h), color},
+            Vertex{{top_x2, top_y2}, calc_tex_coord(top_x2, top_y2, x, y, w, h), color},
+            Vertex{{top_x2, top_y1}, calc_tex_coord(top_x2, top_y1, x, y, w, h), color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
+        verticies_count += len(top_verts)
+
+        // Bottom rectangle
+        bottom_x1 := x + clamped_radius
+        bottom_y1 := y + h - clamped_radius
+        bottom_x2 := x + w - clamped_radius
+        bottom_y2 := y + h
+
+        bottom_verts := []Vertex{
+            Vertex{{bottom_x1, bottom_y1}, calc_tex_coord(bottom_x1, bottom_y1, x, y, w, h), color},
+            Vertex{{bottom_x1, bottom_y2}, calc_tex_coord(bottom_x1, bottom_y2, x, y, w, h), color},
+            Vertex{{bottom_x2, bottom_y2}, calc_tex_coord(bottom_x2, bottom_y2, x, y, w, h), color},
+            Vertex{{bottom_x1, bottom_y1}, calc_tex_coord(bottom_x1, bottom_y1, x, y, w, h), color},
+            Vertex{{bottom_x2, bottom_y2}, calc_tex_coord(bottom_x2, bottom_y2, x, y, w, h), color},
+            Vertex{{bottom_x2, bottom_y1}, calc_tex_coord(bottom_x2, bottom_y1, x, y, w, h), color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(bottom_verts)], bottom_verts[:])
+        verticies_count += len(bottom_verts)
+    }
+
+    // Draw left and right rectangles (only if they have height)
+    if inner_h > 0 {
+        // Left rectangle
+        left_x1 := x
+        left_y1 := y + clamped_radius
+        left_x2 := x + clamped_radius
+        left_y2 := y + h - clamped_radius
+
+        left_verts := []Vertex{
+            Vertex{{left_x1, left_y1}, calc_tex_coord(left_x1, left_y1, x, y, w, h), color},
+            Vertex{{left_x1, left_y2}, calc_tex_coord(left_x1, left_y2, x, y, w, h), color},
+            Vertex{{left_x2, left_y2}, calc_tex_coord(left_x2, left_y2, x, y, w, h), color},
+            Vertex{{left_x1, left_y1}, calc_tex_coord(left_x1, left_y1, x, y, w, h), color},
+            Vertex{{left_x2, left_y2}, calc_tex_coord(left_x2, left_y2, x, y, w, h), color},
+            Vertex{{left_x2, left_y1}, calc_tex_coord(left_x2, left_y1, x, y, w, h), color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
+        verticies_count += len(left_verts)
+
+        // Right rectangle
+        right_x1 := x + w - clamped_radius
+        right_y1 := y + clamped_radius
+        right_x2 := x + w
+        right_y2 := y + h - clamped_radius
+
+        right_verts := []Vertex{
+            Vertex{{right_x1, right_y1}, calc_tex_coord(right_x1, right_y1, x, y, w, h), color},
+            Vertex{{right_x1, right_y2}, calc_tex_coord(right_x1, right_y2, x, y, w, h), color},
+            Vertex{{right_x2, right_y2}, calc_tex_coord(right_x2, right_y2, x, y, w, h), color},
+            Vertex{{right_x1, right_y1}, calc_tex_coord(right_x1, right_y1, x, y, w, h), color},
+            Vertex{{right_x2, right_y2}, calc_tex_coord(right_x2, right_y2, x, y, w, h), color},
+            Vertex{{right_x2, right_y1}, calc_tex_coord(right_x2, right_y1, x, y, w, h), color}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(right_verts)], right_verts[:])
+        verticies_count += len(right_verts)
+    }
+}
+
+
 color_lerp :: proc(a, b: Color, t: f32) -> Color {
     return Color{
         r = u8(f32(a.r) + (f32(b.r) - f32(a.r)) * t),

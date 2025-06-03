@@ -56,7 +56,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         fx.use_texture(cover)
         fx.draw_texture(art_x, art_y, art_size, art_size, fx.WHITE)
     } else {
-        fx.draw_rounded_rect(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
+        fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
 
 
@@ -121,7 +121,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         lyrics_w := w - content_split - 40
         lyrics_h := h - 40
 
-        fx.draw_rounded_rect(lyrics_x, lyrics_y, lyrics_w, lyrics_h, 8, UI_SECONDARY_COLOR)
+        fx.draw_rect_rounded(lyrics_x, lyrics_y, lyrics_w, lyrics_h, 8, UI_SECONDARY_COLOR)
 
         lyrics_content_y := lyrics_y // ?
         lyrics_content_h := lyrics_h // ?
@@ -172,7 +172,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
                 }
 
                 if bg_color.a > 0 {
-                    fx.draw_rounded_rect(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color)
+                    fx.draw_rect_rounded(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color)
                 }
 
                 fx.draw_text_wrapped(lyric.text, lyrics_x + 20, line_y, lyrics_w - 55, 16, text_color)

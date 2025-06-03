@@ -59,8 +59,10 @@ draw_player_controls :: proc() {
     startX : f32 = 20
     if cover.width > 0 {
         fx.use_texture(cover)
-        fx.draw_texture(0, player_y, player_height, player_height, fx.WHITE)
-        startX += 80
+
+        padding :: 7
+        fx.draw_texture_rounded(padding, player_y + padding, player_height - padding * 2, player_height - padding * 2, 12, fx.WHITE)
+        startX += 70
 
         mouse_x, mouse_y := fx.get_mouse()
 

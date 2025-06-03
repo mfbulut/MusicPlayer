@@ -52,7 +52,7 @@ draw_button :: proc(btn: Button) -> bool {
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_rounded_rect(btn.x, btn.y, btn.w, btn.h, 8, color)
+    fx.draw_rect_rounded(btn.x, btn.y, btn.w, btn.h, 8, color)
 
     text_width := fx.measure_text(btn.text, 16)
     text_x := btn.x + btn.w / 2
@@ -98,11 +98,11 @@ ProgressBar :: struct {
 }
 
 draw_progress_bar :: proc(bar: ProgressBar) -> f32 {
-    fx.draw_rounded_rect(bar.x, bar.y, bar.w, bar.h, bar.h/2, bar.bg_color)
+    fx.draw_rect_rounded(bar.x, bar.y, bar.w, bar.h, bar.h/2, bar.bg_color)
 
     if bar.progress > 0 {
         progress_width := bar.w * bar.progress
-        fx.draw_rounded_rect(bar.x, bar.y, progress_width, bar.h, bar.h/2, bar.color)
+        fx.draw_rect_rounded(bar.x, bar.y, progress_width, bar.h, bar.h/2, bar.color)
     }
 
     mouse_x, mouse_y := fx.get_mouse()
@@ -117,20 +117,20 @@ draw_progress_bar :: proc(bar: ProgressBar) -> f32 {
 }
 
 draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -> f32 {
-    fx.draw_rounded_rect(x, y, w, h, h/2, bg_color)
+    fx.draw_rect_rounded(x, y, w, h, h/2, bg_color)
 
     handle_x := x + (w - h) * value
 
     mouse_x, mouse_y := fx.get_mouse()
     if is_hovering(x - 40, y - 20, w + 80, h + 40) {
-        fx.draw_rounded_rect(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
+        fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
 
         if fx.mouse_held(.LEFT) {
             new_value := (f32(mouse_x) - x) / w
             return clamp(new_value, 0, 1)
         }
     } else {
-        fx.draw_rounded_rect(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
+        fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
     }
 
     return value
@@ -174,7 +174,7 @@ draw_scrollbar :: proc(scrollbar: ^Scrollbar, x, y, w, h: f32, max_scroll: f32, 
         return false
     }
 
-    fx.draw_rounded_rect(x, y, w, h, w/2, bg_color)
+    fx.draw_rect_rounded(x, y, w, h, w/2, bg_color)
 
     thumb_size := max(20, h * (h / (h + max_scroll)))
     scroll_ratio := scrollbar.scroll / max_scroll
@@ -193,7 +193,7 @@ draw_scrollbar :: proc(scrollbar: ^Scrollbar, x, y, w, h: f32, max_scroll: f32, 
         }
     }
 
-    fx.draw_rounded_rect(x, thumb_y, w, thumb_size, w/2, thumb_draw_color)
+    fx.draw_rect_rounded(x, thumb_y, w, thumb_size, w/2, thumb_draw_color)
 
     if fx.mouse_pressed(.LEFT) {
         if is_over_thumb {
