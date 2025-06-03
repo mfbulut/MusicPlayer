@@ -15,10 +15,17 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     art_x := x + content_split/2 - art_size/2
     art_y := y + 40
 
-    if track.audio_clip.has_cover {
+    cover := track.audio_clip.cover
+
+    if !track.audio_clip.has_cover && len(track.playlist) > 0 {
+        playlist := find_playlist_by_name(track.playlist)
+        cover = playlist.cover
+    }
+
+    if cover.width > 0 {
         if update_background {
             fx.begin_render_to_texture(&background, {0, 128, 0, 0})
-            fx.use_texture(track.audio_clip.cover)
+            fx.use_texture(cover)
             fx.use_shader(blur_shader)
             fx.draw_texture(0, 0, 512, 512, fx.WHITE)
             fx.end_render_to_texture()
@@ -29,8 +36,8 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         fx.set_scissor(i32(x), i32(y), i32(w), i32(h))
 
-        texture_w := track.audio_clip.cover.width
-        texture_h := track.audio_clip.cover.height
+        texture_w := cover.width
+        texture_h := cover.height
         texture_aspect := f32(texture_w) / f32(texture_h)
         dest_aspect := f32(w) / f32(h)
 
@@ -46,7 +53,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         fx.disable_scissor()
 
-        fx.use_texture(track.audio_clip.cover)
+        fx.use_texture(cover)
         fx.draw_texture(art_x, art_y, art_size, art_size, fx.WHITE)
     } else {
         fx.draw_rounded_rect(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)

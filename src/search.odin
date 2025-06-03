@@ -135,9 +135,8 @@ handle_char_input :: proc(char: u8) {
 }
 
 draw_search_view :: proc(x, y, w, h: f32) {
-    // Calculate centered position for search input
     search_input_w: f32 = min(500, w - 80)
-    search_input_x := x + (w - search_input_w) / 2  // Center horizontally
+    search_input_x := x + (w - search_input_w) / 2
     search_input_y := y + 20
 
     is_hovering_input := is_hovering(search_input_x, search_input_y, search_input_w, 40)
@@ -149,10 +148,13 @@ draw_search_view :: proc(x, y, w, h: f32) {
     input_color := ui_state.search_focus ? UI_HOVER_COLOR : UI_SECONDARY_COLOR
     fx.draw_rounded_rect(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
 
+    fx.use_texture(search_icon)
+    fx.draw_texture(search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
+
     if len(ui_state.search_query) > 0 || ui_state.search_focus {
-        fx.draw_text(string(ui_state.search_query), search_input_x + 10, search_input_y + 10, 16, UI_TEXT_COLOR)
+        fx.draw_text(string(ui_state.search_query), search_input_x + 30, search_input_y + 9, 16, UI_TEXT_COLOR)
     } else {
-        fx.draw_text("Type to search tracks and playlists...", search_input_x + 10, search_input_y + 10, 16, UI_TEXT_SECONDARY)
+        fx.draw_text("Type to search tracks and playlists...", search_input_x + 30, search_input_y + 9, 16, UI_TEXT_SECONDARY)
     }
 
     if fx.mouse_pressed(.LEFT) {

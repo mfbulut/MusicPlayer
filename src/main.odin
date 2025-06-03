@@ -90,8 +90,6 @@ draw_main_content :: proc() {
     }
 }
 
-
-
 all_covers_loaded_status: bool
 
 frame :: proc(dt: f64) {
@@ -118,7 +116,8 @@ pause_icon_qoi    := #load("assets/pause.qoi")
 play_icon_qoi     := #load("assets/play.qoi")
 volume_icon_qoi   := #load("assets/volume.qoi")
 shuffle_icon_qoi  := #load("assets/shuffle.qoi")
-liked_icon_qoi := #load("assets/liked.qoi")
+search_icon_qoi   := #load("assets/search.qoi")
+liked_icon_qoi    := #load("assets/liked.qoi")
 liked_empty_icon_qoi := #load("assets/liked_empty.qoi")
 
 previous_icon : fx.Texture
@@ -129,6 +128,7 @@ volume_icon   : fx.Texture
 shuffle_icon  : fx.Texture
 liked_icon    : fx.Texture
 liked_empty   : fx.Texture
+search_icon   : fx.Texture
 
 blur_shader : fx.Shader
 
@@ -146,6 +146,7 @@ main :: proc() {
     volume_icon   = fx.load_texture_from_bytes(volume_icon_qoi)
     shuffle_icon  = fx.load_texture_from_bytes(shuffle_icon_qoi)
     liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
+    search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
     liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
     blur_shader   = fx.load_shader(transmute([]u8)blur_shader_hlsl)
     background    = fx.create_render_texture(512, 512, true)

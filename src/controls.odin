@@ -49,11 +49,18 @@ draw_player_controls :: proc() {
 
     fx.draw_rect(0, player_y, f32(window_w), 2, UI_SECONDARY_COLOR)
 
+    cover := player.current_track.audio_clip.cover
+
+    if !player.current_track.audio_clip.has_cover && len(player.current_track.playlist) > 0 {
+        playlist := find_playlist_by_name(player.current_track.playlist)
+        cover = playlist.cover
+    }
+
     startX : f32 = 20
-    if player.current_track.audio_clip.has_cover {
-        fx.use_texture(player.current_track.audio_clip.cover)
+    if cover.width > 0 {
+        fx.use_texture(cover)
         fx.draw_texture(0, player_y, player_height, player_height, fx.WHITE)
-        startX += 100
+        startX += 80
 
         mouse_x, mouse_y := fx.get_mouse()
 
@@ -68,7 +75,8 @@ draw_player_controls :: proc() {
 
     track_title := truncate_text(player.current_track.name, 350, 24)
     fx.draw_text(track_title, startX, player_y + 15, 24, UI_TEXT_COLOR)
-    fx.draw_text(player.current_track.playlist, startX, player_y + 45, 16, UI_TEXT_SECONDARY)
+    track_playlist := truncate_text(player.current_track.playlist, 350, 16)
+    fx.draw_text(track_playlist, startX, player_y + 45, 16, UI_TEXT_SECONDARY)
 
     title_end := startX + fx.measure_text(track_title, 24)
     controls_x := f32(window_w) / 2 - 80

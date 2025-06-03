@@ -5,14 +5,14 @@ import fx "../fx"
 draw_sidebar :: proc() {
     window_w, window_h := fx.window_size()
 
-    fx.draw_rect(0, 0, sidebar_width, f32(window_h), UI_SECONDARY_COLOR)
+    fx.draw_rect(0, 0, sidebar_width, f32(window_h), UI_PRIMARY_COLOR)
 
     y_offset: f32 = 10
 
     search_btn := Button{
         x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
         text = "Search",
-        color = ui_state.current_view == .SEARCH ? UI_ACCENT_COLOR : UI_PRIMARY_COLOR,
+        color = ui_state.current_view == .SEARCH ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .SEARCH ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
     }
@@ -26,7 +26,7 @@ draw_sidebar :: proc() {
     now_playing_btn := Button{
         x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
         text = "Now Playing",
-        color = ui_state.current_view == .NOW_PLAYING ? UI_ACCENT_COLOR : UI_PRIMARY_COLOR,
+        color = ui_state.current_view == .NOW_PLAYING ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .NOW_PLAYING ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
     }
@@ -40,7 +40,7 @@ draw_sidebar :: proc() {
     liked_btn := Button{
         x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
         text = "Liked",
-        color = ui_state.current_view == .LIKED ? UI_ACCENT_COLOR : UI_PRIMARY_COLOR,
+        color = ui_state.current_view == .LIKED ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .LIKED ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
     }
@@ -79,7 +79,7 @@ draw_sidebar :: proc() {
             playlist_btn := Button{
                 x = 20, y = scroll_y, w = sidebar_width - 40, h = 35,
                 text = playlist.name,
-                color = ui_state.selected_playlist == playlist.name ? UI_ACCENT_COLOR : UI_PRIMARY_COLOR,
+                color = ui_state.selected_playlist == playlist.name ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
                 hover_color = ui_state.selected_playlist == playlist.name ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
                 text_color = UI_TEXT_COLOR,
             }

@@ -146,7 +146,6 @@ init_liked_songs :: proc(save_file: string = "liked_songs.json") -> bool {
         return res
     }
 
-    fmt.println("No existing liked songs file found, starting fresh")
     return true
 }
 
