@@ -102,7 +102,7 @@ draw_sidebar :: proc() {
         indicator_y := y_offset
         indicator_h := sidebar_visible_height - 2
 
-        draw_scrollbar(&ui_state.sidebar_scrollbar, indicator_x, indicator_y, 4, indicator_h, sidebar_max_scroll, UI_PRIMARY_COLOR, UI_ACCENT_COLOR)
+        draw_scrollbar(&ui_state.sidebar_scrollbar, indicator_x, indicator_y, 4, indicator_h, sidebar_max_scroll, UI_SECONDARY_COLOR, UI_ACCENT_COLOR)
     }
 
     if !ui_state.sidebar_scrollbar.is_dragging {

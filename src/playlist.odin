@@ -106,7 +106,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
         indicator_y := list_y + 5
         indicator_h := list_h - 10
 
-        draw_scrollbar(&ui_state.playlist_scrollbar, indicator_x, indicator_y, 4, indicator_h, ui_state.playlist_scrollbar.scroll, UI_PRIMARY_COLOR, UI_ACCENT_COLOR)
+        draw_scrollbar(&ui_state.playlist_scrollbar, indicator_x, indicator_y, 4, indicator_h, playlist_max_scroll, UI_PRIMARY_COLOR, UI_ACCENT_COLOR)
     }
 
     if !ui_state.playlist_scrollbar.is_dragging {
