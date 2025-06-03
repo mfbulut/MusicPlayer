@@ -20,8 +20,9 @@ Run ``` odin build src -out:music.exe -o:speed -resource:src/assets/resource.rc 
 
 ## Screenshots
 
-![screenshots](screenshots/screenshot1.png)
-![screenshots](screenshots/screenshot2.png)
+![Screenshot](screenshots/1.png)
+![Screenshot](screenshots/2.png)
+![Screenshot](screenshots/3.png)
 
 ## Recommended Software
 
