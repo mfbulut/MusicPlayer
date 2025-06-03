@@ -54,11 +54,10 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         fx.disable_scissor()
 
         fx.use_texture(cover)
-        fx.draw_texture(art_x, art_y, art_size, art_size, fx.WHITE)
+        fx.draw_texture_rounded(art_x, art_y, art_size, art_size, 12, fx.WHITE)
     } else {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
-
 
     info_y := art_y + art_size + 30
     track_name := truncate_text(track.name, content_split - 50, 24)

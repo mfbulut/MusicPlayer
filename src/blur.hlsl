@@ -1,3 +1,5 @@
+// Bokeh blur by "Xor" https://www.shadertoy.com/view/fljyWd
+
 struct Input {
     float4 position : SV_POSITION;
     float2 texcoord : TEX;
@@ -39,6 +41,7 @@ float4 ps_main(Input input) : SV_TARGET
 /*
 
 // Gaussian version
+// I personally prefer bokeh blur
 
 struct Input {
     float4 position : SV_POSITION;
