@@ -1,9 +1,11 @@
 package fx
 
 import "vendor:miniaudio"
+
 import "core:fmt"
-import "core:strings"
 import "core:os"
+import "core:strings"
+import fp "core:path/filepath"
 
 Audio :: struct {
     duration: f32,
@@ -111,6 +113,95 @@ load_album_art :: proc(file: string) -> (Texture, bool) {
     return Texture{}, false
 }
 
+FLAC_Metadata_Block_Header :: struct {
+    is_last: bool,
+    type: u8,
+    length: int,
+}
+
+load_album_art_from_flac :: proc(file: string) -> (Texture, bool) {
+    buffer, ok := os.read_entire_file(file)
+    if !ok || len(buffer) < 4 {
+        return Texture{}, false
+    }
+    defer delete(buffer)
+
+    if !strings.has_prefix(string(buffer[:4]), "fLaC") {
+        return Texture{}, false
+    }
+
+    pos := 4
+    for pos + 4 <= len(buffer) {
+        header_byte := buffer[pos]
+        block: FLAC_Metadata_Block_Header
+        block.is_last = (header_byte & 0x80) != 0
+        block.type = header_byte & 0x7F
+        block.length = int(buffer[pos+1]) << 16 |
+                       int(buffer[pos+2]) << 8 |
+                       int(buffer[pos+3])
+
+        pos += 4
+
+        if pos + block.length > len(buffer) {
+            break
+        }
+
+        if block.type == 6 { // PICTURE block
+            data := buffer[pos : pos + block.length]
+            cursor := 0
+
+            picture_type := (int(data[cursor]) << 24 |
+                             int(data[cursor+1]) << 16 |
+                             int(data[cursor+2]) << 8 |
+                             int(data[cursor+3]))
+            cursor += 4
+
+            mime_length := int(data[cursor]) << 24 |
+                           int(data[cursor+1]) << 16 |
+                           int(data[cursor+2]) << 8 |
+                           int(data[cursor+3])
+            cursor += 4
+
+            cursor += mime_length // skip MIME
+
+            desc_length := int(data[cursor]) << 24 |
+                           int(data[cursor+1]) << 16 |
+                           int(data[cursor+2]) << 8 |
+                           int(data[cursor+3])
+            cursor += 4
+
+            cursor += desc_length // skip description
+
+            // Skip width, height, depth, colors
+            cursor += 4 * 4
+
+            pic_data_length := int(data[cursor]) << 24 |
+                               int(data[cursor+1]) << 16 |
+                               int(data[cursor+2]) << 8 |
+                               int(data[cursor+3])
+            cursor += 4
+
+            if cursor + pic_data_length > len(data) {
+                break
+            }
+
+            image_data := data[cursor : cursor + pic_data_length]
+
+            image := load_texture_from_bytes(image_data)
+            return image, true
+        }
+
+        pos += block.length
+
+        if block.is_last {
+            break
+        }
+    }
+
+    return Texture{}, false
+}
+
+
 load_audio :: proc(filepath: string) -> Audio {
     clip := Audio{}
 
@@ -132,11 +223,24 @@ load_audio :: proc(filepath: string) -> Audio {
 
     clip.loaded = true
 
-    cover, ok := load_album_art(filepath)
+    extension := fp.ext(filepath)
 
-    if ok {
-        clip.cover = cover
-        clip.has_cover = true
+    if extension == ".mp3" {
+        cover, ok := load_album_art(filepath)
+
+        if ok {
+            clip.cover = cover
+            clip.has_cover = true
+        }
+    }
+
+    if extension == ".flac" {
+        cover, ok := load_album_art_from_flac(filepath)
+
+        if ok {
+            clip.cover = cover
+            clip.has_cover = true
+        }
     }
 
     return clip

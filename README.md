@@ -4,11 +4,11 @@ A **minimalist**, **modern**, and **native** music player
 
 [Download Here](https://github.com/mfbulut/MusicPlayer/releases/latest)
 
-- **Auto-scans Music Folder**: By default, scans `C:\Users\{username}\Music\` for MP3 files.
-- **Playlist Discovery**: Any folder containing MP3 files is treated as a playlist.
+- **Auto-scans Music Folder**: By default, scans `C:\Users\{username}\Music\` for Music files.
+- **Playlist Discovery**: Any folder containing mp3, flac and wav files is treated as a playlist.
 - **Cover Art Support**:
   - Attempts to load `cover.qoi` or `cover.png` if found in the folder.
-  - Extracts embedded PNG cover art from MP3 metadata if available.
+  - Extracts embedded PNG cover art from MP3 metadata if available otherview it uses playlist cover.
 - Use right click adds songs to the **queue**
 - **Hide Sidebar** using Ctrl+B
 

@@ -59,6 +59,8 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
     if queue do return
 
+    clear(&player.queue)
+
     player.current_playlist = playlist
     for t, i in playlist.tracks {
         if track.name == t.name && track.path == t.path {

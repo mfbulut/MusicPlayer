@@ -101,7 +101,7 @@ process_music_file :: proc(file: os2.File_Info) {
     dir_path, filename := os2.split_path(file.fullpath)
     name, ext := os2.split_filename(filename)
 
-    if strings.to_lower(ext) != "mp3" do return
+    if ext != "mp3" && ext != "wav" && ext != "flac" do return
 
     dir_name := filepath.base(dir_path)
     playlist := find_or_create_playlist(dir_path, dir_name)
