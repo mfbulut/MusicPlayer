@@ -6,7 +6,7 @@ import "core:strings"
 import "core:math"
 
 handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
-    mouse_x, mouse_y := fx.get_mouse()
+    mouse_x, _ := fx.get_mouse()
 
     is_hovering := is_hovering(time_x, time_y, time_width, time_height)
 
@@ -63,8 +63,6 @@ draw_player_controls :: proc() {
         padding :: 7
         fx.draw_texture_rounded(padding, player_y + padding, player_height - padding * 2, player_height - padding * 2, 12, fx.WHITE)
         startX += 70
-
-        mouse_x, mouse_y := fx.get_mouse()
 
         if is_hovering(0, player_y, player_height, player_height) {
             fx.set_cursor(.CLICK)

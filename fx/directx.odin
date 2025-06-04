@@ -2,7 +2,6 @@ package fx
 
 import "core:fmt"
 
-import win "core:sys/windows"
 import D3D11 "vendor:directx/d3d11"
 import DXGI "vendor:directx/dxgi"
 import D3D "vendor:directx/d3d_compiler"

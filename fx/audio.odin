@@ -47,8 +47,6 @@ load_album_art :: proc(file: string) -> (Texture, bool) {
     }
 
     version := buffer[3]
-    revision := buffer[4]
-    flags := buffer[5]
     size := (int(buffer[6]) & 0x7F) << 21 |
             (int(buffer[7]) & 0x7F) << 14 |
             (int(buffer[8]) & 0x7F) << 7  |
@@ -150,10 +148,6 @@ load_album_art_from_flac :: proc(file: string) -> (Texture, bool) {
             data := buffer[pos : pos + block.length]
             cursor := 0
 
-            picture_type := (int(data[cursor]) << 24 |
-                             int(data[cursor+1]) << 16 |
-                             int(data[cursor+2]) << 8 |
-                             int(data[cursor+3]))
             cursor += 4
 
             mime_length := int(data[cursor]) << 24 |

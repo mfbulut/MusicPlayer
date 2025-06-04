@@ -265,7 +265,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
         track_y := results_y - ui_state.search_scrollbar.scroll
 
-        for track, i in ui_state.search_results {
+        for track, _ in ui_state.search_results {
             if track_y > y + h {
                 break
             }

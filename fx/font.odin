@@ -38,7 +38,7 @@ load_from_csv :: proc() {
 
     csv.reader_init_with_string(&r, font_csv)
 
-    for r, i, err in csv.iterator_next(&r) {
+    for r, _, err in csv.iterator_next(&r) {
         assert(err == nil)
 
         char := strconv.atoi(r[0])

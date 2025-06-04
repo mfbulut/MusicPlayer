@@ -3,7 +3,6 @@ package main
 import fx "../fx"
 
 import "core:math/rand"
-import "core:fmt"
 
 PlayerState :: enum {
     STOPPED,

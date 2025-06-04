@@ -189,7 +189,6 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         fx.disable_scissor()
 
-        lyric_count := len(track.lyrics)
         lyrics_max_scroll := total_line_height - lyrics_h + 20
 
         ui_state.lyrics_scrollbar.target = clamp(ui_state.lyrics_scrollbar.target, 0, lyrics_max_scroll)

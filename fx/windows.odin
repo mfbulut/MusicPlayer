@@ -89,7 +89,7 @@ init :: proc(title: string, width, height: int) {
 		style =         win.CS_HREDRAW | win.CS_VREDRAW,
 	}
 
-	class := win.RegisterClassExW(&cls)
+	win.RegisterClassExW(&cls)
 
 	screen_width := win.GetSystemMetrics(win.SM_CXSCREEN)
 	screen_height := win.GetSystemMetrics(win.SM_CYSCREEN)
@@ -169,7 +169,7 @@ run :: proc(frame : proc(dt : f32)) {
 			win.DispatchMessageW(&msg)
 		}
 
-		current_time := time.now()
+		current_time = time.now()
 		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
 		ctx.prev_time = current_time
 

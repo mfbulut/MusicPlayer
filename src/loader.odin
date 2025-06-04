@@ -7,7 +7,6 @@ import "core:path/filepath"
 import "core:os"
 import "core:os/os2"
 import "core:strings"
-import "core:mem"
 import "core:strconv"
 import "core:slice"
 

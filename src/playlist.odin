@@ -3,13 +3,14 @@ package main
 import fx "../fx"
 
 import "core:fmt"
-import "core:encoding/json"
+import "core:encoding/ini"
 import "core:os"
 import "core:time"
 import "core:slice"
+import "core:strconv"
+import "core:strings"
 
 draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
-    mouse_x, mouse_y := fx.get_mouse()
     hover := is_hovering(x, y, w, h)
     bg_color := UI_SECONDARY_COLOR
 
@@ -17,7 +18,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
         bg_color = UI_HOVER_COLOR
     } else if hover {
         bg_color = UI_SELECTED_COLOR
-        fx.set_cursor(.CLICK)
+        // fx.set_cursor(.CLICK)
     }
 
     fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, darken(bg_color, 30))
@@ -27,10 +28,6 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
 
     fx.draw_text(track.name, x + 20, y + 5, 20, text_color)
     fx.draw_text(track.playlist, x + 20, y + 35, 16, secondary_color)
-
-    heart_x := x + w - 40
-    heart_y := y + 15
-    heart_size: f32 = 20
 
     is_liked := is_song_liked(track.name, track.playlist)
 
@@ -83,7 +80,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
 
     track_y := list_y - ui_state.playlist_scrollbar.scroll
 
-    mouse_x, mouse_y := fx.get_mouse()
+    mouse_x, _ := fx.get_mouse()
 
     for i in 0..<len(playlist.tracks) {
         track := playlist.tracks[i]
@@ -137,7 +134,7 @@ liked_playlist : Playlist = Playlist {
     tracks = make([dynamic]Track),
 }
 
-init_liked_songs :: proc(save_file: string = "liked_songs.json") -> bool {
+init_liked_songs :: proc(save_file: string = "songs.ini") -> bool {
     liked_songs = make([dynamic]LikedSong)
 
     if os.exists(save_file) {
@@ -167,7 +164,7 @@ is_song_liked :: proc(name: string, playlist: string) -> bool {
     return index != -1 && liked_songs[index].is_liked
 }
 
-set_liked_song :: proc(name: string, playlist: string, liked: bool, save_file: string = "liked_songs.json") {
+set_liked_song :: proc(name: string, playlist: string, liked: bool, save_file: string = "songs.ini") {
     index := find_liked_song_index(name, playlist)
 
     if liked {
@@ -227,20 +224,30 @@ get_all_liked_songs :: proc() {
     })
 }
 
-toggle_song_like :: proc(name: string, playlist: string, save_file: string = "liked_songs.json") {
+toggle_song_like :: proc(name: string, playlist: string, save_file: string = "songs.ini") {
     current_state := is_song_liked(name, playlist)
     set_liked_song(name, playlist, !current_state, save_file)
 }
 
 save_liked_songs_to_file :: proc(filename: string) -> bool {
-    json_data, marshal_err := json.marshal(liked_songs)
-    if marshal_err != nil {
-        fmt.printf("Error marshaling liked songs: %v\n", marshal_err)
-        return false
-    }
-    defer delete(json_data)
+    ini_map := make(ini.Map)
+    defer delete(ini_map)
 
-    write_success := os.write_entire_file(filename, json_data)
+    for song, i in liked_songs {
+        section_name := fmt.aprintf("song_%d", i)
+        song_section := make(map[string]string)
+
+        song_section["name"] = song.name
+        song_section["playlist"] = song.playlist
+        song_section["timestamp"] = fmt.aprintf("%d", song.timestamp)
+
+        ini_map[section_name] = song_section
+    }
+
+    ini_data := ini.save_map_to_string(ini_map, context.allocator)
+    defer delete(ini_data)
+
+    write_success := os.write_entire_file(filename, transmute([]u8)ini_data)
     if !write_success {
         fmt.printf("Error writing liked songs to file: %s\n", filename)
         return false
@@ -256,10 +263,37 @@ load_liked_songs_from_file :: proc(filename: string) -> bool {
     }
     defer delete(file_data)
 
-    unmarshal_err := json.unmarshal(file_data, &liked_songs)
-    if unmarshal_err != nil {
-        fmt.printf("Error parsing liked songs JSON: %v\n", unmarshal_err)
+    ini_map, alloc_err := ini.load_map_from_string(string(file_data), context.allocator)
+    if alloc_err != nil {
+        fmt.printf("Error parsing liked songs INI: %v\n", alloc_err)
         return false
+    }
+    defer ini.delete_map(ini_map)
+
+    clear(&liked_songs)
+
+    for section_name, section_data in ini_map {
+        if len(section_name) > 5 && section_name[:5] == "song_" {
+            song := LikedSong{}
+
+            if name, ok := section_data["name"]; ok {
+                song.name = strings.clone(name)
+            }
+
+            if playlist, ok := section_data["playlist"]; ok {
+                song.playlist = strings.clone(playlist)
+            }
+
+            if timestamp_str, ok := section_data["timestamp"]; ok {
+                if timestamp, parse_ok := strconv.parse_i64(timestamp_str); parse_ok {
+                    song.timestamp = timestamp
+                }
+            }
+
+            song.is_liked = true
+
+            append(&liked_songs, song)
+        }
     }
 
     return true

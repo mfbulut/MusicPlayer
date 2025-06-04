@@ -4,9 +4,10 @@ import fx "../fx"
 
 import "core:fmt"
 import "core:mem"
+
 import "core:strings"
-import "core:math"
 import "core:os"
+
 
 UI_PRIMARY_COLOR      :: fx.Color{9, 17, 45, 255}
 UI_SECONDARY_COLOR    :: fx.Color{30, 30, 90, 255}
@@ -165,7 +166,7 @@ main :: proc() {
     liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
     search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
     liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
-    blur_shader   = fx.load_shader(transmute([]u8)blur_shader_hlsl)
+    blur_shader   = fx.load_shader(blur_shader_hlsl)
     background    = fx.create_render_texture(1024, 1024)
 
     fx.run_manual(proc() {

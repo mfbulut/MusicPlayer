@@ -52,10 +52,9 @@ draw_button :: proc(btn: Button, text_offset := 0) -> bool {
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_rect_rounded(btn.x, btn.y, btn.w, btn.h, 8, color)
+    fx.draw_gradient_rect_rounded_horizontal(btn.x, btn.y, btn.w, btn.h, 8, color, darken(color, 10))
 
-    text := truncate_text(btn.text, btn.w - 10, 16)
-    text_width := fx.measure_text(text, 16)
+    text := truncate_text(btn.text, btn.w - 15, 16)
     text_x := btn.x
     text_y := btn.y + btn.h / 2 - 10
 
@@ -79,7 +78,6 @@ IconButton :: struct {
 }
 
 draw_icon_button :: proc(btn: IconButton) -> bool {
-    mouse_x, mouse_y := fx.get_mouse()
     is_hovered := is_hovering(btn.x, btn.y, btn.size, btn.size)
 
     color := btn.color
@@ -128,7 +126,7 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
 
     handle_x := x + (w - h) * value
 
-    mouse_x, mouse_y := fx.get_mouse()
+    mouse_x, _ := fx.get_mouse()
     if is_hovering(x - 50, y - 30, w + 100, h + 60) {
         fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
 
@@ -215,12 +213,12 @@ draw_scrollbar :: proc(scrollbar: ^Scrollbar, x, y, w, h: f32, max_scroll: f32, 
     }
 
     if scrollbar.is_dragging {
-        thumb_size := max(20, h * (h / (h + max_scroll)))
+        thumb_size = max(20, h * (h / (h + max_scroll)))
         available_drag_space := h - thumb_size
 
         mouse_delta := f32(mouse_y) - ui_state.drag_start_mouse_y
 
-        scroll_ratio := mouse_delta / available_drag_space
+        scroll_ratio = mouse_delta / available_drag_space
         scroll_delta := scroll_ratio * max_scroll
 
         new_scroll := ui_state.drag_start_scroll + scroll_delta
