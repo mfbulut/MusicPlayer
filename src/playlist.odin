@@ -7,15 +7,18 @@ import "core:fmt"
 draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
     hover := is_hovering(x, y, w, h)
     bg_color := UI_SECONDARY_COLOR
+    bg_right := fx.Color{25, 30, 60, 255}
 
     if player.current_track.name == track.name {
         bg_color = UI_HOVER_COLOR
+        bg_right = fx.Color{36, 38, 85, 255}
     } else if hover {
         bg_color = UI_SELECTED_COLOR
+        bg_right = fx.Color{36, 38, 85, 255}
         // fx.set_cursor(.CLICK)
     }
 
-    fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, darken(bg_color, 30))
+    fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, bg_right)
 
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY

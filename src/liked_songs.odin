@@ -117,10 +117,17 @@ toggle_song_like :: proc(name: string, playlist: string, save_file: string = "so
     set_liked_song(name, playlist, !current_state, save_file)
 }
 
-save_liked_songs_to_file :: proc(filename: string) -> bool {
+save_liked_songs_to_file :: proc(filename: string = "songs.ini") -> bool {
     ini_map := make(ini.Map)
     defer delete(ini_map)
 
+    // Save settings section
+    settings_section := make(map[string]string)
+    settings_section["volume"] = fmt.aprintf("%.6f", player.volume)
+    settings_section["use_gaussian"] = use_gaussian ? "true" : "false"
+    ini_map["settings"] = settings_section
+
+    // Save liked songs
     for song, i in liked_songs {
         // Todo: Fix this
         // if song has [] or = in the title this can fail
@@ -154,7 +161,22 @@ load_liked_songs_from_file :: proc(filename: string) -> bool {
 
     clear(&liked_songs)
 
+    if settings_data, settings_ok := ini_map["settings"]; settings_ok {
+        if volume_str, volume_ok := settings_data["volume"]; volume_ok {
+            if volume, parse_ok := strconv.parse_f32(volume_str); parse_ok {
+                player.volume = volume
+            }
+        }
+
+        if use_gaussian_str, gaussian_ok := settings_data["use_gaussian"]; gaussian_ok {
+            use_gaussian = use_gaussian_str == "true"
+        }
+    }
+
+    // Load liked songs (skip settings section)
     for section_name, section_data in ini_map {
+        if section_name == "settings" do continue
+
         song := LikedSong{}
 
         song.name = strings.clone(section_name)

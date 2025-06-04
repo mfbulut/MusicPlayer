@@ -422,7 +422,6 @@ color_lerp :: proc(a, b: Color, t: f32) -> Color {
     }
 }
 
-
 draw_gradient_rect_horizontal :: proc(x, y, w, h: f32, color_left, color_right: Color) {
     if ctx.is_minimized do return
 
@@ -499,7 +498,7 @@ draw_gradient_circle_radial :: proc(center_x, center_y, radius: f32, color_cente
     }
 }
 
-draw_gradient_rect_multistop :: proc(x, y, w, h: f32, colors: []Color, stops: []f32) {
+draw_gradient_rect_multistop_horizontal :: proc(x, y, w, h: f32, colors: []Color, stops: []f32) {
     if ctx.is_minimized do return
     if len(colors) != len(stops) || len(colors) < 2 do return
 

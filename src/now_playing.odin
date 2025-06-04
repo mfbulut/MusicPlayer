@@ -73,6 +73,17 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     playlist_name_width := fx.measure_text(track.playlist, 16)
     fx.draw_text(track.playlist, x + content_split/2 - playlist_name_width/2, info_y + 30, 16, UI_TEXT_SECONDARY)
 
+    if is_hovering(x + content_split/2 - playlist_name_width/2, info_y + 30, playlist_name_width, 18) {
+        fx.set_cursor(.CLICK)
+
+        if fx.mouse_pressed(.LEFT) {
+                ui_state.selected_playlist = track.playlist
+                ui_state.current_view = .PLAYLIST_DETAIL
+                ui_state.playlist_scrollbar.scroll = 0
+                ui_state.playlist_scrollbar.target = 0
+        }
+    }
+
     progress_y := info_y + 70
 
     progress_w: f32 = min(400, content_split - 60)
@@ -84,7 +95,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         x = progress_x, y = progress_y, w = progress_w, h = 6,
         progress = progress,
         color = UI_TEXT_COLOR,
-        bg_color = UI_ACCENT_COLOR,
+        bg_color = UI_ACCENT_COLOR, // UI_SECONDARY_COLOR
     }
 
     new_progress := draw_progress_bar(progress_bar)

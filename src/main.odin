@@ -65,7 +65,6 @@ UIState :: struct {
 
 ui_state := UIState {
     current_view = .LIKED,
-    volume = 0.5,
     show_lyrics = true,
     follow_lyrics = true,
     search_query = "",
@@ -125,6 +124,7 @@ frame :: proc(dt: f32) {
             cleanup_cover_loading()
         }
     }
+
 }
 
 previous_icon_qoi := #load("assets/previous.qoi")
@@ -147,7 +147,9 @@ liked_icon    : fx.Texture
 liked_empty   : fx.Texture
 search_icon   : fx.Texture
 
-blur_shader_hlsl : []u8 = #load("blur.hlsl")
+bokeh_shader_hlsl : []u8 = #load("bokeh_blur.hlsl")
+gaussian_shader_hlsl : []u8 = #load("gaussian_blur.hlsl")
+use_gaussian : bool
 blur_shader : fx.Shader
 
 background : fx.RenderTexture
@@ -164,7 +166,6 @@ main :: proc() {
     liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
     search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
     liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
-    blur_shader   = fx.load_shader(blur_shader_hlsl)
     background    = fx.create_render_texture(1024, 1024)
 
     fx.run_manual(proc() {
@@ -205,8 +206,10 @@ main :: proc() {
     sort_playlists()
     init_liked_songs()
     init_cover_loading()
+    blur_shader = fx.load_shader(use_gaussian ? gaussian_shader_hlsl : bokeh_shader_hlsl)
     loading_covers = true
     search_tracks("")
 
     fx.run(frame)
+    save_liked_songs_to_file()
 }
