@@ -218,7 +218,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
     fx.draw_texture(search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
 
     if len(ui_state.search_query) > 0 || ui_state.search_focus {
-        fx.draw_text(string(ui_state.search_query), search_input_x + 30, search_input_y + 9, 16, UI_TEXT_COLOR)
+        fx.draw_text(fmt.tprintf("%s|", ui_state.search_query), search_input_x + 30, search_input_y + 9, 16, UI_TEXT_COLOR)
     } else {
         fx.draw_text("Type to search tracks and playlists...", search_input_x + 30, search_input_y + 9, 16, UI_TEXT_SECONDARY)
     }
