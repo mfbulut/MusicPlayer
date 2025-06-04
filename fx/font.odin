@@ -27,7 +27,7 @@ Character :: struct {
     top_px    : f32,
 }
 
-default_font : [256]Character
+default_font : [512]Character
 
 load_from_csv :: proc() {
     r: csv.Reader
@@ -69,7 +69,7 @@ init_font :: proc() {
 	device->CreatePixelShader(ps_blob->GetBufferPointer(), ps_blob->GetBufferSize(), nil, &font_shader)
 }
 
-draw_char :: proc(char: u8, x, y, size: f32, color: Color) -> f32 {
+draw_char :: proc(char: int, x, y, size: f32, color: Color) -> f32 {
     if int(char) >= len(default_font) do return 0
 
     ch := default_font[char]
@@ -131,11 +131,11 @@ draw_text :: proc(text: string, x, y, size: f32, color: Color) {
             continue
         }
 
-        if ch < 32 || ch > 126 {
+        if ch >= 512 || default_font[ch].advance == 0.0 {
             ch = '?'
         }
 
-        advance := draw_char(u8(ch), cursor_x, y, size, color)
+        advance := draw_char(int(ch), cursor_x, y, size, color)
         cursor_x += advance
     }
 
@@ -217,11 +217,11 @@ draw_text_wrapped :: proc(text: string, x, y, max_width, size: f32, color: Color
         for char in word {
             ch := char
 
-            if ch < 32 || ch > 126 {
+            if ch >= 512 || default_font[ch].advance == 0.0 {
                 ch = '?'
             }
 
-            advance := draw_char(u8(ch), cursor_x, cursor_y, size, color)
+            advance := draw_char(int(ch), cursor_x, cursor_y, size, color)
             cursor_x += advance
         }
 

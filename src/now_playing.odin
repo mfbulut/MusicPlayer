@@ -13,7 +13,10 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     content_split := has_lyrics && ui_state.show_lyrics ? w * 0.5 : w
 
     art_x := x + content_split/2 - art_size/2
-    total_h := art_size + 140
+    total_h := art_size + 135
+    if has_lyrics {
+        total_h += 25
+    }
     art_y := y + h/2 - total_h/2
 
     cover := track.audio_clip.cover
@@ -101,7 +104,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         toggle_width := fx.measure_text(toggle_text, 14) + 6
         toggle_btn := Button{
             x = x + content_split/2 - toggle_width/2 - 10,
-            y = progress_y + 45,
+            y = progress_y + 30,
             w = toggle_width + 30,
             h = 35,
             text = toggle_text,

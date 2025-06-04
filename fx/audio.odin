@@ -10,6 +10,8 @@ import fp "core:path/filepath"
 Audio :: struct {
     duration: f32,
     sound: ^miniaudio.sound,
+    decoder: ^miniaudio.decoder,
+    file_data: []byte,
     cover: Texture,
     loaded: bool,
     has_cover: bool,
@@ -29,19 +31,244 @@ init_audio :: proc() -> bool {
     return true
 }
 
+load_audio :: proc(filepath: string) -> Audio {
+    clip := Audio{}
+
+    file_data, read_ok := os.read_entire_file(filepath)
+    if !read_ok {
+        fmt.printf("Failed to read audio file '%s'\n", filepath)
+        return {}
+    }
+
+    clip.file_data = file_data
+
+    clip.decoder = new(miniaudio.decoder)
+
+    extension := fp.ext(filepath)
+    decoder_config := miniaudio.decoder_config_init(
+        outputFormat = .f32,
+        outputChannels = 0, // Use source channel count
+        outputSampleRate = 0, // Use source sample rate
+    )
+
+    // Set encoding format based on file extension
+    switch extension {
+    case ".mp3":
+        decoder_config.encodingFormat = .mp3
+    case ".wav":
+        decoder_config.encodingFormat = .wav
+    case ".flac":
+        decoder_config.encodingFormat = .flac
+    case:
+        decoder_config.encodingFormat = .unknown
+    }
+
+    decoder_result := miniaudio.decoder_init_memory(
+        pData = raw_data(clip.file_data),
+        dataSize = len(clip.file_data),
+        pConfig = &decoder_config,
+        pDecoder = clip.decoder,
+    )
+
+    if decoder_result != .SUCCESS {
+        fmt.printf("Failed to initialize decoder for '%s': %v\n", filepath, decoder_result)
+        delete(clip.file_data)
+        free(clip.decoder)
+        return {}
+    }
+
+    clip.sound = new(miniaudio.sound)
+
+    result := miniaudio.sound_init_from_data_source(
+        pEngine = &audio_engine,
+        pDataSource = clip.decoder.ds.pCurrent,
+        flags = {},
+        pGroup = nil,
+        pSound = clip.sound,
+    )
+
+    if result != .SUCCESS {
+        fmt.printf("Failed to load audio file '%s': %v\n", filepath, result)
+        miniaudio.decoder_uninit(clip.decoder)
+        free(clip.decoder)
+        free(clip.sound)
+        delete(clip.file_data)
+        return {}
+    }
+
+    length_in_frames: u64
+    miniaudio.sound_get_length_in_pcm_frames(clip.sound, &length_in_frames)
+    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
+    clip.duration = f32(length_in_frames) / f32(sample_rate)
+
+    clip.loaded = true
+
+    if extension == ".mp3" {
+        cover, ok := load_album_art_mp3(file_data)
+
+        if ok {
+            clip.cover = cover
+            clip.has_cover = true
+        }
+    }
+
+    if extension == ".flac" {
+        cover, ok := load_album_art_from_flac(file_data)
+
+        if ok {
+            clip.cover = cover
+            clip.has_cover = true
+        }
+    }
+
+    return clip
+}
+
+unload_audio :: proc(clip: ^Audio) {
+    if !clip.loaded {
+        return
+    }
+
+    if clip.has_cover {
+        unload_texture(&clip.cover)
+        clip.has_cover = false
+    }
+
+    if clip.sound != nil {
+        miniaudio.sound_uninit(clip.sound)
+        free(clip.sound)
+        clip.sound = nil
+    }
+
+    if clip.decoder != nil {
+        miniaudio.decoder_uninit(clip.decoder)
+        free(clip.decoder)
+        clip.decoder = nil
+    }
+
+    if clip.file_data != nil {
+        delete(clip.file_data)
+        clip.file_data = nil
+    }
+
+    clip.loaded = false
+}
+
+play_audio :: proc(clip: ^Audio) -> bool {
+    if !clip.loaded {
+        fmt.println("Audio clip not loaded!")
+        return false
+    }
+
+    result := miniaudio.sound_start(clip.sound)
+    if result != .SUCCESS {
+        fmt.printf("Failed to play audio: %v\n", result)
+        return false
+    }
+
+    return true
+}
+
+stop_audio :: proc(clip: ^Audio) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    result := miniaudio.sound_stop(clip.sound)
+    return result == .SUCCESS
+}
+
+pause_audio :: proc(clip: ^Audio) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    result := miniaudio.sound_stop(clip.sound)
+    return result == .SUCCESS
+}
+
+set_volume :: proc(clip: ^Audio, volume: f32) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    clamped_volume := clamp(volume, 0.0, 1.0)
+    miniaudio.sound_set_volume(clip.sound, clamped_volume)
+    return true
+}
+
+get_volume :: proc(clip: ^Audio) -> f32 {
+    if !clip.loaded {
+        return 0.0
+    }
+
+    return miniaudio.sound_get_volume(clip.sound)
+}
+
+set_time :: proc(clip: ^Audio, time_seconds: f32) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
+    frame_position := u64(time_seconds * f32(sample_rate))
+
+    result := miniaudio.sound_seek_to_pcm_frame(clip.sound, frame_position)
+    return result == .SUCCESS
+}
+
+get_time :: proc(clip: ^Audio) -> f32 {
+    if !clip.loaded {
+        return 0.0
+    }
+
+    cursor: u64
+    miniaudio.sound_get_cursor_in_pcm_frames(clip.sound, &cursor)
+    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
+
+    return f32(cursor) / f32(sample_rate)
+}
+
+get_duration :: proc(clip: ^Audio) -> f32 {
+    if !clip.loaded {
+        return 0.0
+    }
+
+    return clip.duration
+}
+
+is_playing :: proc(clip: ^Audio) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    return bool(miniaudio.sound_is_playing(clip.sound))
+}
+
+set_looping :: proc(clip: ^Audio, loop: bool) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    miniaudio.sound_set_looping(clip.sound, b32(loop))
+    return true
+}
+
+is_looping :: proc(clip: ^Audio) -> bool {
+    if !clip.loaded {
+        return false
+    }
+
+    return bool(miniaudio.sound_is_looping(clip.sound))
+}
+
 ID3_Frame_Header :: struct {
     id: [4]u8,
     size: int,
     flags: [2]u8,
 }
 
-load_album_art :: proc(file: string) -> (Texture, bool) {
-    buffer, ok := os.read_entire_file(file)
-    if !ok {
-        return Texture{}, false
-    }
-    defer delete(buffer)
-
+load_album_art_mp3 :: proc(buffer: []u8) -> (Texture, bool) {
     if !strings.has_prefix(string(buffer[:3]), "ID3") {
         return Texture{}, false
     }
@@ -117,13 +344,7 @@ FLAC_Metadata_Block_Header :: struct {
     length: int,
 }
 
-load_album_art_from_flac :: proc(file: string) -> (Texture, bool) {
-    buffer, ok := os.read_entire_file(file)
-    if !ok || len(buffer) < 4 {
-        return Texture{}, false
-    }
-    defer delete(buffer)
-
+load_album_art_from_flac :: proc(buffer: []u8) -> (Texture, bool) {
     if !strings.has_prefix(string(buffer[:4]), "fLaC") {
         return Texture{}, false
     }
@@ -193,178 +414,4 @@ load_album_art_from_flac :: proc(file: string) -> (Texture, bool) {
     }
 
     return Texture{}, false
-}
-
-
-load_audio :: proc(filepath: string) -> Audio {
-    clip := Audio{}
-
-    filepath_cstr := strings.clone_to_cstring(filepath)
-    defer delete(filepath_cstr)
-
-    clip.sound = new(miniaudio.sound)
-
-    result := miniaudio.sound_init_from_file(&audio_engine, filepath_cstr, {}, nil, nil, clip.sound)
-    if result != .SUCCESS {
-        fmt.printf("Failed to load audio file '%s': %v\n", filepath, result)
-        return {}
-    }
-
-    length_in_frames: u64
-    miniaudio.sound_get_length_in_pcm_frames(clip.sound, &length_in_frames)
-    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
-    clip.duration = f32(length_in_frames) / f32(sample_rate)
-
-    clip.loaded = true
-
-    extension := fp.ext(filepath)
-
-    if extension == ".mp3" {
-        cover, ok := load_album_art(filepath)
-
-        if ok {
-            clip.cover = cover
-            clip.has_cover = true
-        }
-    }
-
-    if extension == ".flac" {
-        cover, ok := load_album_art_from_flac(filepath)
-
-        if ok {
-            clip.cover = cover
-            clip.has_cover = true
-        }
-    }
-
-    return clip
-}
-
-unload_audio :: proc(clip: ^Audio) {
-    if !clip.loaded {
-        return
-    }
-
-    if clip.has_cover {
-        unload_texture(&clip.cover)
-        clip.has_cover = false
-    }
-
-    miniaudio.sound_uninit(clip.sound)
-    clip.loaded = false
-    free(clip.sound)
-}
-
-play_audio :: proc(clip: ^Audio) -> bool {
-    if !clip.loaded {
-        fmt.println("Audio clip not loaded!")
-        return false
-    }
-
-    result := miniaudio.sound_start(clip.sound)
-    if result != .SUCCESS {
-        fmt.printf("Failed to play audio: %v\n", result)
-        return false
-    }
-
-    return true
-}
-
-stop_audio :: proc(clip: ^Audio) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    result := miniaudio.sound_stop(clip.sound)
-    return result == .SUCCESS
-}
-
-
-pause_audio :: proc(clip: ^Audio) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    result := miniaudio.sound_stop(clip.sound)
-    return result == .SUCCESS
-}
-
-
-set_volume :: proc(clip: ^Audio, volume: f32) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    clamped_volume := clamp(volume, 0.0, 1.0)
-    miniaudio.sound_set_volume(clip.sound, clamped_volume)
-    return true
-}
-
-
-get_volume :: proc(clip: ^Audio) -> f32 {
-    if !clip.loaded {
-        return 0.0
-    }
-
-    return miniaudio.sound_get_volume(clip.sound)
-}
-
-set_time :: proc(clip: ^Audio, time_seconds: f32) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
-    frame_position := u64(time_seconds * f32(sample_rate))
-
-    result := miniaudio.sound_seek_to_pcm_frame(clip.sound, frame_position)
-    return result == .SUCCESS
-}
-
-
-get_time :: proc(clip: ^Audio) -> f32 {
-    if !clip.loaded {
-        return 0.0
-    }
-
-    cursor: u64
-    miniaudio.sound_get_cursor_in_pcm_frames(clip.sound, &cursor)
-    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
-
-    return f32(cursor) / f32(sample_rate)
-}
-
-get_duration :: proc(clip: ^Audio) -> f32 {
-    if !clip.loaded {
-        return 0.0
-    }
-
-    return clip.duration
-}
-
-is_playing :: proc(clip: ^Audio) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    return bool(miniaudio.sound_is_playing(clip.sound))
-}
-
-
-set_looping :: proc(clip: ^Audio, loop: bool) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    miniaudio.sound_set_looping(clip.sound, b32(loop))
-    return true
-}
-
-
-is_looping :: proc(clip: ^Audio) -> bool {
-    if !clip.loaded {
-        return false
-    }
-
-    return bool(miniaudio.sound_is_looping(clip.sound))
 }

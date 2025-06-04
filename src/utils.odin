@@ -112,7 +112,7 @@ draw_progress_bar :: proc(bar: ProgressBar) -> f32 {
 
     mouse_x, _ := fx.get_mouse()
     if fx.mouse_pressed(.LEFT) {
-        if is_hovering(bar.x - 50, bar.y - 40, bar.w + 100, bar.h + 80) {
+        if is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
             return (f32(mouse_x) - bar.x) / bar.w
         }
     }

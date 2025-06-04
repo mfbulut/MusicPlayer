@@ -292,10 +292,11 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		swap_buffers()
 	case win.WM_MOUSEWHEEL:
 		delta := cast(i8)((wparam >> 16) & 0xFFFF)
-		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA // usually ±120
+		// Maybe change to float later
+		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA // usually 120±
 	case win.WM_GETMINMAXINFO: {
 	    minMax := cast(^win.MINMAXINFO)uintptr(lparam);
-	    minMax.ptMinTrackSize.x = 600;
+	    minMax.ptMinTrackSize.x = 700;
 	    minMax.ptMinTrackSize.y = 600;
 	    return 0;
 	}
