@@ -235,29 +235,27 @@ draw_scrollbar :: proc(scrollbar: ^Scrollbar, x, y, w, h: f32, max_scroll: f32, 
 
 UI_SCROLL_SPEED :: 20.0
 
-update_smooth_scrolling :: proc(dt: f64) {
-    dt_f32 := f32(dt)
-
+update_smooth_scrolling :: proc(dt: f32) {
     if abs(ui_state.sidebar_scrollbar.target - ui_state.sidebar_scrollbar.scroll) > 0.5 {
-        ui_state.sidebar_scrollbar.scroll += (ui_state.sidebar_scrollbar.target - ui_state.sidebar_scrollbar.scroll) * UI_SCROLL_SPEED * dt_f32
+        ui_state.sidebar_scrollbar.scroll += (ui_state.sidebar_scrollbar.target - ui_state.sidebar_scrollbar.scroll) * UI_SCROLL_SPEED * dt
     } else {
         ui_state.sidebar_scrollbar.scroll = ui_state.sidebar_scrollbar.target
     }
 
     if abs(ui_state.playlist_scrollbar.target - ui_state.playlist_scrollbar.scroll) > 0.5 {
-        ui_state.playlist_scrollbar.scroll += (ui_state.playlist_scrollbar.target - ui_state.playlist_scrollbar.scroll) * UI_SCROLL_SPEED * dt_f32
+        ui_state.playlist_scrollbar.scroll += (ui_state.playlist_scrollbar.target - ui_state.playlist_scrollbar.scroll) * UI_SCROLL_SPEED * dt
     } else {
         ui_state.playlist_scrollbar.scroll = ui_state.playlist_scrollbar.target
     }
 
     if abs(ui_state.lyrics_scrollbar.target - ui_state.lyrics_scrollbar.scroll) > 0.5 {
-        ui_state.lyrics_scrollbar.scroll += (ui_state.lyrics_scrollbar.target - ui_state.lyrics_scrollbar.scroll) * UI_SCROLL_SPEED * dt_f32
+        ui_state.lyrics_scrollbar.scroll += (ui_state.lyrics_scrollbar.target - ui_state.lyrics_scrollbar.scroll) * UI_SCROLL_SPEED * dt
     } else {
         ui_state.lyrics_scrollbar.scroll = ui_state.lyrics_scrollbar.target
     }
 
     if abs(ui_state.search_scrollbar.target - ui_state.search_scrollbar.scroll) > 0.5 {
-        ui_state.search_scrollbar.scroll += (ui_state.search_scrollbar.target - ui_state.search_scrollbar.scroll) * UI_SCROLL_SPEED * dt_f32
+        ui_state.search_scrollbar.scroll += (ui_state.search_scrollbar.target - ui_state.search_scrollbar.scroll) * UI_SCROLL_SPEED * dt
     } else {
         ui_state.search_scrollbar.scroll = ui_state.search_scrollbar.target
     }

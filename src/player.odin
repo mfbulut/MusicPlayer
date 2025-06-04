@@ -131,7 +131,7 @@ seek_to_position :: proc(position: f32) {
     player.position = clamped_pos
 }
 
-update_player :: proc(dt: f64) {
+update_player :: proc(dt: f32) {
     if !player.current_track.audio_clip.loaded || player.state != .PLAYING {
         return
     }

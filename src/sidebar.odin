@@ -2,15 +2,15 @@ package main
 
 import fx "../fx"
 
-draw_sidebar :: proc() {
+draw_sidebar :: proc(x_offset: f32) {
     window_w, window_h := fx.window_size()
 
-    fx.draw_rect(0, 0, sidebar_width, f32(window_h), UI_PRIMARY_COLOR)
+    fx.draw_rect(x_offset, 0, sidebar_width, f32(window_h), UI_PRIMARY_COLOR)
 
     y_offset: f32 = 10
 
     search_btn := Button{
-        x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
+        x = 20 + x_offset, y = y_offset, w = sidebar_width - 40, h = 40,
         text = "  Search",
         color = ui_state.current_view == .SEARCH ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .SEARCH ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
@@ -27,7 +27,7 @@ draw_sidebar :: proc() {
     y_offset += 50
 
     now_playing_btn := Button{
-        x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
+        x = 20 + x_offset, y = y_offset, w = sidebar_width - 40, h = 40,
         text = "  Now Playing",
         color = ui_state.current_view == .NOW_PLAYING ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .NOW_PLAYING ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
@@ -44,7 +44,7 @@ draw_sidebar :: proc() {
     y_offset += 50
 
     liked_btn := Button{
-        x = 20, y = y_offset, w = sidebar_width - 40, h = 40,
+        x = 20 + x_offset, y = y_offset, w = sidebar_width - 40, h = 40,
         text = "  Liked",
         color = ui_state.current_view == .LIKED ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .LIKED ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
@@ -61,7 +61,7 @@ draw_sidebar :: proc() {
 
     y_offset += 60
 
-    fx.draw_text_aligned("Your Playlists", sidebar_width / 2, y_offset, 16, UI_TEXT_SECONDARY, .CENTER)
+    fx.draw_text_aligned("Your Playlists", sidebar_width / 2 + x_offset, y_offset, 16, UI_TEXT_SECONDARY, .CENTER)
     y_offset += 30
 
     playlist_count := len(playlists)
@@ -86,7 +86,7 @@ draw_sidebar :: proc() {
 
         if scroll_y + 35 > y_offset {
             playlist_btn := Button{
-                x = 20, y = scroll_y, w = sidebar_width - 40, h = 35,
+                x = 20 + x_offset, y = scroll_y, w = sidebar_width - 40, h = 35,
                 text = playlist.name,
                 color = ui_state.selected_playlist == playlist.name ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
                 hover_color = ui_state.selected_playlist == playlist.name ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
@@ -107,7 +107,7 @@ draw_sidebar :: proc() {
     fx.disable_scissor()
 
     if sidebar_max_scroll > 0 {
-        indicator_x := sidebar_width - 15
+        indicator_x := sidebar_width - 15 + x_offset
         indicator_y := y_offset
         indicator_h := sidebar_visible_height - 2
 

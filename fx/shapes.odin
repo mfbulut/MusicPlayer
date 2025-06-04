@@ -554,3 +554,369 @@ draw_gradient_rect_multistop_vertical :: proc(x, y, w, h: f32, colors: []Color, 
         }
     }
 }
+
+draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_left, color_right: Color, corner_segments: int = 8) {
+    if ctx.is_minimized do return
+
+    max_radius := min(w, h) * 0.5
+    clamped_radius := min(radius, max_radius)
+
+    if clamped_radius <= 0 {
+        draw_gradient_rect_horizontal(x, y, w, h, color_left, color_right)
+        return
+    }
+
+    // Helper function to interpolate color based on x position
+    interpolate_color_x :: proc(px, rect_x, rect_w: f32, color_left, color_right: Color) -> Color {
+        t := (px - rect_x) / rect_w
+        return color_lerp(color_left, color_right, t)
+    }
+
+    // Corner centers
+    corners := [4][2]f32{
+        {x + clamped_radius, y + clamped_radius},         // top-left
+        {x + w - clamped_radius, y + clamped_radius},     // top-right
+        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
+        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+    }
+
+    // Corner angle ranges
+    corner_angles := [4][2]f32{
+        {math.PI, 3.0 * math.PI / 2.0},         // top-left
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
+        {0.0, math.PI / 2.0},                   // bottom-right
+        {math.PI / 2.0, math.PI}                // bottom-left
+    }
+
+    // Draw corner arcs with gradient
+    for corner_idx in 0..<4 {
+        corner_center := corners[corner_idx]
+        start_angle := corner_angles[corner_idx][0]
+        end_angle := corner_angles[corner_idx][1]
+
+        angle_step := (end_angle - start_angle) / f32(corner_segments)
+        center_color := interpolate_color_x(corner_center.x, x, w, color_left, color_right)
+
+        for i in 0..<corner_segments {
+            angle1 := start_angle + f32(i) * angle_step
+            angle2 := start_angle + f32(i + 1) * angle_step
+
+            x1 := corner_center.x + clamped_radius * math.cos(angle1)
+            y1 := corner_center.y + clamped_radius * math.sin(angle1)
+            x2 := corner_center.x + clamped_radius * math.cos(angle2)
+            y2 := corner_center.y + clamped_radius * math.sin(angle2)
+
+            color1 := interpolate_color_x(x1, x, w, color_left, color_right)
+            color2 := interpolate_color_x(x2, x, w, color_left, color_right)
+
+            verts := []Vertex{
+                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, center_color},
+                Vertex{{x1, y1}, {-1.0, 0.0}, color1},
+                Vertex{{x2, y2}, {-1.0, 0.0}, color2}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+
+    // Calculate dimensions for rectangular sections
+    inner_w := w - 2.0 * clamped_radius
+    inner_h := h - 2.0 * clamped_radius
+
+    // Draw center rectangle (only if it has area)
+    if inner_w > 0 && inner_h > 0 {
+        center_x1 := x + clamped_radius
+        center_y1 := y + clamped_radius
+        center_x2 := x + w - clamped_radius
+        center_y2 := y + h - clamped_radius
+
+        color1 := interpolate_color_x(center_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(center_x2, x, w, color_left, color_right)
+
+        center_verts := []Vertex{
+            Vertex{{center_x1, center_y1}, {-1.0, 0.0}, color1},
+            Vertex{{center_x1, center_y2}, {-1.0, 0.0}, color1},
+            Vertex{{center_x2, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x1, center_y1}, {-1.0, 0.0}, color1},
+            Vertex{{center_x2, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x2, center_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(center_verts)], center_verts[:])
+        verticies_count += len(center_verts)
+    }
+
+    // Draw top and bottom rectangles (only if they have width)
+    if inner_w > 0 {
+        // Top rectangle
+        top_x1 := x + clamped_radius
+        top_y1 := y
+        top_x2 := x + w - clamped_radius
+        top_y2 := y + clamped_radius
+
+        color1 := interpolate_color_x(top_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(top_x2, x, w, color_left, color_right)
+
+        top_verts := []Vertex{
+            Vertex{{top_x1, top_y1}, {-1.0, 0.0}, color1},
+            Vertex{{top_x1, top_y2}, {-1.0, 0.0}, color1},
+            Vertex{{top_x2, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x1, top_y1}, {-1.0, 0.0}, color1},
+            Vertex{{top_x2, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x2, top_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
+        verticies_count += len(top_verts)
+
+        // Bottom rectangle
+        bottom_x1 := x + clamped_radius
+        bottom_y1 := y + h - clamped_radius
+        bottom_x2 := x + w - clamped_radius
+        bottom_y2 := y + h
+
+        color1 = interpolate_color_x(bottom_x1, x, w, color_left, color_right)
+        color2 = interpolate_color_x(bottom_x2, x, w, color_left, color_right)
+
+        bottom_verts := []Vertex{
+            Vertex{{bottom_x1, bottom_y1}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x1, bottom_y2}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x2, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x1, bottom_y1}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x2, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x2, bottom_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(bottom_verts)], bottom_verts[:])
+        verticies_count += len(bottom_verts)
+    }
+
+    // Draw left and right rectangles (only if they have height)
+    if inner_h > 0 {
+        // Left rectangle
+        left_x1 := x
+        left_y1 := y + clamped_radius
+        left_x2 := x + clamped_radius
+        left_y2 := y + h - clamped_radius
+
+        color1 := interpolate_color_x(left_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(left_x2, x, w, color_left, color_right)
+
+        left_verts := []Vertex{
+            Vertex{{left_x1, left_y1}, {-1.0, 0.0}, color1},
+            Vertex{{left_x1, left_y2}, {-1.0, 0.0}, color1},
+            Vertex{{left_x2, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x1, left_y1}, {-1.0, 0.0}, color1},
+            Vertex{{left_x2, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x2, left_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
+        verticies_count += len(left_verts)
+
+        // Right rectangle
+        right_x1 := x + w - clamped_radius
+        right_y1 := y + clamped_radius
+        right_x2 := x + w
+        right_y2 := y + h - clamped_radius
+
+        color1 = interpolate_color_x(right_x1, x, w, color_left, color_right)
+        color2 = interpolate_color_x(right_x2, x, w, color_left, color_right)
+
+        right_verts := []Vertex{
+            Vertex{{right_x1, right_y1}, {-1.0, 0.0}, color1},
+            Vertex{{right_x1, right_y2}, {-1.0, 0.0}, color1},
+            Vertex{{right_x2, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x1, right_y1}, {-1.0, 0.0}, color1},
+            Vertex{{right_x2, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x2, right_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(right_verts)], right_verts[:])
+        verticies_count += len(right_verts)
+    }
+}
+
+draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, color_bottom: Color, corner_segments: int = 8) {
+    if ctx.is_minimized do return
+
+    max_radius := min(w, h) * 0.5
+    clamped_radius := min(radius, max_radius)
+
+    if clamped_radius <= 0 {
+        draw_gradient_rect_vertical(x, y, w, h, color_top, color_bottom)
+        return
+    }
+
+    // Helper function to interpolate color based on y position
+    interpolate_color_y :: proc(py, rect_y, rect_h: f32, color_top, color_bottom: Color) -> Color {
+        t := (py - rect_y) / rect_h
+        return color_lerp(color_top, color_bottom, t)
+    }
+
+    // Corner centers
+    corners := [4][2]f32{
+        {x + clamped_radius, y + clamped_radius},         // top-left
+        {x + w - clamped_radius, y + clamped_radius},     // top-right
+        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
+        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+    }
+
+    // Corner angle ranges
+    corner_angles := [4][2]f32{
+        {math.PI, 3.0 * math.PI / 2.0},         // top-left
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
+        {0.0, math.PI / 2.0},                   // bottom-right
+        {math.PI / 2.0, math.PI}                // bottom-left
+    }
+
+    // Draw corner arcs with gradient
+    for corner_idx in 0..<4 {
+        corner_center := corners[corner_idx]
+        start_angle := corner_angles[corner_idx][0]
+        end_angle := corner_angles[corner_idx][1]
+
+        angle_step := (end_angle - start_angle) / f32(corner_segments)
+        center_color := interpolate_color_y(corner_center.y, y, h, color_top, color_bottom)
+
+        for i in 0..<corner_segments {
+            angle1 := start_angle + f32(i) * angle_step
+            angle2 := start_angle + f32(i + 1) * angle_step
+
+            x1 := corner_center.x + clamped_radius * math.cos(angle1)
+            y1 := corner_center.y + clamped_radius * math.sin(angle1)
+            x2 := corner_center.x + clamped_radius * math.cos(angle2)
+            y2 := corner_center.y + clamped_radius * math.sin(angle2)
+
+            color1 := interpolate_color_y(y1, y, h, color_top, color_bottom)
+            color2 := interpolate_color_y(y2, y, h, color_top, color_bottom)
+
+            verts := []Vertex{
+                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, center_color},
+                Vertex{{x1, y1}, {-1.0, 0.0}, color1},
+                Vertex{{x2, y2}, {-1.0, 0.0}, color2}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+
+    // Calculate dimensions for rectangular sections
+    inner_w := w - 2.0 * clamped_radius
+    inner_h := h - 2.0 * clamped_radius
+
+    // Draw center rectangle (only if it has area)
+    if inner_w > 0 && inner_h > 0 {
+        center_x1 := x + clamped_radius
+        center_y1 := y + clamped_radius
+        center_x2 := x + w - clamped_radius
+        center_y2 := y + h - clamped_radius
+
+        color1 := interpolate_color_y(center_y1, y, h, color_top, color_bottom)
+        color2 := interpolate_color_y(center_y2, y, h, color_top, color_bottom)
+
+        center_verts := []Vertex{
+            Vertex{{center_x1, center_y1}, {-1.0, 0.0}, color1},
+            Vertex{{center_x1, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x2, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x1, center_y1}, {-1.0, 0.0}, color1},
+            Vertex{{center_x2, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x2, center_y1}, {-1.0, 0.0}, color1}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(center_verts)], center_verts[:])
+        verticies_count += len(center_verts)
+    }
+
+    // Draw top and bottom rectangles (only if they have width)
+    if inner_w > 0 {
+        // Top rectangle
+        top_x1 := x + clamped_radius
+        top_y1 := y
+        top_x2 := x + w - clamped_radius
+        top_y2 := y + clamped_radius
+
+        color1 := interpolate_color_y(top_y1, y, h, color_top, color_bottom)
+        color2 := interpolate_color_y(top_y2, y, h, color_top, color_bottom)
+
+        top_verts := []Vertex{
+            Vertex{{top_x1, top_y1}, {-1.0, 0.0}, color1},
+            Vertex{{top_x1, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x2, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x1, top_y1}, {-1.0, 0.0}, color1},
+            Vertex{{top_x2, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x2, top_y1}, {-1.0, 0.0}, color1}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
+        verticies_count += len(top_verts)
+
+        // Bottom rectangle
+        bottom_x1 := x + clamped_radius
+        bottom_y1 := y + h - clamped_radius
+        bottom_x2 := x + w - clamped_radius
+        bottom_y2 := y + h
+
+        color1 = interpolate_color_y(bottom_y1, y, h, color_top, color_bottom)
+        color2 = interpolate_color_y(bottom_y2, y, h, color_top, color_bottom)
+
+        bottom_verts := []Vertex{
+            Vertex{{bottom_x1, bottom_y1}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x1, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x2, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x1, bottom_y1}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x2, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x2, bottom_y1}, {-1.0, 0.0}, color1}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(bottom_verts)], bottom_verts[:])
+        verticies_count += len(bottom_verts)
+    }
+
+    // Draw left and right rectangles (only if they have height)
+    if inner_h > 0 {
+        // Left rectangle
+        left_x1 := x
+        left_y1 := y + clamped_radius
+        left_x2 := x + clamped_radius
+        left_y2 := y + h - clamped_radius
+
+        color1 := interpolate_color_y(left_y1, y, h, color_top, color_bottom)
+        color2 := interpolate_color_y(left_y2, y, h, color_top, color_bottom)
+
+        left_verts := []Vertex{
+            Vertex{{left_x1, left_y1}, {-1.0, 0.0}, color1},
+            Vertex{{left_x1, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x2, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x1, left_y1}, {-1.0, 0.0}, color1},
+            Vertex{{left_x2, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x2, left_y1}, {-1.0, 0.0}, color1}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
+        verticies_count += len(left_verts)
+
+        // Right rectangle
+        right_x1 := x + w - clamped_radius
+        right_y1 := y + clamped_radius
+        right_x2 := x + w
+        right_y2 := y + h - clamped_radius
+
+        color1 = interpolate_color_y(right_y1, y, h, color_top, color_bottom)
+        color2 = interpolate_color_y(right_y2, y, h, color_top, color_bottom)
+
+        right_verts := []Vertex{
+            Vertex{{right_x1, right_y1}, {-1.0, 0.0}, color1},
+            Vertex{{right_x1, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x2, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x1, right_y1}, {-1.0, 0.0}, color1},
+            Vertex{{right_x2, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x2, right_y1}, {-1.0, 0.0}, color1}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(right_verts)], right_verts[:])
+        verticies_count += len(right_verts)
+    }
+}

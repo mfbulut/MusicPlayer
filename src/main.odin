@@ -54,6 +54,9 @@ UIState :: struct {
     drag_start_time_x: f32,
     drag_start_position: f32,
 
+    hide_sidebar : bool,
+    sidebar_width: f32,
+
     sidebar_scrollbar: Scrollbar,
     playlist_scrollbar: Scrollbar,
     lyrics_scrollbar: Scrollbar,
@@ -66,20 +69,16 @@ ui_state := UIState {
     show_lyrics = true,
     follow_lyrics = true,
     search_query = "",
+    sidebar_width = sidebar_width,
     search_results = make([dynamic]Track),
 }
 
-draw_main_content :: proc(hide_sidebar : bool) {
+draw_main_content :: proc(sidebar_width: f32) {
     window_w, window_h := fx.window_size()
 
-    content_x := f32(0)
-    content_w := f32(window_w)
+    content_x := sidebar_width
+    content_w := f32(window_w) - sidebar_width
     content_h := f32(window_h) - player_height
-
-    if !hide_sidebar {
-        content_x += sidebar_width
-        content_w -= sidebar_width
-    }
 
     fx.draw_rect(content_x, 0, content_w, content_h, UI_PRIMARY_COLOR)
 
@@ -95,28 +94,32 @@ draw_main_content :: proc(hide_sidebar : bool) {
     }
 }
 
-all_covers_loaded_status: bool
-hide_sidebar: bool
+loading_covers: bool
+all_covers_loaded: bool
 
-frame :: proc(dt: f64) {
+frame :: proc(dt: f32) {
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
-        hide_sidebar = !hide_sidebar
+        ui_state.hide_sidebar = !ui_state.hide_sidebar
     }
 
     update_player(dt)
     update_smooth_scrolling(dt)
 
-    if !hide_sidebar {
-        draw_sidebar()
+    if ui_state.hide_sidebar {
+        ui_state.sidebar_width = clamp(ui_state.sidebar_width - dt * 2000, 0, sidebar_width)
+    } else {
+        ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2000, 0, sidebar_width)
     }
 
-    draw_main_content(hide_sidebar)
+    draw_sidebar(ui_state.sidebar_width - sidebar_width)
+
+    draw_main_content(ui_state.sidebar_width)
     draw_player_controls()
 
-    if !all_covers_loaded_status {
-        if dt < -1.0 do return
-        all_covers_loaded_status = check_all_covers_loaded()
-        if !all_covers_loaded_status {
+    if !all_covers_loaded {
+        if !loading_covers do return
+        all_covers_loaded = check_all_covers_loaded()
+        if !all_covers_loaded {
             process_loaded_covers()
         } else {
             cleanup_cover_loading()
@@ -163,10 +166,10 @@ main :: proc() {
     search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
     liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
     blur_shader   = fx.load_shader(transmute([]u8)blur_shader_hlsl)
-    background    = fx.create_render_texture(1024, 1024, false)
+    background    = fx.create_render_texture(1024, 1024)
 
     fx.run_manual(proc() {
-        frame(-5.0)
+        frame(0)
         fx.draw_rect(0, 0, 1280, 720, fx.Color{0, 0, 0, 196})
         fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
     })
@@ -203,6 +206,7 @@ main :: proc() {
     sort_playlists()
     init_liked_songs()
     init_cover_loading()
+    loading_covers = true
     search_tracks("")
 
     fx.run(frame)

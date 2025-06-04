@@ -13,7 +13,7 @@ float4 ps_main(Input input) : SV_TARGET
 {
     float2 uv = input.texcoord;
 
-    float angle = 0.08;
+    float angle = 0.1;
     float2 d = float2(sin(angle), cos(angle));
 
     float2 p = d * d.yx / 200.0;

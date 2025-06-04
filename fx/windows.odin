@@ -9,11 +9,11 @@ Context :: struct {
 	hwnd: 	     win.HWND,
 	is_running : bool,
 	is_minimized: bool,
-	frame_proc : proc(dt : f64),
+	frame_proc : proc(dt : f32),
 	text_callback : proc(char : u8),
 
 	prev_time:  time.Time,
-	delta_time: f64,
+	delta_time: f32,
 
 	window:      struct { w, h: int },
 	mouse_pos:   struct { x, y: int },
@@ -156,7 +156,7 @@ run_manual :: proc(frame : proc()) {
 	ctx.mouse_scroll = 0
 }
 
-run :: proc(frame : proc(dt : f64)) {
+run :: proc(frame : proc(dt : f32)) {
 	ctx.frame_proc = frame
 
 	current_time := time.now()
@@ -170,7 +170,7 @@ run :: proc(frame : proc(dt : f64)) {
 		}
 
 		current_time := time.now()
-		ctx.delta_time = time.duration_seconds(time.diff(ctx.prev_time, current_time))
+		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
 		ctx.prev_time = current_time
 
 		if !ctx.is_minimized {
@@ -280,7 +280,7 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
         break
     case win.WM_TIMER:
 		current_time := time.now()
-		ctx.delta_time = time.duration_seconds(time.diff(ctx.prev_time, current_time))
+		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
 		ctx.prev_time = current_time
 
 		clear_background(BLACK)

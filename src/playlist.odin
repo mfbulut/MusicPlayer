@@ -20,7 +20,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_rect_rounded(x, y, w, h, 12, bg_color)
+    fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, darken(bg_color, 30))
 
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
@@ -61,8 +61,8 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
         fx.draw_text(playlist.name, x + 160, y + 30, 32, UI_TEXT_COLOR)
         fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 160, y + 70, 16, UI_TEXT_SECONDARY)
     } else {
-        fx.draw_text(playlist.name, x + 30, y + 30, 32, UI_TEXT_COLOR)
-        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 32, y + 70, 16, UI_TEXT_SECONDARY)
+        fx.draw_text(playlist.name, x + 40, y + 30, 32, UI_TEXT_COLOR)
+        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 40, y + 70, 16, UI_TEXT_SECONDARY)
     }
 
     list_y := y + 120
