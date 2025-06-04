@@ -13,7 +13,8 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     content_split := has_lyrics && ui_state.show_lyrics ? w * 0.5 : w
 
     art_x := x + content_split/2 - art_size/2
-    art_y := y + 40
+    total_h := art_size + 140
+    art_y := y + h/2 - total_h/2
 
     cover := track.audio_clip.cover
 
@@ -61,7 +62,6 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
 
-
     info_y := art_y + art_size + 30
     track_name := truncate_text(track.name, content_split - 50, 24)
     track_name_width := fx.measure_text(track_name, 24)
@@ -71,6 +71,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     fx.draw_text(track.playlist, x + content_split/2 - playlist_name_width/2, info_y + 30, 16, UI_TEXT_SECONDARY)
 
     progress_y := info_y + 70
+
     progress_w: f32 = min(400, content_split - 60)
     progress_x := x + content_split/2 - progress_w/2
 
@@ -136,6 +137,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)
 
+        ui_state.lyrics_scrollbar.scroll = max(ui_state.lyrics_scrollbar.scroll, 0)
         line_y := lyrics_content_y + 10 - ui_state.lyrics_scrollbar.scroll
 
         for lyric, i in track.lyrics {

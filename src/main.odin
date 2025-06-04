@@ -8,7 +8,6 @@ import "core:mem"
 import "core:strings"
 import "core:os"
 
-
 UI_PRIMARY_COLOR      :: fx.Color{9, 17, 45, 255}
 UI_SECONDARY_COLOR    :: fx.Color{30, 30, 90, 255}
 
@@ -148,9 +147,8 @@ liked_icon    : fx.Texture
 liked_empty   : fx.Texture
 search_icon   : fx.Texture
 
-blur_shader : fx.Shader
-
 blur_shader_hlsl : []u8 = #load("blur.hlsl")
+blur_shader : fx.Shader
 
 background : fx.RenderTexture
 

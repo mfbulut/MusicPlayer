@@ -295,8 +295,8 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA // usually ±120
 	case win.WM_GETMINMAXINFO: {
 	    minMax := cast(^win.MINMAXINFO)uintptr(lparam);
-	    minMax.ptMinTrackSize.x = 900;
-	    minMax.ptMinTrackSize.y = 620;
+	    minMax.ptMinTrackSize.x = 600;
+	    minMax.ptMinTrackSize.y = 600;
 	    return 0;
 	}
 	case win.WM_CHAR:

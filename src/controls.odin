@@ -36,7 +36,6 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
     }
 }
 
-
 draw_player_controls :: proc() {
     window_w, window_h := fx.window_size()
     player_y := f32(window_h) - player_height
@@ -73,30 +72,28 @@ draw_player_controls :: proc() {
         }
     }
 
-    track_title := truncate_text(player.current_track.name, 350, 24)
-    fx.draw_text(track_title, startX, player_y + 15, 24, UI_TEXT_COLOR)
-    track_playlist := truncate_text(player.current_track.playlist, 350, 16)
-    fx.draw_text(track_playlist, startX, player_y + 45, 16, UI_TEXT_SECONDARY)
 
+    max_size : f32 = 300
+    track_title := truncate_text(player.current_track.name, max_size, 24)
     title_end := startX + fx.measure_text(track_title, 24)
-    controls_x := f32(window_w) / 2 - 80
-    controls_x = max(controls_x, title_end + 70)
+
+    track_playlist := truncate_text(player.current_track.playlist, max_size, 16)
+    title_end = max(title_end, startX + fx.measure_text(track_playlist, 16))
+
+    available_space := f32(window_w) - 400
+    controls_x := max(title_end + 70, f32(window_w) / 2 - 80)
+
+    if controls_x + 250 > f32(window_w) - 160 {
+        controls_x = max(startX, f32(window_w) - 400)
+        max_size = controls_x - startX - 90
+    }
+
     controls_y := player_y + 20
 
-    current_time := format_time(player.position)
-    total_time := format_time(player.duration)
-
-    if player.current_track.audio_clip.loaded {
-        time_text := strings.concatenate({current_time, " / ", total_time}, context.temp_allocator)
-        time_width := fx.measure_text(time_text, 16)
-        time_x: f32 = controls_x + 205
-        time_y := player_y + 30
-
-        handle_time_drag(time_x, time_y, time_width, 20)
-
-        text_color := ui_state.is_dragging_time ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
-        fx.draw_text(time_text, time_x, time_y, 16, text_color)
-    }
+    track_title = truncate_text(player.current_track.name, max_size, 24)
+    fx.draw_text(track_title, startX, player_y + 15, 24, UI_TEXT_COLOR)
+    track_playlist = truncate_text(player.current_track.playlist, max_size, 16)
+    fx.draw_text(track_playlist, startX, player_y + 45, 16, UI_TEXT_SECONDARY)
 
     prev_btn := IconButton{
         x = controls_x, y = controls_y, size = 40,
@@ -165,6 +162,23 @@ draw_player_controls :: proc() {
     if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging{
         player.volume = new_volume
         fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+    }
+
+    if player.current_track.audio_clip.loaded {
+        current_time := format_time(player.position)
+        total_time := format_time(player.duration)
+
+        time_text := strings.concatenate({current_time, " / ", total_time}, context.temp_allocator)
+        time_width := fx.measure_text(time_text, 16)
+        time_x: f32 = controls_x + 205
+        time_y := player_y + 30
+
+        if time_x + time_width + 30 < volume_x {
+            handle_time_drag(time_x, time_y, time_width, 20)
+
+            text_color := ui_state.is_dragging_time ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
+            fx.draw_text(time_text, time_x, time_y, 16, text_color)
+        }
     }
 
     fx.draw_rect(0, player_y, f32(window_w) * progress, 1, UI_TEXT_COLOR)

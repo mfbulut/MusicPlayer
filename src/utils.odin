@@ -110,10 +110,9 @@ draw_progress_bar :: proc(bar: ProgressBar) -> f32 {
         fx.draw_rect_rounded(bar.x, bar.y, progress_width, bar.h, bar.h/2, bar.color)
     }
 
-    mouse_x, mouse_y := fx.get_mouse()
+    mouse_x, _ := fx.get_mouse()
     if fx.mouse_pressed(.LEFT) {
-        if f32(mouse_x) >= bar.x && f32(mouse_x) <= bar.x + bar.w &&
-           f32(mouse_y) >= bar.y && f32(mouse_y) <= bar.y + bar.h {
+        if is_hovering(bar.x - 50, bar.y - 40, bar.w + 100, bar.h + 80) {
             return (f32(mouse_x) - bar.x) / bar.w
         }
     }
