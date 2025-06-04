@@ -15,6 +15,9 @@ Audio :: struct {
     cover: Texture,
     loaded: bool,
     has_cover: bool,
+
+    total_frames: u64,
+    sample_rate: u32,
 }
 
 @(private)
@@ -47,11 +50,11 @@ load_audio :: proc(filepath: string) -> Audio {
     extension := fp.ext(filepath)
     decoder_config := miniaudio.decoder_config_init(
         outputFormat = .f32,
-        outputChannels = 0, // Use source channel count
-        outputSampleRate = 0, // Use source sample rate
+        outputChannels = 0,
+        outputSampleRate = 0,
     )
 
-    // Set encoding format based on file extension
+
     switch extension {
     case ".mp3":
         decoder_config.encodingFormat = .mp3
@@ -96,10 +99,13 @@ load_audio :: proc(filepath: string) -> Audio {
         return {}
     }
 
-    length_in_frames: u64
-    miniaudio.sound_get_length_in_pcm_frames(clip.sound, &length_in_frames)
-    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
-    clip.duration = f32(length_in_frames) / f32(sample_rate)
+    miniaudio.decoder_get_length_in_pcm_frames(clip.decoder, &clip.total_frames)
+
+    format: miniaudio.format
+    channels: u32
+    miniaudio.decoder_get_data_format(clip.decoder, &format, &channels, &clip.sample_rate, nil, 0)
+
+    clip.duration = f32(clip.total_frames) / f32(clip.sample_rate)
 
     clip.loaded = true
 
@@ -210,8 +216,13 @@ set_time :: proc(clip: ^Audio, time_seconds: f32) -> bool {
         return false
     }
 
-    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
-    frame_position := u64(time_seconds * f32(sample_rate))
+
+    frame_position := u64(time_seconds * f32(clip.sample_rate))
+
+
+    if frame_position > clip.total_frames {
+        frame_position = clip.total_frames
+    }
 
     result := miniaudio.sound_seek_to_pcm_frame(clip.sound, frame_position)
     return result == .SUCCESS
@@ -223,16 +234,25 @@ get_time :: proc(clip: ^Audio) -> f32 {
     }
 
     cursor: u64
-    miniaudio.sound_get_cursor_in_pcm_frames(clip.sound, &cursor)
-    sample_rate := miniaudio.engine_get_sample_rate(&audio_engine)
+    result := miniaudio.sound_get_cursor_in_pcm_frames(clip.sound, &cursor)
 
-    return f32(cursor) / f32(sample_rate)
+    if result != .SUCCESS {
+        return 0.0
+    }
+
+
+    if cursor > clip.total_frames {
+        cursor = clip.total_frames
+    }
+
+    return f32(cursor) / f32(clip.sample_rate)
 }
 
 get_duration :: proc(clip: ^Audio) -> f32 {
     if !clip.loaded {
         return 0.0
     }
+
 
     return clip.duration
 }
@@ -365,7 +385,7 @@ load_album_art_from_flac :: proc(buffer: []u8) -> (Texture, bool) {
             break
         }
 
-        if block.type == 6 { // PICTURE block
+        if block.type == 6 {
             data := buffer[pos : pos + block.length]
             cursor := 0
 
@@ -377,7 +397,7 @@ load_album_art_from_flac :: proc(buffer: []u8) -> (Texture, bool) {
                            int(data[cursor+3])
             cursor += 4
 
-            cursor += mime_length // skip MIME
+            cursor += mime_length
 
             desc_length := int(data[cursor]) << 24 |
                            int(data[cursor+1]) << 16 |
@@ -385,9 +405,9 @@ load_album_art_from_flac :: proc(buffer: []u8) -> (Texture, bool) {
                            int(data[cursor+3])
             cursor += 4
 
-            cursor += desc_length // skip description
+            cursor += desc_length
 
-            // Skip width, height, depth, colors
+
             cursor += 4 * 4
 
             pic_data_length := int(data[cursor]) << 24 |
