@@ -62,7 +62,7 @@ draw_player_controls :: proc() {
         fx.draw_texture_rounded(padding, player_y + padding, PLAYER_HEIGHT - padding * 2, PLAYER_HEIGHT - padding * 2, 12, fx.WHITE)
         startX += 70
 
-        if is_hovering(0, player_y, PLAYER_HEIGHT, PLAYER_HEIGHT) {
+        if is_hovering(10, player_y, PLAYER_HEIGHT - 10, PLAYER_HEIGHT) {
             fx.set_cursor(.CLICK)
 
             if fx.mouse_pressed(.LEFT) {

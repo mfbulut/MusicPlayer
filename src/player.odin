@@ -19,12 +19,15 @@ Player :: struct {
     shuffle: bool,
     current_playlist: Playlist,
     current_index: int,
-    queue: [dynamic]Track
+    queue: Playlist
 }
 
 player := Player {
     volume = 0.5,
     state = .STOPPED,
+    queue = {
+        name = "Queue",
+    }
 }
 
 load_track_audio :: proc(track: ^Track) {
@@ -58,7 +61,7 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
     if queue do return
 
-    clear(&player.queue)
+    // clear(&player.queue.tracks)
 
     player.current_playlist = playlist
     for t, i in playlist.tracks {
@@ -83,8 +86,8 @@ toggle_playback :: proc() {
 }
 
 next_track :: proc() {
-    if len(player.queue) > 0 {
-        track := pop(&player.queue)
+    if len(player.queue.tracks) > 0 {
+        track := pop(&player.queue.tracks)
         play_track(track, player.current_playlist, true)
         return
     }
@@ -165,5 +168,5 @@ toggle_shuffle :: proc() {
 }
 
 insert_next_track :: proc(track : Track) {
-    inject_at_elem(&player.queue, 0, track)
+    inject_at_elem(&player.queue.tracks, 0, track)
 }

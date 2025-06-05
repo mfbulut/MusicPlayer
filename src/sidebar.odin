@@ -57,6 +57,23 @@ draw_sidebar :: proc(x_offset: f32) {
     fx.use_texture(liked_icon)
     fx.draw_texture(liked_btn.x + 20, liked_btn.y + liked_btn.h/2 - 8, 16, 16, fx.WHITE)
 
+    y_offset += 50
+
+    queue_btn := Button{
+        x = 20 + x_offset, y = y_offset, w = SIDEBAR_WIDTH - 40, h = 40,
+        text = "  Queue",
+        color = ui_state.current_view == .QUEUE ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
+        hover_color = ui_state.current_view == .QUEUE ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
+        text_color = UI_TEXT_COLOR,
+    }
+
+    if draw_button(queue_btn, 40) {
+        ui_state.current_view = .QUEUE
+    }
+
+    fx.use_texture(queue_icon)
+    fx.draw_texture(queue_btn.x + 20, queue_btn.y + queue_btn.h/2 - 8, 16, 16, fx.WHITE)
+
     y_offset += 60
 
     fx.draw_text_aligned("Your Playlists", SIDEBAR_WIDTH / 2 + x_offset, y_offset, 16, UI_TEXT_SECONDARY, .CENTER)

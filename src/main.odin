@@ -26,7 +26,8 @@ View :: enum {
     SEARCH,
     PLAYLIST_DETAIL,
     NOW_PLAYING,
-    LIKED
+    LIKED,
+    QUEUE,
 }
 
 Scrollbar :: struct {
@@ -89,6 +90,8 @@ draw_main_content :: proc(sidebar_width: f32) {
         draw_now_playing_view(content_x, 0, content_w, content_h)
     case .LIKED:
         draw_playlist_view(content_x, 0, content_w, content_h, liked_playlist)
+    case .QUEUE:
+        draw_playlist_view(content_x, 0, content_w, content_h, player.queue)
     }
 }
 
@@ -103,9 +106,9 @@ frame :: proc(dt: f32) {
     update_smooth_scrolling(dt)
 
     if ui_state.hide_sidebar {
-        ui_state.sidebar_width = clamp(ui_state.sidebar_width - dt * 2000, 0, SIDEBAR_WIDTH)
+        ui_state.sidebar_width = clamp(ui_state.sidebar_width - dt * 2500, 0, SIDEBAR_WIDTH)
     } else {
-        ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2000, 0, SIDEBAR_WIDTH)
+        ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2500, 0, SIDEBAR_WIDTH)
     }
 
     // Todo: Make window transparent and rounded corners
@@ -148,7 +151,8 @@ volume_icon_qoi   := #load("assets/volume.qoi")
 shuffle_icon_qoi  := #load("assets/shuffle.qoi")
 search_icon_qoi   := #load("assets/search.qoi")
 liked_icon_qoi    := #load("assets/liked.qoi")
-liked_empty_icon_qoi := #load("assets/liked_empty.qoi")
+empty_icon_qoi    := #load("assets/liked_empty.qoi")
+queue_icon_qoi    := #load("assets/queue.qoi")
 
 exit_icon_qoi     := #load("assets/exit.qoi")
 maximize_icon_qoi := #load("assets/maximize.qoi")
@@ -163,6 +167,7 @@ shuffle_icon  : fx.Texture
 liked_icon    : fx.Texture
 liked_empty   : fx.Texture
 search_icon   : fx.Texture
+queue_icon    : fx.Texture
 
 exit_icon   : fx.Texture
 maximize_icon   : fx.Texture
@@ -213,10 +218,11 @@ main :: proc() {
     shuffle_icon  = fx.load_texture_from_bytes(shuffle_icon_qoi)
     liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
     search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
-    liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
+    liked_empty   = fx.load_texture_from_bytes(empty_icon_qoi)
     exit_icon     = fx.load_texture_from_bytes(exit_icon_qoi)
     maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
     minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
+    queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
     background    = fx.create_render_texture(1024, 1024)
     bokeh_shader  = fx.load_shader(bokeh_shader_hlsl)
     gaussian_shader = fx.load_shader(gaussian_shader_hlsl)
