@@ -5,6 +5,21 @@ import "core:time"
 
 import win "core:sys/windows"
 
+RESIZE_BORDER_WIDTH :: 8
+RESIZE_CORNER_SIZE :: 16
+
+ResizeState :: enum {
+    NONE,
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM,
+    TOP_LEFT,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_RIGHT,
+}
+
 Context :: struct {
 	hwnd: 	     win.HWND,
 	is_running : bool,
@@ -20,7 +35,16 @@ Context :: struct {
 	key_state:   [256]u8,
 	mouse_state: [8]u8,
 	mouse_scroll : int,
+	last_click_time: time.Time,
+	last_click_pos: struct { x, y: int },
+
+
+	resize_state: ResizeState,
+	resize_mouse_offset: struct { x, y: i32 },
+	is_resizing: bool,
 }
+
+double_click_threshold :: 0.2
 
 @(private)
 ctx: Context
@@ -72,6 +96,8 @@ load_icon_by_size :: proc(desired_size: int) -> win.HICON {
     )
 }
 
+window_styles :: win.WS_POPUP | win.WS_VISIBLE | win.WS_EX_LAYERED
+
 init :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
 
@@ -104,23 +130,22 @@ init :: proc(title: string, width, height: int) {
 		bottom = i32(height),
 	}
 
-	win.AdjustWindowRectEx(&rect, win.WS_OVERLAPPEDWINDOW, win.FALSE, 0)
+	win.AdjustWindowRectEx(&rect, window_styles, win.FALSE, 0)
 
 	adjusted_width := rect.right - rect.left
 	adjusted_height := rect.bottom - rect.top
 
-	ctx.hwnd = win.CreateWindowW(
-		class_name,
-		win_title,
-		win.WS_POPUP | win.WS_OVERLAPPEDWINDOW | win.WS_VISIBLE,
-		x, y,
-		adjusted_width, adjusted_height,
-		nil, nil, instance, nil
+	ctx.hwnd = win.CreateWindowExW(
+	    win.WS_EX_LAYERED, // Add this extended style
+	    class_name,
+	    win_title,
+	    window_styles,
+	    x, y,
+	    adjusted_width, adjusted_height,
+	    nil, nil, instance, nil
 	)
 
-	win.ShowWindow(ctx.hwnd, 1)
-	local_true := win.TRUE
-	win.DwmSetWindowAttribute(ctx.hwnd, u32(win.DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE), &local_true, size_of(local_true))
+	win.SetLayeredWindowAttributes(ctx.hwnd, win.RGB(0, 0, 0), 255, 0x00000001);
 
 	init_dx()
 	init_audio()
@@ -131,6 +156,145 @@ init :: proc(title: string, width, height: int) {
 	ctx.is_running = true
 }
 
+get_resize_area :: proc(x, y: int) -> ResizeState {
+    w, h := ctx.window.w, ctx.window.h
+
+    if x < RESIZE_CORNER_SIZE && y < RESIZE_CORNER_SIZE {
+        return .TOP_LEFT
+    }
+    if x > w - RESIZE_CORNER_SIZE && y < RESIZE_CORNER_SIZE {
+        return .TOP_RIGHT
+    }
+    if x < RESIZE_CORNER_SIZE && y > h - RESIZE_CORNER_SIZE {
+        return .BOTTOM_LEFT
+    }
+    if x > w - RESIZE_CORNER_SIZE && y > h - RESIZE_CORNER_SIZE {
+        return .BOTTOM_RIGHT
+    }
+
+    if x < RESIZE_BORDER_WIDTH {
+        return .LEFT
+    }
+    if x > w - RESIZE_BORDER_WIDTH {
+        return .RIGHT
+    }
+    if y < RESIZE_BORDER_WIDTH && x < w - 150 {
+        return .TOP
+    }
+    if y > h - RESIZE_BORDER_WIDTH {
+        return .BOTTOM
+    }
+
+    return .NONE
+}
+
+
+set_resize_cursor :: proc(resize_area: ResizeState) {
+    switch resize_area {
+    case .LEFT, .RIGHT:
+        set_cursor(.HORIZONTAL_RESIZE)
+    case .TOP, .BOTTOM:
+        set_cursor(.VERTICAL_RESIZE)
+    case .TOP_LEFT, .BOTTOM_RIGHT:
+        set_cursor(.DIAGONAL_RESIZE_1)
+    case .TOP_RIGHT, .BOTTOM_LEFT:
+        set_cursor(.DIAGONAL_RESIZE_2)
+    case .NONE:
+        set_cursor(.DEFAULT)
+    }
+}
+
+perform_resize :: proc() {
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
+
+	point: win.POINT
+	win.GetCursorPos(&point)
+
+	// Apply the stored offset directly in screen space
+	adjusted_point := win.POINT{
+	    x = point.x - ctx.resize_mouse_offset.x,
+	    y = point.y - ctx.resize_mouse_offset.y,
+	}
+
+    new_x := rect.left
+    new_y := rect.top
+    new_width := rect.right - rect.left
+    new_height := rect.bottom - rect.top
+
+    switch ctx.resize_state {
+    case .LEFT:
+        new_x = adjusted_point.x
+        new_width = rect.right - adjusted_point.x
+
+    case .RIGHT:
+        new_width = adjusted_point.x - rect.left
+
+    case .TOP:
+        new_y = adjusted_point.y
+        new_height = rect.bottom - adjusted_point.y
+
+    case .BOTTOM:
+        new_height = adjusted_point.y - rect.top
+
+    case .TOP_LEFT:
+        new_x = adjusted_point.x
+        new_y = adjusted_point.y
+        new_width = rect.right - adjusted_point.x
+        new_height = rect.bottom - adjusted_point.y
+
+    case .TOP_RIGHT:
+        new_y = adjusted_point.y
+        new_width = adjusted_point.x - rect.left
+        new_height = rect.bottom - adjusted_point.y
+
+    case .BOTTOM_LEFT:
+        new_x = adjusted_point.x
+        new_width = rect.right - adjusted_point.x
+        new_height = adjusted_point.y - rect.top
+
+    case .BOTTOM_RIGHT:
+        new_width = adjusted_point.x - rect.left
+        new_height = adjusted_point.y - rect.top
+
+    case .NONE:
+    }
+
+    min_width : i32= 700
+    min_height : i32 = 600
+
+    if new_width < min_width {
+        if ctx.resize_state == .LEFT || ctx.resize_state == .TOP_LEFT || ctx.resize_state == .BOTTOM_LEFT {
+            new_x = rect.right - min_width
+        }
+        new_width = min_width
+    }
+
+    if new_height < min_height {
+        if ctx.resize_state == .TOP || ctx.resize_state == .TOP_LEFT || ctx.resize_state == .TOP_RIGHT {
+            new_y = rect.bottom - min_height
+        }
+        new_height = min_height
+    }
+
+    win.SetWindowPos(ctx.hwnd, nil, new_x, new_y, new_width, new_height,
+                     win.SWP_NOZORDER | win.SWP_NOACTIVATE)
+}
+
+
+handle_resize :: proc() {
+    x, y := get_mouse()
+    resize_area := get_resize_area(x, y)
+
+    if ctx.is_resizing {
+        set_resize_cursor(resize_area)
+    }
+
+    if ctx.is_resizing && mouse_held(.LEFT) {
+        perform_resize()
+    }
+}
+
 run_manual :: proc(frame : proc()) {
 	msg: win.MSG
 	for win.PeekMessageW(&msg, ctx.hwnd, 0, 0, win.PM_REMOVE) {
@@ -138,7 +302,7 @@ run_manual :: proc(frame : proc()) {
 		win.DispatchMessageW(&msg)
 	}
 
-	clear_background(BLACK)
+	clear_background(BLANK)
 	begin_render()
 
 	frame()
@@ -172,6 +336,8 @@ run :: proc(frame : proc(dt : f32)) {
 		current_time = time.now()
 		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
 		ctx.prev_time = current_time
+
+		handle_resize()
 
 		if !ctx.is_minimized {
 			clear_background(BLACK)
@@ -219,13 +385,21 @@ switch_keys :: #force_inline proc(virtual_code: u32, lparam: int) -> u32 {
 }
 
 @(private)
+is_in_title_bar :: proc(x, y: int) -> bool {
+	title_bar_left := 200
+	title_bar_right := ctx.window.w - 150
+
+	title_bar_height := 40
+	return y < title_bar_height && x >= title_bar_left && x < title_bar_right
+}
+
+@(private)
 win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARAM, lparam: win.LPARAM) -> win.LRESULT {
 	context = runtime.default_context()
 
 	switch message {
 	case win.WM_KEYDOWN, win.WM_SYSKEYDOWN:
-	    if wparam == win.VK_ESCAPE { ctx.is_running = false }
-		if lparam & (1 << 30) != 0 do break // key repeat
+		if lparam & (1 << 30) != 0 do break
 		code := switch_keys(u32(wparam), lparam)
 		ctx.key_state[code] = KEY_STATE_HELD | KEY_STATE_PRESSED
 
@@ -235,19 +409,96 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		ctx.key_state[code] |=  KEY_STATE_RELEASED
 
 	case win.WM_LBUTTONDOWN, win.WM_RBUTTONDOWN, win.WM_MBUTTONDOWN:
-		win.SetCapture(hwnd)
-		button := switch_button(message)
-		ctx.mouse_state[button] = KEY_STATE_HELD | KEY_STATE_PRESSED
+	    button := switch_button(message)
+
+	    if message == win.WM_LBUTTONDOWN {
+	        resize_area := get_resize_area(ctx.mouse_pos.x, ctx.mouse_pos.y)
+
+	        if resize_area != .NONE {
+	            ctx.is_resizing = true
+	            ctx.resize_state = resize_area
+
+				point: win.POINT
+				win.GetCursorPos(&point)
+
+				rect: win.RECT
+				win.GetWindowRect(ctx.hwnd, &rect)
+
+	            switch resize_area {
+	            case .LEFT, .TOP_LEFT, .BOTTOM_LEFT:
+	                ctx.resize_mouse_offset.x = point.x - rect.left
+	            case .RIGHT, .TOP_RIGHT, .BOTTOM_RIGHT:
+	                ctx.resize_mouse_offset.x = point.x - rect.right
+	            case .TOP, .BOTTOM:
+	                ctx.resize_mouse_offset.x = 0
+	            case .NONE:
+	            }
+
+	            switch resize_area {
+	            case .TOP, .TOP_LEFT, .TOP_RIGHT:
+	                ctx.resize_mouse_offset.y = point.y - rect.top
+	            case .BOTTOM, .BOTTOM_LEFT, .BOTTOM_RIGHT:
+	                ctx.resize_mouse_offset.y = point.y - rect.bottom
+	            case .LEFT, .RIGHT:
+	                ctx.resize_mouse_offset.y = 0
+	            case .NONE:
+	            }
+
+	            win.SetCapture(hwnd)
+	            ctx.mouse_state[button] = KEY_STATE_HELD | KEY_STATE_PRESSED
+	            break
+	        }
+
+        if is_in_title_bar(ctx.mouse_pos.x, ctx.mouse_pos.y)  {
+            current_time := time.now()
+            time_diff := f32(time.duration_seconds(time.diff(ctx.last_click_time, current_time)))
+
+            if time_diff <= double_click_threshold &&
+               abs(ctx.mouse_pos.x - ctx.last_click_pos.x) <= 5 &&
+               abs(ctx.mouse_pos.y - ctx.last_click_pos.y) <= 5 {
+
+                maximize_or_restore_window()
+
+                ctx.last_click_time = {}
+                ctx.last_click_pos = {}
+            } else {
+            	if !ctx.is_resizing {
+	                win.SendMessageW(hwnd, win.WM_NCLBUTTONDOWN, win.HTCAPTION, 0)
+
+	                ctx.last_click_time = current_time
+	                ctx.last_click_pos = ctx.mouse_pos
+            	}
+            }
+        } else {
+            win.SetCapture(hwnd)
+            ctx.mouse_state[button] = KEY_STATE_HELD | KEY_STATE_PRESSED
+        }
+    } else {
+        win.SetCapture(hwnd)
+        ctx.mouse_state[button] = KEY_STATE_HELD | KEY_STATE_PRESSED
+    }
 
 	case win.WM_LBUTTONUP, win.WM_RBUTTONUP, win.WM_MBUTTONUP:
-		win.ReleaseCapture()
 		button := switch_button(message)
+
+	    if message == win.WM_LBUTTONUP && ctx.is_resizing {
+	        ctx.is_resizing = false
+	        ctx.resize_state = .NONE
+	        ctx.resize_mouse_offset = {}
+	    }
+
+		win.ReleaseCapture()
 		ctx.mouse_state[button] &= ~KEY_STATE_HELD
 		ctx.mouse_state[button] |= KEY_STATE_RELEASED
 
 	case win.WM_MOUSEMOVE:
 	   ctx.mouse_pos.x = int(win.GET_X_LPARAM(lparam))
 	   ctx.mouse_pos.y = int(win.GET_Y_LPARAM(lparam))
+
+	   if !ctx.is_resizing {
+		   resize_area := get_resize_area(ctx.mouse_pos.x, ctx.mouse_pos.y)
+		   set_resize_cursor(resize_area)
+	   }
 
 	case win.WM_QUIT, win.WM_CLOSE:
 		ctx.is_running = false
@@ -292,8 +543,8 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		swap_buffers()
 	case win.WM_MOUSEWHEEL:
 		delta := cast(i8)((wparam >> 16) & 0xFFFF)
-		// Maybe change to float later
-		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA // usually 120±
+
+		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA
 	case win.WM_GETMINMAXINFO: {
 	    minMax := cast(^win.MINMAXINFO)uintptr(lparam);
 	    minMax.ptMinTrackSize.x = 700;
@@ -353,6 +604,24 @@ window_size :: proc() -> (int, int) {
 	return ctx.window.w, ctx.window.h
 }
 
+maximize_or_restore_window :: proc() {
+    if win.IsZoomed(ctx.hwnd) {
+        win.ShowWindow(ctx.hwnd, win.SW_RESTORE);
+        ctx.is_minimized = false;
+    } else {
+        win.ShowWindow(ctx.hwnd, win.SW_MAXIMIZE);
+        ctx.is_minimized = false;
+    }
+}
+
+close_window :: proc() {
+    win.PostMessageW(ctx.hwnd, win.WM_CLOSE, 0, 0);
+}
+
+minimize_window :: proc() {
+    win.ShowWindow(ctx.hwnd, win.SW_MINIMIZE);
+}
+
 set_cursor :: proc(cursor: Cursor) {
     sys_cursor: win.HCURSOR
 
@@ -365,7 +634,7 @@ set_cursor :: proc(cursor: Cursor) {
     case .VERTICAL_RESIZE:      sys_cursor = win.LoadCursorA(nil, win.IDC_SIZENS)
     case .DIAGONAL_RESIZE_1:    sys_cursor = win.LoadCursorA(nil, win.IDC_SIZENWSE)
     case .DIAGONAL_RESIZE_2:    sys_cursor = win.LoadCursorA(nil, win.IDC_SIZENESW)
-    case .NONE:                 sys_cursor = nil // hides the cursor
+    case .NONE:                 sys_cursor = nil
     }
 
     win.SetCursor(sys_cursor)

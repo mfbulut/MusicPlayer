@@ -919,3 +919,243 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         verticies_count += len(right_verts)
     }
 }
+
+
+Corner_Flags :: enum u8 {
+    TOP_LEFT     = 0,
+    TOP_RIGHT    = 1,
+    BOTTOM_RIGHT = 2,
+    BOTTOM_LEFT  = 3,
+}
+
+Corner_Flag_Set :: bit_set[Corner_Flags; u8]
+
+// Constants for easy use
+CORNER_ALL :: Corner_Flag_Set{.TOP_LEFT, .TOP_RIGHT, .BOTTOM_RIGHT, .BOTTOM_LEFT}
+CORNER_TOP :: Corner_Flag_Set{.TOP_LEFT, .TOP_RIGHT}
+CORNER_BOTTOM :: Corner_Flag_Set{.BOTTOM_LEFT, .BOTTOM_RIGHT}
+CORNER_LEFT :: Corner_Flag_Set{.TOP_LEFT, .BOTTOM_LEFT}
+CORNER_RIGHT :: Corner_Flag_Set{.TOP_RIGHT, .BOTTOM_RIGHT}
+
+draw_gradient_rect_rounded_horizontal_selective :: proc(
+    x, y, w, h, radius: f32,
+    color_left, color_right: Color,
+    corners: Corner_Flag_Set = CORNER_ALL,
+    corner_segments: int = 8
+) {
+    if ctx.is_minimized do return
+
+    max_radius := min(w, h) * 0.5
+    clamped_radius := min(radius, max_radius)
+
+    if clamped_radius <= 0 || corners == {} {
+        draw_gradient_rect_horizontal(x, y, w, h, color_left, color_right)
+        return
+    }
+
+    // Helper function to interpolate color based on x position
+    interpolate_color_x :: proc(px, rect_x, rect_w: f32, color_left, color_right: Color) -> Color {
+        t := (px - rect_x) / rect_w
+        return color_lerp(color_left, color_right, t)
+    }
+
+    // Corner information
+    corner_info := [4]struct{
+        center: [2]f32,
+        angles: [2]f32,
+        flag: Corner_Flags,
+    }{
+        {{x + clamped_radius, y + clamped_radius}, {math.PI, 3.0 * math.PI / 2.0}, .TOP_LEFT},
+        {{x + w - clamped_radius, y + clamped_radius}, {3.0 * math.PI / 2.0, 2.0 * math.PI}, .TOP_RIGHT},
+        {{x + w - clamped_radius, y + h - clamped_radius}, {0.0, math.PI / 2.0}, .BOTTOM_RIGHT},
+        {{x + clamped_radius, y + h - clamped_radius}, {math.PI / 2.0, math.PI}, .BOTTOM_LEFT},
+    }
+
+    // Draw corner arcs with gradient (only for selected corners)
+    for info in corner_info {
+        if info.flag not_in corners do continue
+
+        corner_center := info.center
+        start_angle := info.angles[0]
+        end_angle := info.angles[1]
+
+        angle_step := (end_angle - start_angle) / f32(corner_segments)
+        center_color := interpolate_color_x(corner_center.x, x, w, color_left, color_right)
+
+        for i in 0..<corner_segments {
+            angle1 := start_angle + f32(i) * angle_step
+            angle2 := start_angle + f32(i + 1) * angle_step
+
+            x1 := corner_center.x + clamped_radius * math.cos(angle1)
+            y1 := corner_center.y + clamped_radius * math.sin(angle1)
+            x2 := corner_center.x + clamped_radius * math.cos(angle2)
+            y2 := corner_center.y + clamped_radius * math.sin(angle2)
+
+            color1 := interpolate_color_x(x1, x, w, color_left, color_right)
+            color2 := interpolate_color_x(x2, x, w, color_left, color_right)
+
+            verts := []Vertex{
+                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, center_color},
+                Vertex{{x1, y1}, {-1.0, 0.0}, color1},
+                Vertex{{x2, y2}, {-1.0, 0.0}, color2}
+            }
+
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
+        }
+    }
+
+    // Calculate effective radii for each corner (0 if not rounded)
+    top_left_r := clamped_radius if .TOP_LEFT in corners else 0
+    top_right_r := clamped_radius if .TOP_RIGHT in corners else 0
+    bottom_right_r := clamped_radius if .BOTTOM_RIGHT in corners else 0
+    bottom_left_r := clamped_radius if .BOTTOM_LEFT in corners else 0
+
+    // Calculate bounds for center rectangle
+    center_x1 := x + max(top_left_r, bottom_left_r)
+    center_x2 := x + w - max(top_right_r, bottom_right_r)
+    center_y1 := y + max(top_left_r, top_right_r)
+    center_y2 := y + h - max(bottom_left_r, bottom_right_r)
+
+    // Draw center rectangle (only if it has area)
+    if center_x2 > center_x1 && center_y2 > center_y1 {
+        color1 := interpolate_color_x(center_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(center_x2, x, w, color_left, color_right)
+
+        center_verts := []Vertex{
+            Vertex{{center_x1, center_y1}, {-1.0, 0.0}, color1},
+            Vertex{{center_x1, center_y2}, {-1.0, 0.0}, color1},
+            Vertex{{center_x2, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x1, center_y1}, {-1.0, 0.0}, color1},
+            Vertex{{center_x2, center_y2}, {-1.0, 0.0}, color2},
+            Vertex{{center_x2, center_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(center_verts)], center_verts[:])
+        verticies_count += len(center_verts)
+    }
+
+    // Draw top rectangle
+    top_x1 := x + top_left_r
+    top_x2 := x + w - top_right_r
+    if top_x2 > top_x1 {
+        top_y1 := y
+        top_y2 := y + max(top_left_r, top_right_r)
+
+        color1 := interpolate_color_x(top_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(top_x2, x, w, color_left, color_right)
+
+        top_verts := []Vertex{
+            Vertex{{top_x1, top_y1}, {-1.0, 0.0}, color1},
+            Vertex{{top_x1, top_y2}, {-1.0, 0.0}, color1},
+            Vertex{{top_x2, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x1, top_y1}, {-1.0, 0.0}, color1},
+            Vertex{{top_x2, top_y2}, {-1.0, 0.0}, color2},
+            Vertex{{top_x2, top_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
+        verticies_count += len(top_verts)
+    }
+
+    // Draw bottom rectangle
+    bottom_x1 := x + bottom_left_r
+    bottom_x2 := x + w - bottom_right_r
+    if bottom_x2 > bottom_x1 {
+        bottom_y1 := y + h - max(bottom_left_r, bottom_right_r)
+        bottom_y2 := y + h
+
+        color1 := interpolate_color_x(bottom_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(bottom_x2, x, w, color_left, color_right)
+
+        bottom_verts := []Vertex{
+            Vertex{{bottom_x1, bottom_y1}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x1, bottom_y2}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x2, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x1, bottom_y1}, {-1.0, 0.0}, color1},
+            Vertex{{bottom_x2, bottom_y2}, {-1.0, 0.0}, color2},
+            Vertex{{bottom_x2, bottom_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(bottom_verts)], bottom_verts[:])
+        verticies_count += len(bottom_verts)
+    }
+
+    // Draw left rectangle
+    left_y1 := y + max(top_left_r, top_right_r)
+    left_y2 := y + h - max(bottom_left_r, bottom_right_r)
+    if left_y2 > left_y1 {
+        left_x1 := x
+        left_x2 := x + max(top_left_r, bottom_left_r)
+
+        color1 := interpolate_color_x(left_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(left_x2, x, w, color_left, color_right)
+
+        left_verts := []Vertex{
+            Vertex{{left_x1, left_y1}, {-1.0, 0.0}, color1},
+            Vertex{{left_x1, left_y2}, {-1.0, 0.0}, color1},
+            Vertex{{left_x2, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x1, left_y1}, {-1.0, 0.0}, color1},
+            Vertex{{left_x2, left_y2}, {-1.0, 0.0}, color2},
+            Vertex{{left_x2, left_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
+        verticies_count += len(left_verts)
+    }
+
+    // Draw right rectangle
+    right_y1 := y + max(top_left_r, top_right_r)
+    right_y2 := y + h - max(bottom_left_r, bottom_right_r)
+    if right_y2 > right_y1 {
+        right_x1 := x + w - max(top_right_r, bottom_right_r)
+        right_x2 := x + w
+
+        color1 := interpolate_color_x(right_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(right_x2, x, w, color_left, color_right)
+
+        right_verts := []Vertex{
+            Vertex{{right_x1, right_y1}, {-1.0, 0.0}, color1},
+            Vertex{{right_x1, right_y2}, {-1.0, 0.0}, color1},
+            Vertex{{right_x2, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x1, right_y1}, {-1.0, 0.0}, color1},
+            Vertex{{right_x2, right_y2}, {-1.0, 0.0}, color2},
+            Vertex{{right_x2, right_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(right_verts)], right_verts[:])
+        verticies_count += len(right_verts)
+    }
+
+    // Fill sharp corners with rectangles where needed
+    corner_fill_info := [4]struct{
+        condition: bool,
+        bounds: [4]f32, // x1, y1, x2, y2
+    }{
+        {.TOP_LEFT not_in corners, {x, y, x + clamped_radius, y + clamped_radius}},
+        {.TOP_RIGHT not_in corners, {x + w - clamped_radius, y, x + w, y + clamped_radius}},
+        {.BOTTOM_RIGHT not_in corners, {x + w - clamped_radius, y + h - clamped_radius, x + w, y + h}},
+        {.BOTTOM_LEFT not_in corners, {x, y + h - clamped_radius, x + clamped_radius, y + h}},
+    }
+
+    for fill in corner_fill_info {
+        if !fill.condition do continue
+
+        corner_x1, corner_y1, corner_x2, corner_y2 := fill.bounds.x, fill.bounds.y, fill.bounds.z, fill.bounds.w
+
+        color1 := interpolate_color_x(corner_x1, x, w, color_left, color_right)
+        color2 := interpolate_color_x(corner_x2, x, w, color_left, color_right)
+
+        corner_verts := []Vertex{
+            Vertex{{corner_x1, corner_y1}, {-1.0, 0.0}, color1},
+            Vertex{{corner_x1, corner_y2}, {-1.0, 0.0}, color1},
+            Vertex{{corner_x2, corner_y2}, {-1.0, 0.0}, color2},
+            Vertex{{corner_x1, corner_y1}, {-1.0, 0.0}, color1},
+            Vertex{{corner_x2, corner_y2}, {-1.0, 0.0}, color2},
+            Vertex{{corner_x2, corner_y1}, {-1.0, 0.0}, color2}
+        }
+
+        copy(verticies[verticies_count:verticies_count + len(corner_verts)], corner_verts[:])
+        verticies_count += len(corner_verts)
+    }
+}

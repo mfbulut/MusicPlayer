@@ -23,7 +23,8 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
 
-    fx.draw_text(track.name, x + 20, y + 5, 20, text_color)
+    track_title := truncate_text(track.name, w - 70, 20)
+    fx.draw_text(track_title, x + 20, y + 5, 20, text_color)
     fx.draw_text(track.playlist, x + 20, y + 35, 16, secondary_color)
 
     is_liked := is_song_liked(track.name, track.playlist)

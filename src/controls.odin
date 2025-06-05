@@ -42,9 +42,8 @@ draw_player_controls :: proc() {
 
     progress := player.duration > 0 ? player.position / player.duration : 0
 
-    colors := []fx.Color{fx.Color{12, 15, 30, 255}, fx.Color{30, 20, 110, 255}, fx.Color{12, 15, 30, 255}}
-    stops := []f32{0.0, 0.5, 1.0}
-    fx.draw_gradient_rect_multistop_horizontal(0, player_y, f32(window_w), PLAYER_HEIGHT, colors, stops)
+    fx.draw_gradient_rect_rounded_horizontal_selective(0, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, fx.Color{12, 15, 30, 255}, fx.Color{30, 20, 110, 255}, {.BOTTOM_LEFT})
+    fx.draw_gradient_rect_rounded_horizontal_selective(f32(window_w) / 2, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, fx.Color{30, 20, 110, 255}, fx.Color{12, 15, 30, 255}, {.BOTTOM_RIGHT})
 
     fx.draw_rect(0, player_y, f32(window_w), 2, UI_SECONDARY_COLOR)
 
@@ -71,7 +70,6 @@ draw_player_controls :: proc() {
             }
         }
     }
-
 
     max_size : f32 = 300
     track_title := truncate_text(player.current_track.name, max_size, 24)

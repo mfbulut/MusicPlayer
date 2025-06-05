@@ -71,7 +71,7 @@ init_dx :: proc() {
 		Format = .B8G8R8A8_UNORM,
 		Stereo = false,
 		SampleDesc = {
-			Count   = 1,  // Swapchain should always be 1 for MSAA resolve
+			Count   = 1,
 			Quality = 0,
 		},
 		BufferUsage = {.RENDER_TARGET_OUTPUT},
@@ -302,7 +302,6 @@ update_constant_buffer :: proc(data : []f32 = {}) {
 resize_swapchain :: proc(width, height: int) {
 	if swapchain == nil do return
 	if width <= 0 || height <= 0 do return
-
 
 	if msaa_render_target_view != nil {
 		msaa_render_target_view->Release()

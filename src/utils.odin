@@ -39,8 +39,7 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
 
 draw_button :: proc(btn: Button, text_offset := 0) -> bool {
     mouse_x, mouse_y := fx.get_mouse()
-    is_hovered := f32(mouse_x) >= btn.x && f32(mouse_x) <= btn.x + btn.w &&
-                 f32(mouse_y) >= btn.y && f32(mouse_y) <= btn.y + btn.h
+    is_hovered := is_hovering(btn.x, btn.y, btn.w, btn.h)
 
     is_valid := is_valid(f32(mouse_x), f32(mouse_y))
 
@@ -65,7 +64,30 @@ draw_button :: proc(btn: Button, text_offset := 0) -> bool {
         text_x += f32(text_offset)
         fx.draw_text(text, text_x, text_y, 16, btn.text_color)
     }
+    return is_clickled
+}
 
+
+draw_icon_button_rect :: proc(x, y, w, h : f32, icon: fx.Texture, color: fx.Color, hover_color: fx.Color, is_exit:= false, padding : f32 = 6) -> bool {
+    is_hovered := is_hovering(x, y, w, h)
+
+    is_clickled := is_hovered && fx.mouse_pressed(.LEFT)
+
+    color := color
+    if is_hovered {
+        color = hover_color
+    }
+
+    if is_exit {
+        fx.draw_gradient_rect_rounded_horizontal_selective(x, y, w, h, 8, color, color, {.TOP_RIGHT})
+    } else {
+        fx.draw_rect(x, y, w, h, color)
+    }
+
+    size := h - padding * 2
+
+    fx.use_texture(icon)
+    fx.draw_texture(x + w / 2 - size / 2, y + padding, size, size, fx.WHITE)
 
     return is_clickled
 }
@@ -126,7 +148,7 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
     handle_x := x + (w - h) * value
 
     mouse_x, _ := fx.get_mouse()
-    if is_hovering(x - 50, y - 30, w + 100, h + 60) {
+    if is_hovering(x - 10, y - 30, w + 20, h + 60) {
         fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
 
         if fx.mouse_held(.LEFT) {

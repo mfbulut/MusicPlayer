@@ -20,6 +20,7 @@ UI_TEXT_SECONDARY     :: fx.Color{147, 154, 168, 255}
 
 SIDEBAR_WIDTH : f32 : 220
 PLAYER_HEIGHT : f32 : 80
+TITLE_HEIGHT  : f32 : 40
 
 View :: enum {
     SEARCH,
@@ -79,8 +80,6 @@ draw_main_content :: proc(sidebar_width: f32) {
     content_w := f32(window_w) - sidebar_width
     content_h := f32(window_h) - PLAYER_HEIGHT
 
-    fx.draw_rect(content_x, 0, content_w, content_h, UI_PRIMARY_COLOR)
-
     switch ui_state.current_view {
     case .SEARCH:
         draw_search_view(content_x, 0, content_w, content_h)
@@ -94,6 +93,8 @@ draw_main_content :: proc(sidebar_width: f32) {
 }
 
 frame :: proc(dt: f32) {
+    window_w, window_h := fx.window_size()
+
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
         ui_state.hide_sidebar = !ui_state.hide_sidebar
     }
@@ -106,6 +107,10 @@ frame :: proc(dt: f32) {
     } else {
         ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2000, 0, SIDEBAR_WIDTH)
     }
+
+    // Todo: Make window transparent and rounded corners
+    fx.draw_rect_rounded(0, 0, f32(window_w), f32(window_h), 8, UI_PRIMARY_COLOR)
+    // fx.draw_rect(0, 0, f32(window_w), f32(window_h), UI_PRIMARY_COLOR)
 
     draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
@@ -121,6 +126,18 @@ frame :: proc(dt: f32) {
             cleanup_cover_loading()
         }
     }
+
+    if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.Color{0, 0, 0, 0}, fx.Color{150, 48, 64, 255}, true) {
+        fx.close_window()
+    }
+
+    if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.Color{0, 0, 0, 0}, fx.Color{64, 64, 128, 255}, false, 6) {
+        fx.maximize_or_restore_window()
+    }
+
+    if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.Color{0, 0, 0, 0}, fx.Color{64, 64, 128, 255}) {
+        fx.minimize_window()
+    }
 }
 
 previous_icon_qoi := #load("assets/previous.qoi")
@@ -133,6 +150,10 @@ search_icon_qoi   := #load("assets/search.qoi")
 liked_icon_qoi    := #load("assets/liked.qoi")
 liked_empty_icon_qoi := #load("assets/liked_empty.qoi")
 
+exit_icon_qoi     := #load("assets/exit.qoi")
+maximize_icon_qoi := #load("assets/maximize.qoi")
+minimize_icon_qoi := #load("assets/minimize.qoi")
+
 previous_icon : fx.Texture
 forward_icon  : fx.Texture
 pause_icon    : fx.Texture
@@ -142,6 +163,10 @@ shuffle_icon  : fx.Texture
 liked_icon    : fx.Texture
 liked_empty   : fx.Texture
 search_icon   : fx.Texture
+
+exit_icon   : fx.Texture
+maximize_icon   : fx.Texture
+minimize_icon   : fx.Texture
 
 bokeh_shader_hlsl : []u8 = #load("shaders/bokeh_blur.hlsl")
 gaussian_shader_hlsl : []u8 = #load("shaders/gaussian_blur.hlsl")
@@ -178,7 +203,6 @@ main :: proc() {
 		}
 	}
 
-
     fx.init("Music Player", 1280, 720)
 
     previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
@@ -190,6 +214,9 @@ main :: proc() {
     liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
     search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
     liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
+    exit_icon     = fx.load_texture_from_bytes(exit_icon_qoi)
+    maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
+    minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
     background    = fx.create_render_texture(1024, 1024)
     bokeh_shader  = fx.load_shader(bokeh_shader_hlsl)
     gaussian_shader = fx.load_shader(gaussian_shader_hlsl)

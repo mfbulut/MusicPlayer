@@ -134,9 +134,9 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
     if has_lyrics && ui_state.show_lyrics {
         lyrics_x := x + content_split + 20
-        lyrics_y := y + 20
+        lyrics_y := y + 40
         lyrics_w := w - content_split - 40
-        lyrics_h := h - 40
+        lyrics_h := h - 60
 
         fx.draw_rect_rounded(lyrics_x, lyrics_y, lyrics_w, lyrics_h, 8, UI_SECONDARY_COLOR)
 

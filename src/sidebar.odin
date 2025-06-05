@@ -5,8 +5,6 @@ import fx "../fx"
 draw_sidebar :: proc(x_offset: f32) {
     window_w, window_h := fx.window_size()
 
-    fx.draw_rect(x_offset, 0, SIDEBAR_WIDTH, f32(window_h), UI_PRIMARY_COLOR)
-
     y_offset: f32 = 10
 
     search_btn := Button{
