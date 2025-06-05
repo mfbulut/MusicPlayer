@@ -18,8 +18,8 @@ UI_SELECTED_COLOR     :: fx.Color{86, 84, 155, 255}
 UI_TEXT_COLOR         :: fx.Color{235, 237, 240, 255}
 UI_TEXT_SECONDARY     :: fx.Color{147, 154, 168, 255}
 
-sidebar_width : f32 : 220
-player_height : f32 : 80
+SIDEBAR_WIDTH : f32 : 220
+PLAYER_HEIGHT : f32 : 80
 
 View :: enum {
     SEARCH,
@@ -68,7 +68,7 @@ ui_state := UIState {
     show_lyrics = true,
     follow_lyrics = true,
     search_query = "",
-    sidebar_width = sidebar_width,
+    sidebar_width = SIDEBAR_WIDTH,
     search_results = make([dynamic]Track),
 }
 
@@ -77,7 +77,7 @@ draw_main_content :: proc(sidebar_width: f32) {
 
     content_x := sidebar_width
     content_w := f32(window_w) - sidebar_width
-    content_h := f32(window_h) - player_height
+    content_h := f32(window_h) - PLAYER_HEIGHT
 
     fx.draw_rect(content_x, 0, content_w, content_h, UI_PRIMARY_COLOR)
 
@@ -93,9 +93,6 @@ draw_main_content :: proc(sidebar_width: f32) {
     }
 }
 
-loading_covers: bool
-all_covers_loaded: bool
-
 frame :: proc(dt: f32) {
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
         ui_state.hide_sidebar = !ui_state.hide_sidebar
@@ -105,12 +102,12 @@ frame :: proc(dt: f32) {
     update_smooth_scrolling(dt)
 
     if ui_state.hide_sidebar {
-        ui_state.sidebar_width = clamp(ui_state.sidebar_width - dt * 2000, 0, sidebar_width)
+        ui_state.sidebar_width = clamp(ui_state.sidebar_width - dt * 2000, 0, SIDEBAR_WIDTH)
     } else {
-        ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2000, 0, sidebar_width)
+        ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2000, 0, SIDEBAR_WIDTH)
     }
 
-    draw_sidebar(ui_state.sidebar_width - sidebar_width)
+    draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
     draw_main_content(ui_state.sidebar_width)
     draw_player_controls()
@@ -124,7 +121,6 @@ frame :: proc(dt: f32) {
             cleanup_cover_loading()
         }
     }
-
 }
 
 previous_icon_qoi := #load("assets/previous.qoi")
@@ -147,12 +143,16 @@ liked_icon    : fx.Texture
 liked_empty   : fx.Texture
 search_icon   : fx.Texture
 
-bokeh_shader_hlsl : []u8 = #load("bokeh_blur.hlsl")
-gaussian_shader_hlsl : []u8 = #load("gaussian_blur.hlsl")
+bokeh_shader_hlsl : []u8 = #load("shaders/bokeh_blur.hlsl")
+gaussian_shader_hlsl : []u8 = #load("shaders/gaussian_blur.hlsl")
+
 use_gaussian : bool
 blur_shader : fx.Shader
 
+loading_covers: bool
+all_covers_loaded: bool
 background : fx.RenderTexture
+music_dir : string
 
 main :: proc() {
     fx.init("Music Player", 1280, 720)
@@ -174,7 +174,10 @@ main :: proc() {
         fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
     })
 
-    music_dir := strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
+    music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
+
+    load_state()
+
     if len(os.args) > 1 {
         music_dir = os.args[1]
     }
@@ -204,12 +207,13 @@ main :: proc() {
 	}
 
     sort_playlists()
-    init_liked_songs()
+    get_all_liked_songs()
     init_cover_loading()
+
     blur_shader = fx.load_shader(use_gaussian ? gaussian_shader_hlsl : bokeh_shader_hlsl)
     loading_covers = true
-    search_tracks("")
 
+    search_tracks("")
     fx.run(frame)
-    save_liked_songs_to_file()
+    save_state()
 }

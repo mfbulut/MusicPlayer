@@ -38,13 +38,13 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 
 draw_player_controls :: proc() {
     window_w, window_h := fx.window_size()
-    player_y := f32(window_h) - player_height
+    player_y := f32(window_h) - PLAYER_HEIGHT
 
     progress := player.duration > 0 ? player.position / player.duration : 0
 
     colors := []fx.Color{fx.Color{12, 15, 30, 255}, fx.Color{30, 20, 110, 255}, fx.Color{12, 15, 30, 255}}
     stops := []f32{0.0, 0.5, 1.0}
-    fx.draw_gradient_rect_multistop_horizontal(0, player_y, f32(window_w), player_height, colors, stops)
+    fx.draw_gradient_rect_multistop_horizontal(0, player_y, f32(window_w), PLAYER_HEIGHT, colors, stops)
 
     fx.draw_rect(0, player_y, f32(window_w), 2, UI_SECONDARY_COLOR)
 
@@ -60,10 +60,10 @@ draw_player_controls :: proc() {
         fx.use_texture(cover)
 
         padding :: 7
-        fx.draw_texture_rounded(padding, player_y + padding, player_height - padding * 2, player_height - padding * 2, 12, fx.WHITE)
+        fx.draw_texture_rounded(padding, player_y + padding, PLAYER_HEIGHT - padding * 2, PLAYER_HEIGHT - padding * 2, 12, fx.WHITE)
         startX += 70
 
-        if is_hovering(0, player_y, player_height, player_height) {
+        if is_hovering(0, player_y, PLAYER_HEIGHT, PLAYER_HEIGHT) {
             fx.set_cursor(.CLICK)
 
             if fx.mouse_pressed(.LEFT) {
