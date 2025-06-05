@@ -147,7 +147,8 @@ bokeh_shader_hlsl : []u8 = #load("shaders/bokeh_blur.hlsl")
 gaussian_shader_hlsl : []u8 = #load("shaders/gaussian_blur.hlsl")
 
 use_gaussian : bool
-blur_shader : fx.Shader
+gaussian_shader : fx.Shader
+bokeh_shader : fx.Shader
 
 loading_covers: bool
 all_covers_loaded: bool
@@ -155,35 +156,6 @@ background : fx.RenderTexture
 music_dir : string
 
 main :: proc() {
-    fx.init("Music Player", 1280, 720)
-
-    previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
-    forward_icon  = fx.load_texture_from_bytes(forward_icon_qoi)
-    pause_icon    = fx.load_texture_from_bytes(pause_icon_qoi)
-    play_icon     = fx.load_texture_from_bytes(play_icon_qoi)
-    volume_icon   = fx.load_texture_from_bytes(volume_icon_qoi)
-    shuffle_icon  = fx.load_texture_from_bytes(shuffle_icon_qoi)
-    liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
-    search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
-    liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
-    background    = fx.create_render_texture(1024, 1024)
-
-    fx.run_manual(proc() {
-        frame(0)
-        fx.draw_rect(0, 0, 1280, 720, fx.Color{0, 0, 0, 196})
-        fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
-    })
-
-    music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
-
-    load_state()
-
-    if len(os.args) > 1 {
-        music_dir = os.args[1]
-    }
-
-    load_files(music_dir)
-
 	when false {
 		track: mem.Tracking_Allocator
 		mem.tracking_allocator_init(&track, context.allocator)
@@ -206,14 +178,44 @@ main :: proc() {
 		}
 	}
 
+
+    fx.init("Music Player", 1280, 720)
+
+    previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
+    forward_icon  = fx.load_texture_from_bytes(forward_icon_qoi)
+    pause_icon    = fx.load_texture_from_bytes(pause_icon_qoi)
+    play_icon     = fx.load_texture_from_bytes(play_icon_qoi)
+    volume_icon   = fx.load_texture_from_bytes(volume_icon_qoi)
+    shuffle_icon  = fx.load_texture_from_bytes(shuffle_icon_qoi)
+    liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
+    search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
+    liked_empty   = fx.load_texture_from_bytes(liked_empty_icon_qoi)
+    background    = fx.create_render_texture(1024, 1024)
+    bokeh_shader  = fx.load_shader(bokeh_shader_hlsl)
+    gaussian_shader = fx.load_shader(gaussian_shader_hlsl)
+
+    fx.run_manual(proc() {
+        frame(0)
+        fx.draw_rect(0, 0, 1280, 720, fx.Color{0, 0, 0, 196})
+        fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
+    })
+
+    music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
+
+    load_state()
+
+    if len(os.args) > 1 {
+        music_dir = os.args[1]
+    }
+
+    load_files(music_dir)
+
     sort_playlists()
     get_all_liked_songs()
     init_cover_loading()
-
-    blur_shader = fx.load_shader(use_gaussian ? gaussian_shader_hlsl : bokeh_shader_hlsl)
     loading_covers = true
-
     search_tracks("")
     fx.run(frame)
+
     save_state()
 }

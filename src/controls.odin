@@ -79,8 +79,6 @@ draw_player_controls :: proc() {
 
     track_playlist := truncate_text(player.current_track.playlist, max_size, 16)
     title_end = max(title_end, startX + fx.measure_text(track_playlist, 16))
-
-    available_space := f32(window_w) - 400
     controls_x := max(title_end + 70, f32(window_w) / 2 - 80)
 
     if controls_x + 250 > f32(window_w) - 160 {

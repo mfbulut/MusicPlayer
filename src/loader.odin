@@ -102,13 +102,17 @@ process_music_file :: proc(file: os2.File_Info) {
 
     if ext != "mp3" && ext != "wav" && ext != "flac" do return
 
+    name, _ = strings.replace_all(name, "[", "(")
+    name, _ = strings.replace_all(name, "]", ")")
+    name, _ = strings.replace_all(name, "=", "-")
+
     dir_name := filepath.base(dir_path)
     playlist := find_or_create_playlist(dir_path, dir_name)
 
     music := Track{
-        path     = strings.clone(file.fullpath),
-        name     = strings.clone(name),
-        playlist = strings.clone(dir_name),
+        path     = file.fullpath,
+        name     = name,
+        playlist = dir_name,
         lyrics   = load_lyrics_for_track(file.fullpath),
     }
 
@@ -194,7 +198,7 @@ load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
 
         lyric := Lyrics{
             time = time,
-            text = strings.clone(lyric_text),
+            text = lyric_text,
         }
         append(&lyrics, lyric)
     }

@@ -78,7 +78,7 @@ load_state :: proc(){
     }
 }
 
-save_state :: proc() -> bool {
+save_state :: proc() {
     builder := strings.builder_make(context.allocator)
     defer strings.builder_destroy(&builder)
 
@@ -103,9 +103,7 @@ save_state :: proc() -> bool {
     write_success := os.write_entire_file(SAVE_FILE, transmute([]u8)ini_data)
     if !write_success {
         fmt.printf("Error writing liked songs to file: %s\n", SAVE_FILE)
-        return false
     }
-    return true
 }
 
 create_song_key :: proc(name: string, playlist: string) -> string {
