@@ -15,11 +15,15 @@ Texture :: struct {
     height: int,
 }
 
-load_texture :: proc(filepath: string, generate_mipmaps := true) -> Texture {
-    image_data, _ := os.read_entire_file(filepath)
-    texture := load_texture_from_bytes(image_data, generate_mipmaps)
-    delete(image_data)
-    return texture
+load_texture :: proc(filepath: string, generate_mipmaps := true) -> (Texture, bool) {
+    image_data, ok := os.read_entire_file(filepath)
+    if ok {
+        texture := load_texture_from_bytes(image_data, generate_mipmaps)
+        delete(image_data)
+        return texture, true
+    }
+
+    return Texture{}, false
 }
 
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture {

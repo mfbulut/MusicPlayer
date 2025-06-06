@@ -264,7 +264,7 @@ cover_loading_worker :: proc(t: ^thread.Thread) {
             continue
         }
 
-        texture := fx.load_texture(cover_path)
+        texture, _ := fx.load_texture(cover_path)
 
         result := Cover_Load_Result{
             playlist_index = playlist_index,

@@ -118,7 +118,6 @@ load_audio :: proc(filepath: string) -> Audio {
     miniaudio.decoder_get_data_format(clip.decoder, &format, &channels, &clip.sample_rate, nil, 0)
 
     clip.duration = f32(clip.total_frames) / f32(clip.sample_rate)
-
     clip.loaded = true
 
     if extension == ".mp3" {
@@ -128,11 +127,19 @@ load_audio :: proc(filepath: string) -> Audio {
             clip.cover = cover
             clip.has_cover = true
         }
-    }
-
-    if extension == ".flac" {
+    } else if extension == ".flac" {
         cover, ok := load_album_art_from_flac(file_data)
 
+        if ok {
+            clip.cover = cover
+            clip.has_cover = true
+        }
+    } else {
+        stem := fp.stem(filepath);
+        dir  := fp.dir(filepath);
+        path := strings.join({dir, "/", stem, ".png"}, "");
+
+        cover, ok := load_texture(path)
         if ok {
             clip.cover = cover
             clip.has_cover = true

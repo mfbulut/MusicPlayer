@@ -87,7 +87,7 @@ draw_icon_button_rect :: proc(x, y, w, h : f32, icon: fx.Texture, color: fx.Colo
     size := h - padding * 2
 
     fx.use_texture(icon)
-    fx.draw_texture(x + w / 2 - size / 2, y + padding, size, size, fx.WHITE)
+    fx.draw_texture(x + w / 2 - size / 2, y + padding, size, size, fx.Color{225, 225, 240, 196})
 
     return is_clickled
 }

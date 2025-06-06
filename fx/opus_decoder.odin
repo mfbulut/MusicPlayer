@@ -2,9 +2,13 @@ package fx
 
 import ma "vendor:miniaudio"
 
-OPUS_SUPPORT :: #config(OPUS_SUPPORT, false)
+OPUS_SUPPORT :: #config(OPUS_SUPPORT, true)
 
 when OPUS_SUPPORT {
+
+    // How to compile from source
+    // https://github.com/dotBlueShoes/Metronome/blob/master/notes/Compiling%20OPUSFILE%20on%20Windows.md
+
     foreign import decoder {
     	"deps/decoder.lib",
         "deps/opusfile/lib/opusfile.lib",
