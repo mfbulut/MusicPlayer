@@ -23,12 +23,18 @@ Audio :: struct {
 @(private)
 audio_engine: miniaudio.engine
 
+pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
+
 init_audio :: proc() -> bool {
     result := miniaudio.engine_init(nil, &audio_engine)
 
     if result != .SUCCESS {
         fmt.printf("Failed to initialize audio engine: %v\n", result)
         return false
+    }
+
+    when OPUS_SUPPORT {
+        pCustomBackendVTables[0] = ma_decoding_backend_libopus
     }
 
     return true
@@ -54,6 +60,11 @@ load_audio :: proc(filepath: string) -> Audio {
         outputSampleRate = 0,
     )
 
+    when OPUS_SUPPORT {
+        decoder_config.ppCustomBackendVTables = &pCustomBackendVTables[0]
+        decoder_config.customBackendCount     = 1
+        decoder_config.pCustomBackendUserData = nil
+    }
 
     switch extension {
     case ".mp3":
@@ -75,6 +86,7 @@ load_audio :: proc(filepath: string) -> Audio {
 
     if decoder_result != .SUCCESS {
         fmt.printf("Failed to initialize decoder for '%s': %v\n", filepath, decoder_result)
+
         delete(clip.file_data)
         free(clip.decoder)
         return {}

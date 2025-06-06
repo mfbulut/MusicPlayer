@@ -7,6 +7,7 @@ import "core:mem"
 
 import "core:strings"
 import "core:os"
+import "core:os/os2"
 
 UI_PRIMARY_COLOR      :: fx.Color{9, 17, 45, 255}
 UI_SECONDARY_COLOR    :: fx.Color{30, 30, 90, 255}
@@ -91,7 +92,7 @@ draw_main_content :: proc(sidebar_width: f32) {
     case .LIKED:
         draw_playlist_view(content_x, 0, content_w, content_h, liked_playlist)
     case .QUEUE:
-        draw_playlist_view(content_x, 0, content_w, content_h, player.queue)
+        draw_playlist_view(content_x, 0, content_w, content_h, player.queue, true)
     }
 }
 
@@ -111,9 +112,7 @@ frame :: proc(dt: f32) {
         ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2500, 0, SIDEBAR_WIDTH)
     }
 
-    // Todo: Make window transparent and rounded corners
     fx.draw_rect_rounded(0, 0, f32(window_w), f32(window_h), 8, UI_PRIMARY_COLOR)
-    // fx.draw_rect(0, 0, f32(window_w), f32(window_h), UI_PRIMARY_COLOR)
 
     draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
@@ -140,6 +139,10 @@ frame :: proc(dt: f32) {
 
     if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.Color{0, 0, 0, 0}, fx.Color{64, 64, 128, 255}) {
         fx.minimize_window()
+    }
+    if fx.is_hovering_files() {
+        fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
+        fx.draw_text_aligned("Drop files to add to the queue", f32(window_w) / 2, f32(window_h) / 2, 32, fx.WHITE, .CENTER)
     }
 }
 
@@ -185,29 +188,21 @@ all_covers_loaded: bool
 background : fx.RenderTexture
 music_dir : string
 
+drop_callback  :: proc(files: []string) {
+    for filepath in files {
+        file := os2.stat(filepath, context.allocator) or_continue
+        if file.type == .Directory {
+            root_dir, read_err := os2.read_all_directory_by_path(file.fullpath, context.allocator)
+            for sub_file in root_dir {
+                drop_callback({sub_file.fullpath})
+            }
+        } else {
+            process_music_file(file, true)
+        }
+    }
+}
+
 main :: proc() {
-	when false {
-		track: mem.Tracking_Allocator
-		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
-
-		defer {
-			if len(track.allocation_map) > 0 {
-				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
-				for _, entry in track.allocation_map {
-					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
-				}
-			}
-			if len(track.bad_free_array) > 0 {
-				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
-				for entry in track.bad_free_array {
-					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
-				}
-			}
-			mem.tracking_allocator_destroy(&track)
-		}
-	}
-
     fx.init("Music Player", 1280, 720)
 
     previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
@@ -243,11 +238,36 @@ main :: proc() {
 
     load_files(music_dir)
 
+	when false {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer {
+			if len(track.allocation_map) > 0 {
+				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+				for _, entry in track.allocation_map {
+					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+				}
+			}
+			if len(track.bad_free_array) > 0 {
+				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
+				for entry in track.bad_free_array {
+					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
+
     sort_playlists()
     get_all_liked_songs()
     init_cover_loading()
     loading_covers = true
     search_tracks("")
+
+    fx.set_file_drop_callback(drop_callback)
+
     fx.run(frame)
 
     save_state()

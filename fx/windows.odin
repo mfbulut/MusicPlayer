@@ -2,6 +2,8 @@ package fx
 
 import "base:runtime"
 import "core:time"
+import "core:strings"
+import "core:fmt"
 
 import win "core:sys/windows"
 
@@ -26,6 +28,8 @@ Context :: struct {
 	is_minimized: bool,
 	frame_proc : proc(dt : f32),
 	text_callback : proc(char : u8),
+	file_drop_callback : proc(files: []string),
+	is_hovering_files: bool,
 
 	prev_time:  time.Time,
 	delta_time: f32,
@@ -136,7 +140,7 @@ init :: proc(title: string, width, height: int) {
 	adjusted_height := rect.bottom - rect.top
 
 	ctx.hwnd = win.CreateWindowExW(
-	    win.WS_EX_LAYERED, // Add this extended style
+	    win.WS_EX_LAYERED,
 	    class_name,
 	    win_title,
 	    window_styles,
@@ -188,6 +192,17 @@ get_resize_area :: proc(x, y: int) -> ResizeState {
     return .NONE
 }
 
+set_file_drop_callback :: proc(callback: proc(files: []string)) {
+	ctx.file_drop_callback = callback
+
+	if ctx.hwnd != nil {
+		win.DragAcceptFiles(ctx.hwnd, win.TRUE)
+	}
+}
+
+is_hovering_files :: proc() -> bool {
+	return ctx.is_hovering_files
+}
 
 set_resize_cursor :: proc(resize_area: ResizeState) {
     switch resize_area {
@@ -211,7 +226,6 @@ perform_resize :: proc() {
 	point: win.POINT
 	win.GetCursorPos(&point)
 
-	// Apply the stored offset directly in screen space
 	adjusted_point := win.POINT{
 	    x = point.x - ctx.resize_mouse_offset.x,
 	    y = point.y - ctx.resize_mouse_offset.y,
@@ -277,8 +291,7 @@ perform_resize :: proc() {
         new_height = min_height
     }
 
-    win.SetWindowPos(ctx.hwnd, nil, new_x, new_y, new_width, new_height,
-                     win.SWP_NOZORDER | win.SWP_NOACTIVATE)
+    win.SetWindowPos(ctx.hwnd, nil, new_x, new_y, new_width, new_height, win.SWP_NOZORDER | win.SWP_NOACTIVATE)
 }
 
 
@@ -331,6 +344,17 @@ run :: proc(frame : proc(dt : f32)) {
 		for win.PeekMessageW(&msg, ctx.hwnd, 0, 0, win.PM_REMOVE) {
 			win.TranslateMessage(&msg)
 			win.DispatchMessageW(&msg)
+		}
+
+		ci := win.CURSORINFO{ cbSize = size_of(win.CURSORINFO) };
+		win.GetCursorInfo(&ci);
+
+		// Probably only works on my machine
+		CURSOR_ID :: 0x705F3
+		if (ci.hCursor == transmute(win.HCURSOR)uintptr(CURSOR_ID)) {
+			ctx.is_hovering_files = true
+		} else {
+			ctx.is_hovering_files = false
 		}
 
 		current_time = time.now()
@@ -543,7 +567,6 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		swap_buffers()
 	case win.WM_MOUSEWHEEL:
 		delta := cast(i8)((wparam >> 16) & 0xFFFF)
-
 		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA
 	case win.WM_GETMINMAXINFO: {
 	    minMax := cast(^win.MINMAXINFO)uintptr(lparam);
@@ -556,6 +579,41 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		if ctx.text_callback != nil && char >= 32 && char != 127 {
 			ctx.text_callback(char)
 		}
+
+	case win.WM_DROPFILES:
+		hdrop := win.HDROP(wparam)
+		defer win.DragFinish(hdrop)
+
+		file_count := win.DragQueryFileW(hdrop, 0xFFFFFFFF, nil, 0)
+
+		if file_count > 0 && ctx.file_drop_callback != nil {
+			files := make([]string, file_count)
+			defer delete(files)
+
+			for i in 0..<file_count {
+				length := win.DragQueryFileW(hdrop, u32(i), nil, 0)
+
+				if length > 0 {
+					buffer := make([]u16, length + 1)
+					defer delete(buffer)
+
+					win.DragQueryFileW(hdrop, u32(i), raw_data(buffer), u32(len(buffer)))
+
+					if utf8_str, err := win.wstring_to_utf8(raw_data(buffer), len(buffer)); err == nil {
+						files[i] = strings.clone(utf8_str)
+					}
+				}
+			}
+
+			ctx.file_drop_callback(files)
+
+			for file in files {
+				delete(file)
+			}
+		}
+
+		ctx.is_hovering_files = false
+		return 0
 
 	case:
 		return win.DefWindowProcW(hwnd, message, wparam, lparam)

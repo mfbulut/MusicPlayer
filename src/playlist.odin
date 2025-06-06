@@ -36,7 +36,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
         hover_color = bg_color,
     }
 
-    if draw_icon_button(heart_btn) {
+    if len(track.playlist) > 0 && draw_icon_button(heart_btn) {
         toggle_song_like(track.name, track.playlist)
     } else if hover && fx.mouse_pressed(.LEFT) {
         play_track(track, playlist)
@@ -48,7 +48,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
 }
 
 
-draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
+draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, reverse := false) {
     if playlist.loaded {
         fx.use_texture(playlist.cover)
         fx.draw_texture_rounded(x + 40, y + 10, 100, 100, 12, fx.WHITE)
@@ -82,6 +82,10 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist) {
 
     for i in 0..<len(playlist.tracks) {
         track := playlist.tracks[i]
+
+        if reverse {
+            track = playlist.tracks[len(playlist.tracks) - 1 - i]
+        }
 
         if track_y > y + h {
             break

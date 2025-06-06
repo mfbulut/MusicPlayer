@@ -19,7 +19,9 @@ Player :: struct {
     shuffle: bool,
     current_playlist: Playlist,
     current_index: int,
-    queue: Playlist
+    queue: Playlist,
+    shuffled_indices: []int,
+    shuffle_position: int,
 }
 
 player := Player {
@@ -60,15 +62,14 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
     player.state = .PLAYING
 
     if queue do return
-
-    // clear(&player.queue.tracks)
-
     player.current_playlist = playlist
     for t, i in playlist.tracks {
         if track.name == t.name && track.path == t.path {
             player.current_index = i
         }
     }
+
+    song_shuffle()
 }
 
 toggle_playback :: proc() {
@@ -97,7 +98,12 @@ next_track :: proc() {
     }
 
     if player.shuffle {
-        player.current_index = rand.int_max(len(player.current_playlist.tracks))
+        if player.shuffle_position >= len(player.shuffled_indices) {
+            rand.shuffle(player.shuffled_indices[:])
+            player.shuffle_position = 0
+        }
+        player.current_index = player.shuffled_indices[player.shuffle_position]
+        player.shuffle_position += 1
     } else {
         player.current_index = (player.current_index + 1) % len(player.current_playlist.tracks)
     }
@@ -112,7 +118,11 @@ previous_track :: proc() {
     }
 
     if player.shuffle {
-        player.current_index = rand.int_max(len(player.current_playlist.tracks))
+        player.shuffle_position -= 1
+        if player.shuffle_position < 0 {
+            player.shuffle_position = len(player.shuffled_indices) - 1
+        }
+        player.current_index = player.shuffled_indices[player.shuffle_position]
     } else {
         player.current_index = player.current_index - 1
         if player.current_index < 0 {
@@ -163,8 +173,21 @@ seek_to_lyric :: proc(lyric_index: int, lyrics: []Lyrics) {
     }
 }
 
+song_shuffle :: proc() {
+    if player.shuffle {
+        // Todo: fix memory leak
+        player.shuffled_indices = make([]int, len(player.current_playlist.tracks))
+        for i in 0..<len(player.shuffled_indices) {
+            player.shuffled_indices[i] = i
+        }
+        rand.shuffle(player.shuffled_indices[:])
+        player.shuffle_position = 0
+    }
+}
+
 toggle_shuffle :: proc() {
     player.shuffle = !player.shuffle
+    song_shuffle()
 }
 
 insert_next_track :: proc(track : Track) {

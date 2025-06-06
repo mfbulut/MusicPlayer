@@ -96,11 +96,11 @@ sort_playlists :: proc() {
     })
 }
 
-process_music_file :: proc(file: os2.File_Info) {
+process_music_file :: proc(file: os2.File_Info, queue := false) {
     dir_path, filename := os2.split_path(file.fullpath)
     name, ext := os2.split_filename(filename)
 
-    if ext != "mp3" && ext != "wav" && ext != "flac" do return
+    if ext != "mp3" && ext != "wav" && ext != "flac" && ext != "opus" && ext != "ogg" do return
 
     name, _ = strings.replace_all(name, "[", "(")
     name, _ = strings.replace_all(name, "]", ")")
@@ -115,8 +115,11 @@ process_music_file :: proc(file: os2.File_Info) {
         playlist = dir_name,
         lyrics   = load_lyrics_for_track(file.fullpath),
     }
-
-    append(&playlist.tracks, music)
+    if queue {
+        append(&player.queue.tracks, music)
+    } else {
+        append(&playlist.tracks, music)
+    }
 }
 
 parse_lrc_time :: proc(time_str: string) -> (f32, bool) {
