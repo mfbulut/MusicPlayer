@@ -59,6 +59,7 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
     player.duration = fx.get_duration(&player.current_track.audio_clip)
     player.position = 0
     fx.play_audio(&player.current_track.audio_clip)
+
     fx.set_volume(&player.current_track.audio_clip, player.volume)
     player.state = .PLAYING
 

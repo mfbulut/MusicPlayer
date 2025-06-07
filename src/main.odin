@@ -39,8 +39,6 @@ Scrollbar :: struct {
 
 UIState :: struct {
     current_view: View,
-
-    volume: f32,
     selected_playlist: string,
 
     show_lyrics: bool,

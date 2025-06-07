@@ -23,7 +23,6 @@ Audio :: struct {
 @(private)
 audio_engine: miniaudio.engine
 
-
 when OPUS_SUPPORT {
     pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
 
@@ -145,7 +144,9 @@ load_audio :: proc(filepath: string) -> Audio {
             clip.cover = cover
             clip.has_cover = true
         }
-    } else {
+    }
+
+    if !clip.has_cover {
         stem := fp.stem(filepath);
         dir  := fp.dir(filepath);
         path := strings.join({dir, "/", stem, ".png"}, "");
