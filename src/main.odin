@@ -173,7 +173,7 @@ liked_empty   : fx.Texture
 search_icon   : fx.Texture
 queue_icon    : fx.Texture
 
-exit_icon   : fx.Texture
+exit_icon       : fx.Texture
 maximize_icon   : fx.Texture
 minimize_icon   : fx.Texture
 
@@ -193,10 +193,9 @@ drop_callback  :: proc(files: []string) {
     for filepath in files {
         file := os2.stat(filepath, context.allocator) or_continue
         if file.type == .Directory {
-            root_dir := os2.read_all_directory_by_path(file.fullpath, context.allocator) or_continue
-            for sub_file in root_dir {
-                drop_callback({sub_file.fullpath})
-            }
+            load_files(filepath, context.allocator)
+            ui_state.selected_playlist = file.name
+            ui_state.current_view = .PLAYLIST_DETAIL
         } else {
             process_music_file(file, true)
         }
@@ -204,6 +203,28 @@ drop_callback  :: proc(files: []string) {
 }
 
 main :: proc() {
+	when false {
+		track: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&track, context.allocator)
+		context.allocator = mem.tracking_allocator(&track)
+
+		defer {
+			if len(track.allocation_map) > 0 {
+				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+				for _, entry in track.allocation_map {
+					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+				}
+			}
+			if len(track.bad_free_array) > 0 {
+				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
+				for entry in track.bad_free_array {
+					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
+				}
+			}
+			mem.tracking_allocator_destroy(&track)
+		}
+	}
+
     fx.init("Music Player", 1280, 720)
 
     previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
@@ -237,29 +258,12 @@ main :: proc() {
         music_dir = os.args[1]
     }
 
-    load_files(music_dir)
+    arena_mem := make([]byte, 8 * mem.Megabyte)
+    arena: mem.Arena
+    mem.arena_init(&arena, arena_mem)
+    arena_alloc := mem.arena_allocator(&arena)
 
-	when false {
-		track: mem.Tracking_Allocator
-		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
-
-		defer {
-			if len(track.allocation_map) > 0 {
-				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
-				for _, entry in track.allocation_map {
-					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
-				}
-			}
-			if len(track.bad_free_array) > 0 {
-				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
-				for entry in track.bad_free_array {
-					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
-				}
-			}
-			mem.tracking_allocator_destroy(&track)
-		}
-	}
+    load_files(music_dir, arena_alloc)
 
     sort_playlists()
     get_all_liked_songs()

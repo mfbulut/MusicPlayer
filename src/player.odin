@@ -54,11 +54,12 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
     new_track := track
     load_track_audio(&new_track)
+    new_track.lyrics = load_lyrics_for_track(new_track.path)
     player.current_track = new_track
     player.duration = fx.get_duration(&player.current_track.audio_clip)
     player.position = 0
-    fx.set_volume(&player.current_track.audio_clip, player.volume)
     fx.play_audio(&player.current_track.audio_clip)
+    fx.set_volume(&player.current_track.audio_clip, player.volume)
     player.state = .PLAYING
 
     if queue do return

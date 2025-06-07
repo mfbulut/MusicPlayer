@@ -2,6 +2,8 @@ package main
 
 import fx "../fx"
 
+import "base:runtime"
+
 import "core:fmt"
 import "core:path/filepath"
 import "core:os"
@@ -34,17 +36,18 @@ Playlist :: struct {
 
 playlists : [dynamic]Playlist
 
-load_files :: proc(path: string) {
-    root_dir, read_err := os2.read_all_directory_by_path(path, context.allocator)
+load_files :: proc(path: string, allocator : runtime.Allocator) {
+    root_dir, read_err := os2.read_all_directory_by_path(path, allocator)
     if read_err != nil {
         fmt.eprintln("Error reading directory:", path, "->", read_err)
         return
     }
-    defer delete(root_dir)
+
+    context.allocator = allocator
 
     for file in root_dir {
         if file.type == .Directory {
-            load_files(file.fullpath)
+            load_files(file.fullpath, allocator)
         } else {
             process_music_file(file)
         }
@@ -71,7 +74,7 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
     playlist := Playlist{
         path   = dir_path,
         name   = dir_name,
-        tracks = make([dynamic]Track, 0, 128),
+        tracks = make([dynamic]Track, 0, 16),
     }
 
     cover_path := filepath.join({dir_path, "cover.qoi"})
@@ -107,17 +110,17 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
     name, _ = strings.replace_all(name, "=", "-")
 
     dir_name := filepath.base(dir_path)
-    playlist := find_or_create_playlist(dir_path, dir_name)
 
     music := Track{
         path     = file.fullpath,
         name     = name,
         playlist = dir_name,
-        lyrics   = load_lyrics_for_track(file.fullpath),
     }
+
     if queue {
         append(&player.queue.tracks, music)
     } else {
+        playlist := find_or_create_playlist(dir_path, dir_name)
         append(&playlist.tracks, music)
     }
 }
@@ -174,7 +177,7 @@ parse_lrc_time :: proc(time_str: string) -> (f32, bool) {
 }
 
 load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
-    lyrics := make([dynamic]Lyrics, 0, 64)
+    lyrics := make([dynamic]Lyrics)
 
     lrc_path, _ := strings.replace(music_path, ".mp3", ".lrc", 1, context.temp_allocator)
 
