@@ -379,7 +379,11 @@ load_album_art_mp3 :: proc(buffer: []u8) -> (Texture, bool) {
             image_data := buffer[data_pos:pos+10+frame.size]
 
             image := load_texture_from_bytes(image_data)
-            return image, true
+            if image.width > 0 {
+                return image, true
+            } else {
+                return Texture{}, false
+            }
         }
 
         pos += 10 + frame.size
@@ -453,7 +457,11 @@ load_album_art_from_flac :: proc(buffer: []u8) -> (Texture, bool) {
             image_data := data[cursor : cursor + pic_data_length]
 
             image := load_texture_from_bytes(image_data)
-            return image, true
+            if image.width > 0 {
+                return image, true
+            } else {
+                return Texture{}, false
+            }
         }
 
         pos += block.length

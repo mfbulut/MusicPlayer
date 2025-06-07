@@ -3,7 +3,6 @@ package fx
 import "base:runtime"
 import "core:time"
 import "core:strings"
-import "core:fmt"
 
 import win "core:sys/windows"
 
@@ -100,7 +99,8 @@ load_icon_by_size :: proc(desired_size: int) -> win.HICON {
     )
 }
 
-window_styles :: win.WS_POPUP | win.WS_VISIBLE | win.WS_EX_LAYERED
+window_styles :: win.WS_POPUP | win.WS_VISIBLE
+chroma_key :: Color{16, 0, 16, 0}
 
 init :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
@@ -149,7 +149,7 @@ init :: proc(title: string, width, height: int) {
 	    nil, nil, instance, nil
 	)
 
-	win.SetLayeredWindowAttributes(ctx.hwnd, win.RGB(0, 0, 0), 255, 0x00000001);
+	win.SetLayeredWindowAttributes(ctx.hwnd, win.RGB(chroma_key.r, chroma_key.g, chroma_key.b), 255, 0x00000001);
 
 	init_dx()
 	init_audio()
@@ -315,7 +315,7 @@ run_manual :: proc(frame : proc()) {
 		win.DispatchMessageW(&msg)
 	}
 
-	clear_background(BLANK)
+	clear_background(chroma_key)
 	begin_render()
 
 	frame()
@@ -364,7 +364,7 @@ run :: proc(frame : proc(dt : f32)) {
 		handle_resize()
 
 		if !ctx.is_minimized {
-			clear_background(BLACK)
+			clear_background(chroma_key)
 			begin_render()
 			frame(ctx.delta_time)
 			end_render()
@@ -408,9 +408,15 @@ switch_keys :: #force_inline proc(virtual_code: u32, lparam: int) -> u32 {
 	return virtual_code
 }
 
+side_bar_w := 200
+
+set_sidebar_size :: proc(w: int) {
+	side_bar_w = w
+}
+
 @(private)
 is_in_title_bar :: proc(x, y: int) -> bool {
-	title_bar_left := 200
+	title_bar_left := side_bar_w
 	title_bar_right := ctx.window.w - 150
 
 	title_bar_height := 40
@@ -558,7 +564,7 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
 		ctx.prev_time = current_time
 
-		clear_background(BLACK)
+		clear_background(chroma_key)
 		begin_render()
 
         ctx.frame_proc(ctx.delta_time);

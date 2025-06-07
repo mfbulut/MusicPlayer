@@ -101,6 +101,7 @@ frame :: proc(dt: f32) {
 
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
         ui_state.hide_sidebar = !ui_state.hide_sidebar
+        fx.set_sidebar_size(ui_state.hide_sidebar ? 0 : 200)
     }
 
     update_player(dt)
@@ -192,7 +193,7 @@ drop_callback  :: proc(files: []string) {
     for filepath in files {
         file := os2.stat(filepath, context.allocator) or_continue
         if file.type == .Directory {
-            root_dir, read_err := os2.read_all_directory_by_path(file.fullpath, context.allocator)
+            root_dir := os2.read_all_directory_by_path(file.fullpath, context.allocator) or_continue
             for sub_file in root_dir {
                 drop_callback({sub_file.fullpath})
             }

@@ -16,13 +16,13 @@ A **minimalist**, **modern**, and **native** music player
 
 Currently only Windows is supported
 
-Run ``` odin build src -out:music.exe -o:speed -resource:src/assets/resource.rc -subsystem:windows -use-separate-modules ```
+Run ``` odin build src -out:music.exe -o:speed -resource:src/assets/resource.rc -subsystem:windows```
 
 ## Screenshots
 
-![Screenshot](screenshots/1.png)
-![Screenshot](screenshots/2.png)
-![Screenshot](screenshots/3.png)
+![screenshot](screenshots/1.png)
+![screenshot](screenshots/2.png)
+![screenshot](screenshots/3.png)
 
 ## Recommended Software
 
@@ -30,5 +30,5 @@ Lyrics downloaders
 * https://github.com/tranxuanthang/lrcget
 
 Music downloaders
-* https://github.com/yt-dlp/yt-dlp
 * https://cobalt.tools/
+* https://github.com/yt-dlp/yt-dlp
