@@ -23,7 +23,18 @@ Audio :: struct {
 @(private)
 audio_engine: miniaudio.engine
 
-pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
+
+when OPUS_SUPPORT {
+    pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
+
+    opus_decoder := miniaudio.decoding_backend_vtable {
+    	onInit = ma_decoding_backend_init__libopus,
+    	onInitFile = ma_decoding_backend_init_file__libopus,
+    	onInitFileW = nil,
+    	onInitMemory = nil,
+    	onUninit = ma_decoding_backend_uninit__libopus
+    }
+}
 
 init_audio :: proc() -> bool {
     result := miniaudio.engine_init(nil, &audio_engine)
@@ -34,7 +45,7 @@ init_audio :: proc() -> bool {
     }
 
     when OPUS_SUPPORT {
-        pCustomBackendVTables[0] = ma_decoding_backend_libopus
+        pCustomBackendVTables[0] = &opus_decoder
     }
 
     return true

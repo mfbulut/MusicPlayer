@@ -5,9 +5,9 @@ import fx "../fx"
 import "core:fmt"
 import "core:mem"
 
-import "core:strings"
 import "core:os"
 import "core:os/os2"
+import "core:strings"
 
 UI_PRIMARY_COLOR      :: fx.Color{9, 17, 45, 255}
 UI_SECONDARY_COLOR    :: fx.Color{30, 30, 90, 255}

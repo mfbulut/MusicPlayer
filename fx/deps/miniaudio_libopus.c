@@ -463,7 +463,7 @@ MA_API ma_result ma_libopus_get_length_in_pcm_frames(ma_libopus* pOpus, ma_uint6
 The code below defines the vtable that you'll plug into your `ma_decoder_config` object.
 */
 #if !defined(MA_NO_LIBOPUS)
-static ma_result ma_decoding_backend_init__libopus(void* pUserData, ma_read_proc onRead, ma_seek_proc onSeek, ma_tell_proc onTell, void* pReadSeekTellUserData, const ma_decoding_backend_config* pConfig, const ma_allocation_callbacks* pAllocationCallbacks, ma_data_source** ppBackend)
+extern ma_result ma_decoding_backend_init__libopus(void* pUserData, ma_read_proc onRead, ma_seek_proc onSeek, ma_tell_proc onTell, void* pReadSeekTellUserData, const ma_decoding_backend_config* pConfig, const ma_allocation_callbacks* pAllocationCallbacks, ma_data_source** ppBackend)
 {
     ma_result result;
     ma_libopus* pOpus;
@@ -486,7 +486,7 @@ static ma_result ma_decoding_backend_init__libopus(void* pUserData, ma_read_proc
     return MA_SUCCESS;
 }
 
-static ma_result ma_decoding_backend_init_file__libopus(void* pUserData, const char* pFilePath, const ma_decoding_backend_config* pConfig, const ma_allocation_callbacks* pAllocationCallbacks, ma_data_source** ppBackend)
+extern ma_result ma_decoding_backend_init_file__libopus(void* pUserData, const char* pFilePath, const ma_decoding_backend_config* pConfig, const ma_allocation_callbacks* pAllocationCallbacks, ma_data_source** ppBackend)
 {
     ma_result result;
     ma_libopus* pOpus;
@@ -509,7 +509,7 @@ static ma_result ma_decoding_backend_init_file__libopus(void* pUserData, const c
     return MA_SUCCESS;
 }
 
-static void ma_decoding_backend_uninit__libopus(void* pUserData, ma_data_source* pBackend, const ma_allocation_callbacks* pAllocationCallbacks)
+extern void ma_decoding_backend_uninit__libopus(void* pUserData, ma_data_source* pBackend, const ma_allocation_callbacks* pAllocationCallbacks)
 {
     ma_libopus* pOpus = (ma_libopus*)pBackend;
 
@@ -527,6 +527,7 @@ static ma_decoding_backend_vtable ma_gDecodingBackendVTable_libopus =
     NULL, /* onInitMemory() */
     ma_decoding_backend_uninit__libopus
 };
+
 ma_decoding_backend_vtable* ma_decoding_backend_libopus = &ma_gDecodingBackendVTable_libopus;
 #else
 ma_decoding_backend_vtable* ma_decoding_backend_libopus = NULL;
