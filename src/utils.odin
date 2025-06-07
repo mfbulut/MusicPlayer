@@ -30,6 +30,7 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
         target_len = len(truncated_text_buffer) - 1
     }
 
+    
     copy(truncated_text_buffer[:target_len-3], text[:target_len-3])
     copy(truncated_text_buffer[target_len-3:target_len], "...")
     truncated_text_buffer[target_len] = 0
@@ -148,15 +149,16 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
     handle_x := x + (w - h) * value
 
     mouse_x, _ := fx.get_mouse()
+
     if is_hovering(x - 10, y - 30, w + 20, h + 60) {
-        fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
+        fx.draw_rect_rounded(handle_x, y - h/2, 4, h * 2, 8, brighten(fg_color))
 
         if fx.mouse_held(.LEFT) {
             new_value := (f32(mouse_x) - x) / w
             return clamp(new_value, 0, 1)
         }
     } else {
-        fx.draw_rect_rounded(handle_x + 2, y - h/2, 4, h * 2, 8, brighten(fg_color))
+        fx.draw_rect_rounded(handle_x, y - h/2, 4, h * 2, 8, brighten(fg_color))
     }
 
     return value

@@ -2,6 +2,7 @@ package main
 
 import fx "../fx"
 
+import "core:math"
 import "core:math/rand"
 
 PlayerState :: enum {
@@ -59,8 +60,7 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
     player.duration = fx.get_duration(&player.current_track.audio_clip)
     player.position = 0
     fx.play_audio(&player.current_track.audio_clip)
-
-    fx.set_volume(&player.current_track.audio_clip, player.volume)
+    fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
     player.state = .PLAYING
 
     if queue do return

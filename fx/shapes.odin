@@ -750,7 +750,7 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
 
     // Helper function to interpolate color based on y position
     interpolate_color_y :: proc(py, rect_y, rect_h: f32, color_top, color_bottom: Color) -> Color {
-        t := (py - rect_y) / rect_h
+        t := clamp((py - rect_y) / rect_h, 0.0, 1.0)
         return color_lerp(color_top, color_bottom, t)
     }
 
@@ -770,35 +770,66 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         {math.PI / 2.0, math.PI}                // bottom-left
     }
 
-    // Draw corner arcs with gradient
+    // Draw corner arcs with gradient - FIXED VERSION
     for corner_idx in 0..<4 {
         corner_center := corners[corner_idx]
         start_angle := corner_angles[corner_idx][0]
         end_angle := corner_angles[corner_idx][1]
 
         angle_step := (end_angle - start_angle) / f32(corner_segments)
-        center_color := interpolate_color_y(corner_center.y, y, h, color_top, color_bottom)
 
-        for i in 0..<corner_segments {
-            angle1 := start_angle + f32(i) * angle_step
-            angle2 := start_angle + f32(i + 1) * angle_step
+        // Create a triangle fan, but use multiple triangles for smoother gradient
+        prev_x := corner_center.x + clamped_radius * math.cos(start_angle)
+        prev_y := corner_center.y + clamped_radius * math.sin(start_angle)
+        prev_color := interpolate_color_y(prev_y, y, h, color_top, color_bottom)
 
-            x1 := corner_center.x + clamped_radius * math.cos(angle1)
-            y1 := corner_center.y + clamped_radius * math.sin(angle1)
-            x2 := corner_center.x + clamped_radius * math.cos(angle2)
-            y2 := corner_center.y + clamped_radius * math.sin(angle2)
+        for i in 1..=corner_segments {
+            angle := start_angle + f32(i) * angle_step
+            curr_x := corner_center.x + clamped_radius * math.cos(angle)
+            curr_y := corner_center.y + clamped_radius * math.sin(angle)
+            curr_color := interpolate_color_y(curr_y, y, h, color_top, color_bottom)
 
-            color1 := interpolate_color_y(y1, y, h, color_top, color_bottom)
-            color2 := interpolate_color_y(y2, y, h, color_top, color_bottom)
+            // Create multiple sub-triangles for smoother gradient within each segment
+            sub_segments := 3  // Increase for even smoother gradients
+            for sub_i in 0..<sub_segments {
+                t1 := f32(sub_i) / f32(sub_segments)
+                t2 := f32(sub_i + 1) / f32(sub_segments)
 
-            verts := []Vertex{
-                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, center_color},
-                Vertex{{x1, y1}, {-1.0, 0.0}, color1},
-                Vertex{{x2, y2}, {-1.0, 0.0}, color2}
+                // Interpolate positions along the arc edge
+                edge_x1 := prev_x + t1 * (curr_x - prev_x)
+                edge_y1 := prev_y + t1 * (curr_y - prev_y)
+                edge_x2 := prev_x + t2 * (curr_x - prev_x)
+                edge_y2 := prev_y + t2 * (curr_y - prev_y)
+
+                // Interpolate positions along the radius from center
+                center_t1 := t1 * 0.5  // Blend toward center
+                center_t2 := t2 * 0.5
+                center_x1 := corner_center.x + center_t1 * (edge_x1 - corner_center.x)
+                center_y1 := corner_center.y + center_t1 * (edge_y1 - corner_center.y)
+                center_x2 := corner_center.x + center_t2 * (edge_x2 - corner_center.x)
+                center_y2 := corner_center.y + center_t2 * (edge_y2 - corner_center.y)
+
+                edge_color1 := color_lerp(prev_color, curr_color, t1)
+                edge_color2 := color_lerp(prev_color, curr_color, t2)
+                center_color1 := interpolate_color_y(center_y1, y, h, color_top, color_bottom)
+                center_color2 := interpolate_color_y(center_y2, y, h, color_top, color_bottom)
+
+                verts := []Vertex{
+                    Vertex{{center_x1, center_y1}, {-1.0, 0.0}, center_color1},
+                    Vertex{{edge_x1, edge_y1}, {-1.0, 0.0}, edge_color1},
+                    Vertex{{edge_x2, edge_y2}, {-1.0, 0.0}, edge_color2},
+                    Vertex{{center_x1, center_y1}, {-1.0, 0.0}, center_color1},
+                    Vertex{{edge_x2, edge_y2}, {-1.0, 0.0}, edge_color2},
+                    Vertex{{center_x2, center_y2}, {-1.0, 0.0}, center_color2}
+                }
+
+                copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+                verticies_count += len(verts)
             }
 
-            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
-            verticies_count += len(verts)
+            prev_x = curr_x
+            prev_y = curr_y
+            prev_color = curr_color
         }
     }
 

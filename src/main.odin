@@ -9,8 +9,8 @@ import "core:os"
 import "core:os/os2"
 import "core:strings"
 
-UI_PRIMARY_COLOR      :: fx.Color{9, 17, 45, 255}
-UI_SECONDARY_COLOR    :: fx.Color{30, 30, 90, 255}
+UI_PRIMARY_COLOR      :: fx.Color{14, 15, 44, 255}
+UI_SECONDARY_COLOR    :: fx.Color{32, 19, 85, 255}
 
 UI_ACCENT_COLOR       :: fx.Color{83, 82, 145, 255}
 UI_HOVER_COLOR        :: fx.Color{66, 64, 135, 255}
@@ -111,7 +111,7 @@ frame :: proc(dt: f32) {
         ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2500, 0, SIDEBAR_WIDTH)
     }
 
-    fx.draw_rect_rounded(0, 0, f32(window_w), f32(window_h), 8, UI_PRIMARY_COLOR)
+    fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, UI_PRIMARY_COLOR, fx.Color{10, 12, 25, 255})
 
     draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
