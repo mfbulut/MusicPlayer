@@ -92,7 +92,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     progress := player.duration > 0 ? player.position / player.duration : 0
 
     progress_bar := ProgressBar{
-        x = progress_x, y = progress_y, w = progress_w, h = 6,
+        x = progress_x, y = progress_y, w = progress_w, h = 5,
         progress = progress,
         color = UI_TEXT_COLOR,
         bg_color = UI_ACCENT_COLOR, // UI_SECONDARY_COLOR
@@ -106,9 +106,9 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     current_time := format_time(player.position)
     total_time := format_time(player.duration)
 
-    fx.draw_text(current_time, progress_x, progress_y + 15, 16, UI_TEXT_SECONDARY)
+    fx.draw_text(current_time, progress_x, progress_y + 12, 16, UI_TEXT_SECONDARY)
     total_time_width := fx.measure_text(total_time, 16)
-    fx.draw_text(total_time, progress_x + progress_w - total_time_width, progress_y + 15, 16, UI_TEXT_SECONDARY)
+    fx.draw_text(total_time, progress_x + progress_w - total_time_width, progress_y + 12, 16, UI_TEXT_SECONDARY)
 
     if has_lyrics {
         toggle_text := ui_state.show_lyrics ? "Hide Lyrics" : "Show Lyrics"

@@ -178,7 +178,7 @@ draw_player_controls :: proc() {
     volume_y := player_y + 38
 
     fx.use_texture(volume_icon)
-    fx.draw_texture(volume_x - 30, volume_y - 10, 24, 24, fx.WHITE)
+    fx.draw_texture(volume_x - 35, volume_y - 10, 24, 24, fx.WHITE)
 
     new_volume := draw_slider(volume_x, volume_y, 100, 4, player.volume, UI_ACCENT_COLOR, UI_TEXT_COLOR)
     if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.is_dragging_progress && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging && !ui_state.is_dragging_progress && !fx.is_resizing(){
