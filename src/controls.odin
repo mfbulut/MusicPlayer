@@ -180,6 +180,14 @@ draw_player_controls :: proc() {
     fx.use_texture(volume_icon)
     fx.draw_texture(volume_x - 35, volume_y - 10, 24, 24, UI_TEXT_COLOR)
 
+    scroll_delta := fx.get_mouse_scroll()
+    if scroll_delta != 0 {
+        if is_hovering(volume_x, volume_y - 10, 100, 24) {
+            player.volume = clamp(player.volume + f32(scroll_delta) * 0.05, 0, 1)
+            fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+        }
+    }
+
     new_volume := draw_slider(volume_x, volume_y, 100, 4, player.volume, UI_SECONDARY_COLOR, UI_TEXT_COLOR)
     if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.is_dragging_progress && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging && !ui_state.is_dragging_progress && !fx.is_resizing(){
         player.volume = new_volume

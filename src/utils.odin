@@ -125,33 +125,30 @@ ProgressBar :: struct {
     bg_color: fx.Color,
 }
 
-draw_progress_bar :: proc(bar: ProgressBar) -> f32 {
+draw_progress_bar :: proc(bar: ProgressBar){
+    mouse_x, _ := fx.get_mouse()
+    if fx.mouse_held(.LEFT) {
+        if is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
+            seek_to_position((f32(mouse_x) - bar.x) / bar.w * player.duration)
+        }
+    }
+
     fx.draw_rect_rounded(bar.x, bar.y, bar.w, bar.h, bar.h/2, bar.bg_color)
 
     if bar.progress > 0 {
         progress_width := bar.w * bar.progress
         fx.draw_rect_rounded(bar.x, bar.y, progress_width, bar.h, bar.h/2, bar.color)
     }
-
-    mouse_x, _ := fx.get_mouse()
-    if fx.mouse_pressed(.LEFT) {
-        if is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
-            return (f32(mouse_x) - bar.x) / bar.w
-        }
-    }
-
-    return -1
 }
 
 draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -> f32 {
-    fx.draw_rect_rounded(x, y, w, h, h/2, bg_color)
-
     handle_x := x + (w - h) * value
 
     mouse_x, _ := fx.get_mouse()
 
     if is_hovering(x - 10, y - 30, w + 20, h + 60) {
-        fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, fg_color)
+        fx.draw_rect_rounded(x, y, w, h, h/2,  brighten(bg_color))
+        fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, brighten(fg_color))
         fx.draw_circle(handle_x + 2, y + h / 2, 4, brighten(fg_color))
 
         if fx.mouse_held(.LEFT) {
@@ -159,6 +156,7 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
             return clamp(new_value, 0, 1)
         }
     } else {
+        fx.draw_rect_rounded(x, y, w, h, h/2,  bg_color)
         fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, darken(fg_color, 30))
         fx.draw_circle(handle_x + 2, y + h / 2, 4, darken(fg_color, 30))
     }

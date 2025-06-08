@@ -17,7 +17,8 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
         bg_right = brighten(TRACK_GRADIENT_DARK, 8)
     }
 
-    fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, bg_right)
+    // fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, bg_right)
+    fx.draw_gradient_rect_rounded_vertical(x, y, w, h, 12, bg_color, bg_right)
 
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
@@ -32,7 +33,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
         x = x + w - 60, y = y + 10, size = 40,
         icon = is_liked ? liked_icon : liked_empty,
         color = bg_color,
-        hover_color = bg_color,
+        hover_color = brighten(bg_color),
     }
 
     if len(track.playlist) > 0 && draw_icon_button(heart_btn) {

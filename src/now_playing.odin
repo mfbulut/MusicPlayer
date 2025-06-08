@@ -98,10 +98,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         bg_color = darken(UI_SECONDARY_COLOR), // UI_SECONDARY_COLOR
     }
 
-    new_progress := draw_progress_bar(progress_bar)
-    if new_progress >= 0 {
-        seek_to_position(new_progress * player.duration)
-    }
+    draw_progress_bar(progress_bar)
 
     current_time := format_time(player.position)
     total_time := format_time(player.duration)
