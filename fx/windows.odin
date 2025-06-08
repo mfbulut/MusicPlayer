@@ -411,6 +411,11 @@ switch_keys :: #force_inline proc(virtual_code: u32, lparam: int) -> u32 {
 	return virtual_code
 }
 
+
+is_resizing :: proc() -> bool {
+	return ctx.is_resizing
+}
+
 side_bar_w := 200
 
 set_sidebar_size :: proc(w: int) {
