@@ -1,6 +1,7 @@
 cbuffer constants : register(b0)
 {
     float2 rn_screensize; // 2 / width, -2 / height
+    float time;
     float screenPxRange;
 }
 

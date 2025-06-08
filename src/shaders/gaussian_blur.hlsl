@@ -1,6 +1,4 @@
-// Gaussian version
-// I personally prefer bokeh blur
-
+// Gaussian blur https://www.shadertoy.com/view/ltScRG
 
 // 16x acceleration of https://www.shadertoy.com/view/4tSyzy
 // by applying gaussian at intermediate MIPmap level.
@@ -15,7 +13,7 @@ Texture2D    mytexture : register(t0);
 SamplerState mysampler : register(s0);
 
 // Constants
-static const int samples = 75;
+static const int samples = 45;
 static const int LOD = 2;         // gaussian done on MIPmap at scale LOD
 static const int sLOD = 1 << LOD; // tile size = 2^LOD
 static const float sigma = float(samples) * 0.25;
@@ -41,10 +39,7 @@ float4 ps_main(Input input) : SV_TARGET
 {
     float2 uv = input.texcoord;
 
-    // Assuming texture dimensions - you'll need to pass these as constants
-    // or use GetDimensions() to get actual texture size
-    float2 iResolution = float2(1920, 1080); // Replace with actual resolution
-    float2 iChannelResolution = float2(1920, 1080); // Replace with actual texture resolution
+    float2 iChannelResolution = float2(1080, 1080);
 
     float4 result = blur(mytexture, mysampler, uv, 1.0 / iChannelResolution);
     return result;

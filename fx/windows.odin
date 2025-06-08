@@ -32,6 +32,7 @@ Context :: struct {
 
 	prev_time:  time.Time,
 	delta_time: f32,
+	timer: f32,
 
 	window:      struct { w, h: int },
 	mouse_pos:   struct { x, y: int },
@@ -359,6 +360,7 @@ run :: proc(frame : proc(dt : f32)) {
 
 		current_time = time.now()
 		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
+		ctx.timer += ctx.delta_time
 		ctx.prev_time = current_time
 
 		handle_resize()
@@ -366,6 +368,7 @@ run :: proc(frame : proc(dt : f32)) {
 		if !ctx.is_minimized {
 			clear_background(chroma_key)
 			begin_render()
+			update_constant_buffer()
 			frame(ctx.delta_time)
 			end_render()
 			swap_buffers()

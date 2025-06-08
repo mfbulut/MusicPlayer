@@ -111,7 +111,7 @@ frame :: proc(dt: f32) {
         ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2500, 0, SIDEBAR_WIDTH)
     }
 
-    fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, UI_PRIMARY_COLOR, fx.Color{10, 12, 25, 255})
+    fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, fx.Color{20, 25, 60, 255}, fx.Color{16, 18, 40, 255})
 
     draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 

@@ -284,10 +284,12 @@ create_framebuffer :: proc() {
 @(private)
 update_constant_buffer :: proc(data : []f32 = {}) {
 	width, height := window_size()
-	constants : [3]f32
+	constants : [16]f32
 	constants[0] =  2.0 / f32(width)
 	constants[1] = -2.0 / f32(height)
-	copy(constants[2:2+len(data)], data[:len(data)])
+	constants[2] = ctx.timer
+
+	copy(constants[3:3+len(data)], data[:len(data)])
 
 	mapped_subresource: D3D11.MAPPED_SUBRESOURCE
 	device_context->Map(constant_buffer, 0, .WRITE_DISCARD, {}, &mapped_subresource)
