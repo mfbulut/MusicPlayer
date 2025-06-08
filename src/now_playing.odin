@@ -50,11 +50,11 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         if texture_aspect > dest_aspect {
             new_w := h * texture_aspect
             diff := (new_w - w) / 2
-            fx.draw_texture(x - diff, y, new_w, h, fx.Color{96, 96, 96, 255})
+            fx.draw_texture(x - diff, y, new_w, h, fx.Color{108, 108, 108, 255})
         } else {
             new_h := w / texture_aspect
             diff := (new_h - h) / 2
-            fx.draw_texture(x, y - diff, w, new_h, fx.Color{96, 96, 96, 255})
+            fx.draw_texture(x, y - diff, w, new_h, fx.Color{108, 108, 108, 255})
         }
 
         fx.disable_scissor()

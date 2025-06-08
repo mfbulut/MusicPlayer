@@ -40,6 +40,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
         toggle_song_like(track.name, track.playlist)
     } else if hover && fx.mouse_pressed(.LEFT) {
         play_track(track, playlist)
+        song_shuffle()
     }
 
     if fx.mouse_pressed(.RIGHT) && hover {

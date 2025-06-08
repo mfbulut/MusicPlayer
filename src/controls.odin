@@ -36,11 +36,37 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
     }
 }
 
+// Handle progress bar dragging and clicking
+handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
+    mouse_x, mouse_y := fx.get_mouse()
+
+    progress_bar_height: f32 = 10
+    is_over_progress := f32(mouse_y) >= player_y - progress_bar_height && f32(mouse_y) <= player_y + 5
+
+    if fx.mouse_pressed(.LEFT) && is_over_progress && !ui_state.is_dragging_time {
+        ui_state.is_dragging_progress = true
+    }
+
+    if !fx.mouse_held(.LEFT) {
+        ui_state.is_dragging_progress = false
+    }
+
+    if ui_state.is_dragging_progress {
+        // Calculate the position based on mouse x position
+        drag_ratio := f32(mouse_x) / f32(window_w)
+        drag_ratio = clamp(drag_ratio, 0, 1)
+
+        new_position := drag_ratio * player.duration
+        seek_to_position(new_position)
+
+    } else if is_over_progress {
+        fx.set_cursor(.CLICK)
+    }
+}
+
 draw_player_controls :: proc() {
     window_w, window_h := fx.window_size()
     player_y := f32(window_h) - PLAYER_HEIGHT
-
-    progress := player.duration > 0 ? player.position / player.duration : 0
 
     fx.draw_gradient_rect_rounded_horizontal_selective(0, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, fx.Color{12, 15, 30, 255}, fx.Color{30, 20, 80, 255}, {.BOTTOM_LEFT})
     fx.draw_gradient_rect_rounded_horizontal_selective(f32(window_w) / 2, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, fx.Color{30, 20, 80, 255}, fx.Color{12, 15, 30, 255}, {.BOTTOM_RIGHT})
@@ -155,7 +181,7 @@ draw_player_controls :: proc() {
     fx.draw_texture(volume_x - 30, volume_y - 8, 24, 24, fx.WHITE)
 
     new_volume := draw_slider(volume_x, volume_y, 100, 6, player.volume, UI_ACCENT_COLOR, UI_TEXT_COLOR)
-    if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging{
+    if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.is_dragging_progress && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging && !ui_state.is_dragging_progress{
         player.volume = new_volume
         fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
     }
@@ -172,10 +198,15 @@ draw_player_controls :: proc() {
         if time_x + time_width + 30 < volume_x {
             handle_time_drag(time_x, time_y, time_width, 20)
 
-            text_color := ui_state.is_dragging_time ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
+            text_color := (ui_state.is_dragging_time || ui_state.is_dragging_progress) ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
             fx.draw_text(time_text, time_x, time_y, 16, text_color)
         }
     }
 
+    // Handle progress bar dragging
+    handle_progress_bar_drag(window_w, player_y)
+
+    // Draw progress bar
+    progress := player.duration > 0 ? player.position / player.duration : 0
     fx.draw_rect(0, player_y, f32(window_w) * progress, 1, UI_TEXT_COLOR)
 }

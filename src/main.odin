@@ -12,7 +12,7 @@ import "core:strings"
 UI_PRIMARY_COLOR      :: fx.Color{14, 15, 44, 255}
 UI_SECONDARY_COLOR    :: fx.Color{32, 19, 85, 255}
 
-UI_ACCENT_COLOR       :: fx.Color{83, 82, 145, 255}
+UI_ACCENT_COLOR       :: fx.Color{83, 89, 150, 255}
 UI_HOVER_COLOR        :: fx.Color{66, 64, 135, 255}
 UI_SELECTED_COLOR     :: fx.Color{86, 84, 155, 255}
 
@@ -50,6 +50,7 @@ UIState :: struct {
 
     drag_start_mouse_y: f32,
     drag_start_scroll: f32,
+    is_dragging_progress: bool,
 
     is_dragging_time: bool,
     drag_start_time_x: f32,

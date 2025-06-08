@@ -70,8 +70,6 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
             player.current_index = i
         }
     }
-
-    song_shuffle()
 }
 
 toggle_playback :: proc() {
