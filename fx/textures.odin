@@ -8,6 +8,9 @@ import "core:image/png"
 import "core:image/qoi"
 import "core:math"
 
+
+import stb "vendor:stb/image"
+
 Texture :: struct {
     texture: ^D3D11.ITexture2D,
     texture_view: ^D3D11.IShaderResourceView,
@@ -28,24 +31,49 @@ load_texture :: proc(filepath: string, generate_mipmaps := true) -> (Texture, bo
 
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture {
     img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
-    defer image.destroy(img)
 
     if err != nil {
-        fmt.printfln("[ERROR] Failed to load texture from bytes: %v", err)
-        return Texture{} // return empty/default texture
+        w, h, channels_in_file: i32
+        pixels_ptr := stb.load_from_memory(&data[0], i32(len(data)), &w, &h, &channels_in_file, 4)
+
+        if pixels_ptr == nil {
+            fmt.printfln("[ERROR] Failed to load texture from bytes using both image and STB loaders")
+            return Texture{}
+        }
+
+        pixel_count := int(w * h)
+        rgba_pixels := make([][4]u8, pixel_count)
+
+        for i in 0..<pixel_count {
+            rgba_pixels[i] = {
+                pixels_ptr[i * 4 + 0],
+                pixels_ptr[i * 4 + 1],
+                pixels_ptr[i * 4 + 2],
+                pixels_ptr[i * 4 + 3],
+            }
+        }
+
+        stb.image_free(pixels_ptr)
+
+        fallback_img, ok := image.pixels_to_image(rgba_pixels, int(w), int(h))
+        if !ok {
+            fmt.printfln("[ERROR] Failed to convert STB pixels to image")
+            return Texture{}
+        }
+
+        img = new(image.Image)
+        img^ = fallback_img
     }
 
     tex := Texture{}
     tex.width  = img.width
     tex.height = img.height
 
-    // Calculate mip levels if mipmaps are requested
     mip_levels := u32(1)
     if generate_mipmaps {
         mip_levels = u32(math.floor(math.log2(f64(max(img.width, img.height)))) + 1)
     }
 
-    // Create texture with appropriate flags for mipmap generation
     bind_flags := D3D11.BIND_FLAGS{.SHADER_RESOURCE}
     if generate_mipmaps {
         bind_flags |= {.RENDER_TARGET}
@@ -58,21 +86,16 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture
         ArraySize  = 1,
         Format     = .R8G8B8A8_UNORM,
         SampleDesc = {Count = 1},
-        Usage      = .DEFAULT, // Changed from IMMUTABLE to DEFAULT for mipmap generation
+        Usage      = .DEFAULT,
         BindFlags  = bind_flags,
         MiscFlags  = generate_mipmaps ? {.GENERATE_MIPS} : {},
     }
 
     texture : ^D3D11.ITexture2D
-
     if generate_mipmaps {
-        // For mipmap generation, create texture without initial data
         device->CreateTexture2D(&texture_desc, nil, &texture)
-
-        // Upload the base level data
         device_context->UpdateSubresource(texture, 0, nil, &img.pixels.buf[0], u32(img.width) * 4, 0)
     } else {
-        // For non-mipmap textures, use the original method
         texture_data := D3D11.SUBRESOURCE_DATA{
             pSysMem     = &img.pixels.buf[0],
             SysMemPitch = u32(img.width) * 4,
@@ -80,7 +103,6 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture
         device->CreateTexture2D(&texture_desc, &texture_data, &texture)
     }
 
-    // Create shader resource view
     texture_view : ^D3D11.IShaderResourceView
     srv_desc := D3D11.SHADER_RESOURCE_VIEW_DESC{
         Format        = texture_desc.Format,
@@ -89,7 +111,6 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture
     }
     device->CreateShaderResourceView(texture, &srv_desc, &texture_view)
 
-    // Generate mipmaps if requested
     if generate_mipmaps {
         device_context->GenerateMips(texture_view)
     }

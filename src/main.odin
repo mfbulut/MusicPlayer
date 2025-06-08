@@ -9,19 +9,29 @@ import "core:os"
 import "core:os/os2"
 import "core:strings"
 
-UI_PRIMARY_COLOR      :: fx.Color{14, 15, 44, 255}
-UI_SECONDARY_COLOR    :: fx.Color{32, 19, 85, 255}
+UI_PRIMARY_COLOR      :: fx.Color{24, 14, 44, 255}
+UI_SECONDARY_COLOR    :: fx.Color{95, 58, 137, 255}
 
-UI_ACCENT_COLOR       :: fx.Color{83, 89, 150, 255}
-UI_HOVER_COLOR        :: fx.Color{66, 64, 135, 255}
-UI_SELECTED_COLOR     :: fx.Color{86, 84, 155, 255}
+UI_ACCENT_COLOR       :: fx.Color{118, 67, 175, 255}
+UI_HOVER_COLOR        :: fx.Color{105, 68, 147, 255}
 
 UI_TEXT_COLOR         :: fx.Color{235, 237, 240, 255}
-UI_TEXT_SECONDARY     :: fx.Color{147, 154, 168, 255}
+UI_TEXT_SECONDARY     :: fx.Color{157, 164, 178, 255}
+
+NOW_PLAYING_BACKDROP  :: fx.Color{108, 108, 108, 255}
+
+CONTROLS_GRADIENT_BRIGHT   :: fx.Color{44, 27, 71, 255}
+CONTROLS_GRADIENT_DARK     :: fx.Color{24, 15, 39, 255}
+
+TRACK_GRADIENT_BRIGHT      :: fx.Color{54, 35, 85, 255}
+TRACK_GRADIENT_DARK        :: fx.Color{46, 29, 75, 255}
+
+BACKGROUND_GRADIENT_BRIGHT :: fx.Color{44, 27, 71, 255}
+BACKGROUND_GRADIENT_DARK   :: fx.Color{24, 15, 39, 255}
 
 SIDEBAR_WIDTH : f32 : 220
-PLAYER_HEIGHT : f32 : 80
 TITLE_HEIGHT  : f32 : 40
+PLAYER_HEIGHT : f32 : 80
 
 View :: enum {
     SEARCH,
@@ -112,7 +122,7 @@ frame :: proc(dt: f32) {
         ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2500, 0, SIDEBAR_WIDTH)
     }
 
-    fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, fx.Color{20, 25, 60, 255}, fx.Color{16, 18, 40, 255})
+    fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 
     draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
@@ -129,17 +139,18 @@ frame :: proc(dt: f32) {
         }
     }
 
-    if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.Color{0, 0, 0, 0}, fx.Color{150, 48, 64, 255}, true) {
+    if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
         fx.close_window()
     }
 
-    if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.Color{0, 0, 0, 0}, fx.Color{64, 64, 128, 255}, false, 6) {
+    if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.BLANK, fx.Color{80, 64, 128, 255}, false, 6) {
         fx.maximize_or_restore_window()
     }
 
-    if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.Color{0, 0, 0, 0}, fx.Color{64, 64, 128, 255}) {
+    if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.BLANK, fx.Color{80, 64, 128, 255}) {
         fx.minimize_window()
     }
+
     if fx.is_hovering_files() {
         fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
         fx.draw_text_aligned("Drop files to add to the queue", f32(window_w) / 2, f32(window_h) / 2, 32, fx.WHITE, .CENTER)

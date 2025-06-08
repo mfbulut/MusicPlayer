@@ -190,6 +190,10 @@ toggle_shuffle :: proc() {
     song_shuffle()
 }
 
-insert_next_track :: proc(track : Track) {
+insert_as_last_track :: proc(track : Track) {
     inject_at_elem(&player.queue.tracks, 0, track)
+}
+
+insert_as_next_track :: proc(track : Track) {
+    append(&player.queue.tracks, track)
 }

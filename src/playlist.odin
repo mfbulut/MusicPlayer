@@ -4,18 +4,17 @@ import fx "../fx"
 
 import "core:fmt"
 
-draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
+draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue := false) {
     hover := is_hovering(x, y, w, h)
-    bg_color := UI_SECONDARY_COLOR
-    bg_right := fx.Color{25, 30, 60, 255}
+    bg_color := TRACK_GRADIENT_BRIGHT
+    bg_right := TRACK_GRADIENT_DARK
 
     if player.current_track.name == track.name {
-        bg_color = UI_HOVER_COLOR
-        bg_right = fx.Color{36, 38, 85, 255}
+        bg_color = UI_ACCENT_COLOR
+        bg_right = brighten(TRACK_GRADIENT_DARK, 10)
     } else if hover {
-        bg_color = UI_SELECTED_COLOR
-        bg_right = fx.Color{36, 38, 85, 255}
-        // fx.set_cursor(.CLICK)
+        bg_color = brighten(bg_color, 8)
+        bg_right = brighten(TRACK_GRADIENT_DARK, 8)
     }
 
     fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, bg_right)
@@ -38,18 +37,30 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32) {
 
     if len(track.playlist) > 0 && draw_icon_button(heart_btn) {
         toggle_song_like(track.name, track.playlist)
-    } else if hover && fx.mouse_pressed(.LEFT) {
+    } else if hover && fx.mouse_pressed(.LEFT) && !fx.key_held(.LEFT_CONTROL) {
         play_track(track, playlist)
         song_shuffle()
     }
 
-    if fx.mouse_pressed(.RIGHT) && hover {
-        insert_next_track(track)
+    if hover && fx.mouse_pressed(.RIGHT) {
+        if fx.key_held(.LEFT_CONTROL) {
+            insert_as_next_track(track)
+        } else {
+            insert_as_last_track(track)
+        }
+    }
+
+    if queue && hover && fx.mouse_pressed(.LEFT) && fx.key_held(.LEFT_CONTROL) {
+        for q_track, i in player.queue.tracks {
+            if q_track.name == track.name {
+                ordered_remove(&player.queue.tracks, i)
+            }
+        }
     }
 }
 
 
-draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, reverse := false) {
+draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) {
     if playlist.loaded {
         fx.use_texture(playlist.cover)
         fx.draw_texture_rounded(x + 40, y + 10, 100, 100, 12, fx.WHITE)
@@ -84,7 +95,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, reverse := false
     for i in 0..<len(playlist.tracks) {
         track := playlist.tracks[i]
 
-        if reverse {
+        if queue {
             track = playlist.tracks[len(playlist.tracks) - 1 - i]
         }
 
@@ -93,7 +104,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, reverse := false
         }
 
         if track_y + 60 > list_y {
-            draw_track_item(track, playlist, x + 30, track_y, w - 70, 60)
+            draw_track_item(track, playlist, x + 30, track_y, w - 70, 60, queue)
         }
 
         track_y += track_height
@@ -106,7 +117,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, reverse := false
         indicator_y := list_y + 5
         indicator_h := list_h - 10
 
-        draw_scrollbar(&ui_state.playlist_scrollbar, indicator_x, indicator_y, 4, indicator_h, playlist_max_scroll, UI_PRIMARY_COLOR, UI_ACCENT_COLOR)
+        draw_scrollbar(&ui_state.playlist_scrollbar, indicator_x, indicator_y, 4, indicator_h, playlist_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
     }
 
     if !ui_state.playlist_scrollbar.is_dragging {

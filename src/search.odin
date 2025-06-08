@@ -211,7 +211,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
         fx.set_cursor(.TEXT)
     }
 
-    input_color := ui_state.search_focus ? UI_HOVER_COLOR : UI_SECONDARY_COLOR
+    input_color := ui_state.search_focus ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR
     fx.draw_rect_rounded(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
 
     fx.use_texture(search_icon)
@@ -284,7 +284,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
             indicator_y := results_y + 5
             indicator_h := results_h - 10
 
-            draw_scrollbar(&ui_state.search_scrollbar, indicator_x, indicator_y, 4, indicator_h, search_max_scroll, UI_PRIMARY_COLOR, UI_ACCENT_COLOR)
+            draw_scrollbar(&ui_state.search_scrollbar, indicator_x, indicator_y, 4, indicator_h, search_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
         }
 
         if !ui_state.search_scrollbar.is_dragging {

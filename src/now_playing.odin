@@ -50,11 +50,11 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         if texture_aspect > dest_aspect {
             new_w := h * texture_aspect
             diff := (new_w - w) / 2
-            fx.draw_texture(x - diff, y, new_w, h, fx.Color{108, 108, 108, 255})
+            fx.draw_texture(x - diff, y, new_w, h, NOW_PLAYING_BACKDROP)
         } else {
             new_h := w / texture_aspect
             diff := (new_h - h) / 2
-            fx.draw_texture(x, y - diff, w, new_h, fx.Color{108, 108, 108, 255})
+            fx.draw_texture(x, y - diff, w, new_h, NOW_PLAYING_BACKDROP)
         }
 
         fx.disable_scissor()
@@ -95,7 +95,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         x = progress_x, y = progress_y, w = progress_w, h = 5,
         progress = progress,
         color = UI_TEXT_COLOR,
-        bg_color = UI_ACCENT_COLOR, // UI_SECONDARY_COLOR
+        bg_color = darken(UI_SECONDARY_COLOR), // UI_SECONDARY_COLOR
     }
 
     new_progress := draw_progress_bar(progress_bar)
@@ -138,7 +138,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         lyrics_w := w - content_split - 40
         lyrics_h := h - 60
 
-        fx.draw_rect_rounded(lyrics_x, lyrics_y, lyrics_w, lyrics_h, 8, UI_SECONDARY_COLOR)
+        fx.draw_gradient_rect_rounded_vertical(lyrics_x, lyrics_y, lyrics_w, lyrics_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_BRIGHT)
 
         lyrics_content_y := lyrics_y // ?
         lyrics_content_h := lyrics_h // ?
@@ -178,14 +178,14 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
                 is_hovering := is_hovering(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height - 1)
 
                 text_color := UI_TEXT_SECONDARY
-                bg_color := fx.Color{0, 0, 0, 0}
+                bg_color := fx.BLANK
 
                 if i == current_lyric_index {
                     text_color = UI_TEXT_COLOR
-                    bg_color = UI_HOVER_COLOR
+                    bg_color = UI_SECONDARY_COLOR
                 } else if is_hovering {
                     text_color = UI_TEXT_COLOR
-                    bg_color = fx.Color{30, 35, 45, 128}
+                    bg_color = brighten(BACKGROUND_GRADIENT_BRIGHT)
                     fx.set_cursor(.CLICK)
                 }
 
@@ -215,7 +215,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
             indicator_y := lyrics_content_y + 5
             indicator_h := lyrics_content_h - 10
 
-            draw_scrollbar(&ui_state.lyrics_scrollbar, indicator_x, indicator_y, 4, indicator_h, lyrics_max_scroll, UI_PRIMARY_COLOR, UI_ACCENT_COLOR)
+            draw_scrollbar(&ui_state.lyrics_scrollbar, indicator_x, indicator_y, 4, indicator_h, lyrics_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
 
             if ui_state.lyrics_scrollbar.is_dragging {
                 ui_state.follow_lyrics = false

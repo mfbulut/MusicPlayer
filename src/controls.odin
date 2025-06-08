@@ -68,10 +68,10 @@ draw_player_controls :: proc() {
     window_w, window_h := fx.window_size()
     player_y := f32(window_h) - PLAYER_HEIGHT
 
-    fx.draw_gradient_rect_rounded_horizontal_selective(0, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, fx.Color{12, 15, 30, 255}, fx.Color{30, 20, 80, 255}, {.BOTTOM_LEFT})
-    fx.draw_gradient_rect_rounded_horizontal_selective(f32(window_w) / 2, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, fx.Color{30, 20, 80, 255}, fx.Color{12, 15, 30, 255}, {.BOTTOM_RIGHT})
+    fx.draw_gradient_rect_rounded_horizontal_selective(0, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, CONTROLS_GRADIENT_DARK, CONTROLS_GRADIENT_BRIGHT, {.BOTTOM_LEFT})
+    fx.draw_gradient_rect_rounded_horizontal_selective(f32(window_w) / 2, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, CONTROLS_GRADIENT_BRIGHT, CONTROLS_GRADIENT_DARK, {.BOTTOM_RIGHT})
 
-    fx.draw_rect(0, player_y, f32(window_w), 2, UI_SECONDARY_COLOR)
+    // fx.draw_rect(0, player_y, f32(window_w), 2, UI_ACCENT_COLOR)
 
     cover := player.current_track.audio_clip.cover
 
@@ -135,7 +135,7 @@ draw_player_controls :: proc() {
         hover_color = UI_HOVER_COLOR,
     }
 
-    if draw_icon_button(play_btn) || fx.key_pressed_global(fx.Key.MEDIA_PLAY_PAUSE) {
+    if draw_icon_button(play_btn) || fx.key_pressed_global(fx.Key.MEDIA_PLAY_PAUSE) || fx.key_pressed(.SPACE) {
         toggle_playback()
     }
 
@@ -178,9 +178,9 @@ draw_player_controls :: proc() {
     volume_y := player_y + 38
 
     fx.use_texture(volume_icon)
-    fx.draw_texture(volume_x - 35, volume_y - 10, 24, 24, fx.WHITE)
+    fx.draw_texture(volume_x - 35, volume_y - 10, 24, 24, UI_TEXT_COLOR)
 
-    new_volume := draw_slider(volume_x, volume_y, 100, 4, player.volume, UI_ACCENT_COLOR, UI_TEXT_COLOR)
+    new_volume := draw_slider(volume_x, volume_y, 100, 4, player.volume, UI_SECONDARY_COLOR, UI_TEXT_COLOR)
     if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.is_dragging_progress && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging && !ui_state.is_dragging_progress && !fx.is_resizing(){
         player.volume = new_volume
         fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
@@ -203,10 +203,10 @@ draw_player_controls :: proc() {
         }
     }
 
-    // Handle progress bar dragging
-    handle_progress_bar_drag(window_w, player_y)
+    if player.duration > 0 {
+        handle_progress_bar_drag(window_w, player_y)
+    }
 
-    // Draw progress bar
     progress := player.duration > 0 ? player.position / player.duration : 0
     fx.draw_rect(0, player_y, f32(window_w) * progress, 1, UI_TEXT_COLOR)
 }

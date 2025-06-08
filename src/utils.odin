@@ -52,7 +52,7 @@ draw_button :: proc(btn: Button, text_offset := 0) -> bool {
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_gradient_rect_rounded_horizontal(btn.x, btn.y, btn.w, btn.h, 8, color, darken(color, 10))
+    fx.draw_gradient_rect_rounded_vertical(btn.x, btn.y, btn.w, btn.h, 8, color, darken(color, 20))
 
     text := truncate_text(btn.text, btn.w - 15, 16)
     text_x := btn.x
@@ -113,7 +113,7 @@ draw_icon_button :: proc(btn: IconButton) -> bool {
 
     fx.use_texture(btn.icon)
     padding :: 10
-    fx.draw_texture(btn.x + padding, btn.y + padding, btn.size - padding * 2, btn.size - padding * 2, fx.WHITE)
+    fx.draw_texture(btn.x + padding, btn.y + padding, btn.size - padding * 2, btn.size - padding * 2, UI_TEXT_COLOR)
 
     return is_hovered && fx.mouse_pressed(.LEFT)
 }
@@ -215,12 +215,7 @@ draw_scrollbar :: proc(scrollbar: ^Scrollbar, x, y, w, h: f32, max_scroll: f32, 
 
     thumb_draw_color := thumb_color
     if is_over_thumb {
-        thumb_draw_color = fx.Color{
-            u8(min(255, int(thumb_color.r) + 30)),
-            u8(min(255, int(thumb_color.g) + 30)),
-            u8(min(255, int(thumb_color.b) + 30)),
-            thumb_color.a
-        }
+        thumb_draw_color = brighten(thumb_color, 30)
     }
 
     fx.draw_rect_rounded(x, thumb_y, w, thumb_size, w/2, thumb_draw_color)

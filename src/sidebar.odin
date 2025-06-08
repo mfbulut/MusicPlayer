@@ -5,7 +5,7 @@ import fx "../fx"
 draw_sidebar :: proc(x_offset: f32) {
     window_w, window_h := fx.window_size()
 
-    y_offset: f32 = 10
+    y_offset: f32 = 20
 
     search_btn := Button{
         x = 20 + x_offset, y = y_offset, w = SIDEBAR_WIDTH - 40, h = 40,
@@ -20,7 +20,7 @@ draw_sidebar :: proc(x_offset: f32) {
     }
 
     fx.use_texture(search_icon)
-    fx.draw_texture(search_btn.x + 20, search_btn.y + search_btn.h/2 - 8, 16, 16, fx.WHITE)
+    fx.draw_texture(search_btn.x + 20, search_btn.y + search_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 50
 
@@ -37,7 +37,7 @@ draw_sidebar :: proc(x_offset: f32) {
     }
 
     fx.use_texture(play_icon)
-    fx.draw_texture(now_playing_btn.x + 20, now_playing_btn.y + now_playing_btn.h/2 - 8, 16, 16, fx.WHITE)
+    fx.draw_texture(now_playing_btn.x + 20, now_playing_btn.y + now_playing_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 50
 
@@ -55,7 +55,7 @@ draw_sidebar :: proc(x_offset: f32) {
     }
 
     fx.use_texture(liked_icon)
-    fx.draw_texture(liked_btn.x + 20, liked_btn.y + liked_btn.h/2 - 8, 16, 16, fx.WHITE)
+    fx.draw_texture(liked_btn.x + 20, liked_btn.y + liked_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 50
 
@@ -72,7 +72,7 @@ draw_sidebar :: proc(x_offset: f32) {
     }
 
     fx.use_texture(queue_icon)
-    fx.draw_texture(queue_btn.x + 20, queue_btn.y + queue_btn.h/2 - 8, 16, 16, fx.WHITE)
+    fx.draw_texture(queue_btn.x + 20, queue_btn.y + queue_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 60
 
@@ -122,11 +122,11 @@ draw_sidebar :: proc(x_offset: f32) {
     fx.disable_scissor()
 
     if sidebar_max_scroll > 0 {
-        indicator_x := SIDEBAR_WIDTH - 15 + x_offset
+        indicator_x := SIDEBAR_WIDTH - 8 + x_offset
         indicator_y := y_offset
         indicator_h := sidebar_visible_height - 2
 
-        draw_scrollbar(&ui_state.sidebar_scrollbar, indicator_x, indicator_y, 4, indicator_h, sidebar_max_scroll, UI_SECONDARY_COLOR, UI_ACCENT_COLOR)
+        draw_scrollbar(&ui_state.sidebar_scrollbar, indicator_x, indicator_y, 4, indicator_h, sidebar_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
     }
 
     if !ui_state.sidebar_scrollbar.is_dragging {

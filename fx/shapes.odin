@@ -118,23 +118,23 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
         return
     }
 
-    // Corner centers
+
     corners := [4][2]f32{
-        {x + clamped_radius, y + clamped_radius},         // top-left
-        {x + w - clamped_radius, y + clamped_radius},     // top-right
-        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
-        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+        {x + clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + h - clamped_radius},
+        {x + clamped_radius, y + h - clamped_radius}
     }
 
-    // Corner angle ranges
+
     corner_angles := [4][2]f32{
-        {math.PI, 3.0 * math.PI / 2.0},         // top-left
-        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
-        {0.0, math.PI / 2.0},                   // bottom-right
-        {math.PI / 2.0, math.PI}                // bottom-left
+        {math.PI, 3.0 * math.PI / 2.0},
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},
+        {0.0, math.PI / 2.0},
+        {math.PI / 2.0, math.PI}
     }
 
-    // Draw corner arcs
+
     for corner_idx in 0..<4 {
         corner_center := corners[corner_idx]
         start_angle := corner_angles[corner_idx][0]
@@ -152,7 +152,7 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
             y2 := corner_center.y + clamped_radius * math.sin(angle2)
 
             verts := []Vertex{
-                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, color}, // center of arc
+                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, color},
                 Vertex{{x1, y1}, {-1.0, 0.0}, color},
                 Vertex{{x2, y2}, {-1.0, 0.0}, color}
             }
@@ -162,11 +162,9 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
         }
     }
 
-    // Calculate dimensions for rectangular sections
     inner_w := w - 2.0 * clamped_radius
     inner_h := h - 2.0 * clamped_radius
 
-    // Draw center rectangle (only if it has area)
     if inner_w > 0 && inner_h > 0 {
         center_verts := []Vertex{
             Vertex{{x + clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
@@ -181,9 +179,9 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
         verticies_count += len(center_verts)
     }
 
-    // Draw top and bottom rectangles (only if they have width)
+
     if inner_w > 0 {
-        // Top rectangle
+
         top_verts := []Vertex{
             Vertex{{x + clamped_radius, y}, {-1.0, 0.0}, color},
             Vertex{{x + clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
@@ -196,7 +194,7 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
         copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
         verticies_count += len(top_verts)
 
-        // Bottom rectangle
+
         bottom_verts := []Vertex{
             Vertex{{x + clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
             Vertex{{x + clamped_radius, y + h}, {-1.0, 0.0}, color},
@@ -210,9 +208,8 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
         verticies_count += len(bottom_verts)
     }
 
-    // Draw left and right rectangles (only if they have height)
+
     if inner_h > 0 {
-        // Left rectangle
         left_verts := []Vertex{
             Vertex{{x, y + clamped_radius}, {-1.0, 0.0}, color},
             Vertex{{x, y + h - clamped_radius}, {-1.0, 0.0}, color},
@@ -225,7 +222,6 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
         copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
         verticies_count += len(left_verts)
 
-        // Right rectangle
         right_verts := []Vertex{
             Vertex{{x + w - clamped_radius, y + clamped_radius}, {-1.0, 0.0}, color},
             Vertex{{x + w - clamped_radius, y + h - clamped_radius}, {-1.0, 0.0}, color},
@@ -251,30 +247,28 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
         return
     }
 
-    // Helper function to calculate texture coordinates
     calc_tex_coord :: proc(px, py, rect_x, rect_y, rect_w, rect_h: f32) -> [2]f32 {
         u := (px - rect_x) / rect_w
         v := (py - rect_y) / rect_h
         return {u, v}
     }
 
-    // Corner centers
     corners := [4][2]f32{
-        {x + clamped_radius, y + clamped_radius},         // top-left
-        {x + w - clamped_radius, y + clamped_radius},     // top-right
-        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
-        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+        {x + clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + h - clamped_radius},
+        {x + clamped_radius, y + h - clamped_radius}
     }
 
-    // Corner angle ranges
+
     corner_angles := [4][2]f32{
-        {math.PI, 3.0 * math.PI / 2.0},         // top-left
-        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
-        {0.0, math.PI / 2.0},                   // bottom-right
-        {math.PI / 2.0, math.PI}                // bottom-left
+        {math.PI, 3.0 * math.PI / 2.0},
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},
+        {0.0, math.PI / 2.0},
+        {math.PI / 2.0, math.PI}
     }
 
-    // Draw corner arcs with texture coordinates
+
     for corner_idx in 0..<4 {
         corner_center := corners[corner_idx]
         start_angle := corner_angles[corner_idx][0]
@@ -282,7 +276,7 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
 
         angle_step := (end_angle - start_angle) / f32(corner_segments)
 
-        // Calculate texture coordinates for corner center
+
         center_tex := calc_tex_coord(corner_center.x, corner_center.y, x, y, w, h)
 
         for i in 0..<corner_segments {
@@ -294,12 +288,12 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
             x2 := corner_center.x + clamped_radius * math.cos(angle2)
             y2 := corner_center.y + clamped_radius * math.sin(angle2)
 
-            // Calculate texture coordinates for arc points
+
             tex1 := calc_tex_coord(x1, y1, x, y, w, h)
             tex2 := calc_tex_coord(x2, y2, x, y, w, h)
 
             verts := []Vertex{
-                Vertex{{corner_center.x, corner_center.y}, center_tex, color}, // center of arc
+                Vertex{{corner_center.x, corner_center.y}, center_tex, color},
                 Vertex{{x1, y1}, tex1, color},
                 Vertex{{x2, y2}, tex2, color}
             }
@@ -309,11 +303,11 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
         }
     }
 
-    // Calculate dimensions for rectangular sections
+
     inner_w := w - 2.0 * clamped_radius
     inner_h := h - 2.0 * clamped_radius
 
-    // Draw center rectangle (only if it has area)
+
     if inner_w > 0 && inner_h > 0 {
         center_x1 := x + clamped_radius
         center_y1 := y + clamped_radius
@@ -333,9 +327,9 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
         verticies_count += len(center_verts)
     }
 
-    // Draw top and bottom rectangles (only if they have width)
+
     if inner_w > 0 {
-        // Top rectangle
+
         top_x1 := x + clamped_radius
         top_y1 := y
         top_x2 := x + w - clamped_radius
@@ -353,7 +347,7 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
         copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
         verticies_count += len(top_verts)
 
-        // Bottom rectangle
+
         bottom_x1 := x + clamped_radius
         bottom_y1 := y + h - clamped_radius
         bottom_x2 := x + w - clamped_radius
@@ -372,9 +366,9 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
         verticies_count += len(bottom_verts)
     }
 
-    // Draw left and right rectangles (only if they have height)
+
     if inner_h > 0 {
-        // Left rectangle
+
         left_x1 := x
         left_y1 := y + clamped_radius
         left_x2 := x + clamped_radius
@@ -392,7 +386,7 @@ draw_texture_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segme
         copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
         verticies_count += len(left_verts)
 
-        // Right rectangle
+
         right_x1 := x + w - clamped_radius
         right_y1 := y + clamped_radius
         right_x2 := x + w
@@ -565,29 +559,29 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         return
     }
 
-    // Helper function to interpolate color based on x position
+
     interpolate_color_x :: proc(px, rect_x, rect_w: f32, color_left, color_right: Color) -> Color {
         t := (px - rect_x) / rect_w
         return color_lerp(color_left, color_right, t)
     }
 
-    // Corner centers
+
     corners := [4][2]f32{
-        {x + clamped_radius, y + clamped_radius},         // top-left
-        {x + w - clamped_radius, y + clamped_radius},     // top-right
-        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
-        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+        {x + clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + h - clamped_radius},
+        {x + clamped_radius, y + h - clamped_radius}
     }
 
-    // Corner angle ranges
+
     corner_angles := [4][2]f32{
-        {math.PI, 3.0 * math.PI / 2.0},         // top-left
-        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
-        {0.0, math.PI / 2.0},                   // bottom-right
-        {math.PI / 2.0, math.PI}                // bottom-left
+        {math.PI, 3.0 * math.PI / 2.0},
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},
+        {0.0, math.PI / 2.0},
+        {math.PI / 2.0, math.PI}
     }
 
-    // Draw corner arcs with gradient
+
     for corner_idx in 0..<4 {
         corner_center := corners[corner_idx]
         start_angle := corner_angles[corner_idx][0]
@@ -619,11 +613,11 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         }
     }
 
-    // Calculate dimensions for rectangular sections
+
     inner_w := w - 2.0 * clamped_radius
     inner_h := h - 2.0 * clamped_radius
 
-    // Draw center rectangle (only if it has area)
+
     if inner_w > 0 && inner_h > 0 {
         center_x1 := x + clamped_radius
         center_y1 := y + clamped_radius
@@ -646,9 +640,9 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         verticies_count += len(center_verts)
     }
 
-    // Draw top and bottom rectangles (only if they have width)
+
     if inner_w > 0 {
-        // Top rectangle
+
         top_x1 := x + clamped_radius
         top_y1 := y
         top_x2 := x + w - clamped_radius
@@ -669,7 +663,7 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
         verticies_count += len(top_verts)
 
-        // Bottom rectangle
+
         bottom_x1 := x + clamped_radius
         bottom_y1 := y + h - clamped_radius
         bottom_x2 := x + w - clamped_radius
@@ -691,9 +685,9 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         verticies_count += len(bottom_verts)
     }
 
-    // Draw left and right rectangles (only if they have height)
+
     if inner_h > 0 {
-        // Left rectangle
+
         left_x1 := x
         left_y1 := y + clamped_radius
         left_x2 := x + clamped_radius
@@ -714,7 +708,7 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
         verticies_count += len(left_verts)
 
-        // Right rectangle
+
         right_x1 := x + w - clamped_radius
         right_y1 := y + clamped_radius
         right_x2 := x + w
@@ -736,7 +730,6 @@ draw_gradient_rect_rounded_horizontal :: proc(x, y, w, h, radius: f32, color_lef
         verticies_count += len(right_verts)
     }
 }
-
 draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, color_bottom: Color, corner_segments: int = 8) {
     if ctx.is_minimized do return
 
@@ -748,29 +741,29 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         return
     }
 
-    // Helper function to interpolate color based on y position
+
     interpolate_color_y :: proc(py, rect_y, rect_h: f32, color_top, color_bottom: Color) -> Color {
         t := clamp((py - rect_y) / rect_h, 0.0, 1.0)
         return color_lerp(color_top, color_bottom, t)
     }
 
-    // Corner centers
+
     corners := [4][2]f32{
-        {x + clamped_radius, y + clamped_radius},         // top-left
-        {x + w - clamped_radius, y + clamped_radius},     // top-right
-        {x + w - clamped_radius, y + h - clamped_radius}, // bottom-right
-        {x + clamped_radius, y + h - clamped_radius}      // bottom-left
+        {x + clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + clamped_radius},
+        {x + w - clamped_radius, y + h - clamped_radius},
+        {x + clamped_radius, y + h - clamped_radius}
     }
 
-    // Corner angle ranges
+
     corner_angles := [4][2]f32{
-        {math.PI, 3.0 * math.PI / 2.0},         // top-left
-        {3.0 * math.PI / 2.0, 2.0 * math.PI},   // top-right
-        {0.0, math.PI / 2.0},                   // bottom-right
-        {math.PI / 2.0, math.PI}                // bottom-left
+        {math.PI, 3.0 * math.PI / 2.0},
+        {3.0 * math.PI / 2.0, 2.0 * math.PI},
+        {0.0, math.PI / 2.0},
+        {math.PI / 2.0, math.PI}
     }
 
-    // Draw corner arcs with gradient - FIXED VERSION
+
     for corner_idx in 0..<4 {
         corner_center := corners[corner_idx]
         start_angle := corner_angles[corner_idx][0]
@@ -778,66 +771,36 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
 
         angle_step := (end_angle - start_angle) / f32(corner_segments)
 
-        // Create a triangle fan, but use multiple triangles for smoother gradient
-        prev_x := corner_center.x + clamped_radius * math.cos(start_angle)
-        prev_y := corner_center.y + clamped_radius * math.sin(start_angle)
-        prev_color := interpolate_color_y(prev_y, y, h, color_top, color_bottom)
 
-        for i in 1..=corner_segments {
-            angle := start_angle + f32(i) * angle_step
-            curr_x := corner_center.x + clamped_radius * math.cos(angle)
-            curr_y := corner_center.y + clamped_radius * math.sin(angle)
-            curr_color := interpolate_color_y(curr_y, y, h, color_top, color_bottom)
+        for i in 0..<corner_segments {
+            angle1 := start_angle + f32(i) * angle_step
+            angle2 := start_angle + f32(i + 1) * angle_step
 
-            // Create multiple sub-triangles for smoother gradient within each segment
-            sub_segments := 3  // Increase for even smoother gradients
-            for sub_i in 0..<sub_segments {
-                t1 := f32(sub_i) / f32(sub_segments)
-                t2 := f32(sub_i + 1) / f32(sub_segments)
+            x1 := corner_center.x + clamped_radius * math.cos(angle1)
+            y1 := corner_center.y + clamped_radius * math.sin(angle1)
+            x2 := corner_center.x + clamped_radius * math.cos(angle2)
+            y2 := corner_center.y + clamped_radius * math.sin(angle2)
 
-                // Interpolate positions along the arc edge
-                edge_x1 := prev_x + t1 * (curr_x - prev_x)
-                edge_y1 := prev_y + t1 * (curr_y - prev_y)
-                edge_x2 := prev_x + t2 * (curr_x - prev_x)
-                edge_y2 := prev_y + t2 * (curr_y - prev_y)
+            center_color := interpolate_color_y(corner_center.y, y, h, color_top, color_bottom)
+            color1 := interpolate_color_y(y1, y, h, color_top, color_bottom)
+            color2 := interpolate_color_y(y2, y, h, color_top, color_bottom)
 
-                // Interpolate positions along the radius from center
-                center_t1 := t1 * 0.5  // Blend toward center
-                center_t2 := t2 * 0.5
-                center_x1 := corner_center.x + center_t1 * (edge_x1 - corner_center.x)
-                center_y1 := corner_center.y + center_t1 * (edge_y1 - corner_center.y)
-                center_x2 := corner_center.x + center_t2 * (edge_x2 - corner_center.x)
-                center_y2 := corner_center.y + center_t2 * (edge_y2 - corner_center.y)
-
-                edge_color1 := color_lerp(prev_color, curr_color, t1)
-                edge_color2 := color_lerp(prev_color, curr_color, t2)
-                center_color1 := interpolate_color_y(center_y1, y, h, color_top, color_bottom)
-                center_color2 := interpolate_color_y(center_y2, y, h, color_top, color_bottom)
-
-                verts := []Vertex{
-                    Vertex{{center_x1, center_y1}, {-1.0, 0.0}, center_color1},
-                    Vertex{{edge_x1, edge_y1}, {-1.0, 0.0}, edge_color1},
-                    Vertex{{edge_x2, edge_y2}, {-1.0, 0.0}, edge_color2},
-                    Vertex{{center_x1, center_y1}, {-1.0, 0.0}, center_color1},
-                    Vertex{{edge_x2, edge_y2}, {-1.0, 0.0}, edge_color2},
-                    Vertex{{center_x2, center_y2}, {-1.0, 0.0}, center_color2}
-                }
-
-                copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
-                verticies_count += len(verts)
+            verts := []Vertex{
+                Vertex{{corner_center.x, corner_center.y}, {-1.0, 0.0}, center_color},
+                Vertex{{x1, y1}, {-1.0, 0.0}, color1},
+                Vertex{{x2, y2}, {-1.0, 0.0}, color2}
             }
 
-            prev_x = curr_x
-            prev_y = curr_y
-            prev_color = curr_color
+            copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+            verticies_count += len(verts)
         }
     }
 
-    // Calculate dimensions for rectangular sections
+
     inner_w := w - 2.0 * clamped_radius
     inner_h := h - 2.0 * clamped_radius
 
-    // Draw center rectangle (only if it has area)
+
     if inner_w > 0 && inner_h > 0 {
         center_x1 := x + clamped_radius
         center_y1 := y + clamped_radius
@@ -860,9 +823,9 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         verticies_count += len(center_verts)
     }
 
-    // Draw top and bottom rectangles (only if they have width)
+
     if inner_w > 0 {
-        // Top rectangle
+
         top_x1 := x + clamped_radius
         top_y1 := y
         top_x2 := x + w - clamped_radius
@@ -883,7 +846,7 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         copy(verticies[verticies_count:verticies_count + len(top_verts)], top_verts[:])
         verticies_count += len(top_verts)
 
-        // Bottom rectangle
+
         bottom_x1 := x + clamped_radius
         bottom_y1 := y + h - clamped_radius
         bottom_x2 := x + w - clamped_radius
@@ -905,9 +868,9 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         verticies_count += len(bottom_verts)
     }
 
-    // Draw left and right rectangles (only if they have height)
+
     if inner_h > 0 {
-        // Left rectangle
+
         left_x1 := x
         left_y1 := y + clamped_radius
         left_x2 := x + clamped_radius
@@ -928,7 +891,7 @@ draw_gradient_rect_rounded_vertical :: proc(x, y, w, h, radius: f32, color_top, 
         copy(verticies[verticies_count:verticies_count + len(left_verts)], left_verts[:])
         verticies_count += len(left_verts)
 
-        // Right rectangle
+
         right_x1 := x + w - clamped_radius
         right_y1 := y + clamped_radius
         right_x2 := x + w
@@ -961,7 +924,7 @@ Corner_Flags :: enum u8 {
 
 Corner_Flag_Set :: bit_set[Corner_Flags; u8]
 
-// Constants for easy use
+
 CORNER_ALL :: Corner_Flag_Set{.TOP_LEFT, .TOP_RIGHT, .BOTTOM_RIGHT, .BOTTOM_LEFT}
 CORNER_TOP :: Corner_Flag_Set{.TOP_LEFT, .TOP_RIGHT}
 CORNER_BOTTOM :: Corner_Flag_Set{.BOTTOM_LEFT, .BOTTOM_RIGHT}
@@ -984,13 +947,13 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         return
     }
 
-    // Helper function to interpolate color based on x position
+
     interpolate_color_x :: proc(px, rect_x, rect_w: f32, color_left, color_right: Color) -> Color {
         t := (px - rect_x) / rect_w
         return color_lerp(color_left, color_right, t)
     }
 
-    // Corner information
+
     corner_info := [4]struct{
         center: [2]f32,
         angles: [2]f32,
@@ -1002,7 +965,7 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         {{x + clamped_radius, y + h - clamped_radius}, {math.PI / 2.0, math.PI}, .BOTTOM_LEFT},
     }
 
-    // Draw corner arcs with gradient (only for selected corners)
+
     for info in corner_info {
         if info.flag not_in corners do continue
 
@@ -1036,19 +999,19 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         }
     }
 
-    // Calculate effective radii for each corner (0 if not rounded)
+
     top_left_r := clamped_radius if .TOP_LEFT in corners else 0
     top_right_r := clamped_radius if .TOP_RIGHT in corners else 0
     bottom_right_r := clamped_radius if .BOTTOM_RIGHT in corners else 0
     bottom_left_r := clamped_radius if .BOTTOM_LEFT in corners else 0
 
-    // Calculate bounds for center rectangle
+
     center_x1 := x + max(top_left_r, bottom_left_r)
     center_x2 := x + w - max(top_right_r, bottom_right_r)
     center_y1 := y + max(top_left_r, top_right_r)
     center_y2 := y + h - max(bottom_left_r, bottom_right_r)
 
-    // Draw center rectangle (only if it has area)
+
     if center_x2 > center_x1 && center_y2 > center_y1 {
         color1 := interpolate_color_x(center_x1, x, w, color_left, color_right)
         color2 := interpolate_color_x(center_x2, x, w, color_left, color_right)
@@ -1066,7 +1029,7 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         verticies_count += len(center_verts)
     }
 
-    // Draw top rectangle
+
     top_x1 := x + top_left_r
     top_x2 := x + w - top_right_r
     if top_x2 > top_x1 {
@@ -1089,7 +1052,7 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         verticies_count += len(top_verts)
     }
 
-    // Draw bottom rectangle
+
     bottom_x1 := x + bottom_left_r
     bottom_x2 := x + w - bottom_right_r
     if bottom_x2 > bottom_x1 {
@@ -1112,7 +1075,7 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         verticies_count += len(bottom_verts)
     }
 
-    // Draw left rectangle
+
     left_y1 := y + max(top_left_r, top_right_r)
     left_y2 := y + h - max(bottom_left_r, bottom_right_r)
     if left_y2 > left_y1 {
@@ -1135,7 +1098,7 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         verticies_count += len(left_verts)
     }
 
-    // Draw right rectangle
+
     right_y1 := y + max(top_left_r, top_right_r)
     right_y2 := y + h - max(bottom_left_r, bottom_right_r)
     if right_y2 > right_y1 {
@@ -1158,10 +1121,10 @@ draw_gradient_rect_rounded_horizontal_selective :: proc(
         verticies_count += len(right_verts)
     }
 
-    // Fill sharp corners with rectangles where needed
+
     corner_fill_info := [4]struct{
         condition: bool,
-        bounds: [4]f32, // x1, y1, x2, y2
+        bounds: [4]f32,
     }{
         {.TOP_LEFT not_in corners, {x, y, x + clamped_radius, y + clamped_radius}},
         {.TOP_RIGHT not_in corners, {x + w - clamped_radius, y, x + w, y + clamped_radius}},
