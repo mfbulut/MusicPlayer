@@ -13,7 +13,7 @@ float4 ps_main(Input input) : SV_TARGET
 {
     float2 uv = input.texcoord;
 
-    float2 radius =  0.0005;
+    float2 radius =  0.0004;
 
     float4 result = float4(0, 0, 0, 0);
     float2 i = float2(1.0, 1.0);

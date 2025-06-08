@@ -51,8 +51,8 @@ load_state :: proc(){
                 }
             }
 
-            if use_gaussian_str, gaussian_ok := settings_data["use_gaussian"]; gaussian_ok {
-                use_gaussian = use_gaussian_str == "true"
+            if use_bokeh_str, gaussian_ok := settings_data["use_bokeh"]; gaussian_ok {
+                use_bokeh = use_bokeh_str == "true"
             }
         }
 
@@ -87,7 +87,7 @@ save_state :: proc() {
     ini.write_section(stream, "settings")
     ini.write_pair(stream, "path", music_dir)
     ini.write_pair(stream, "volume", fmt.aprintf("%.6f", player.volume))
-    ini.write_pair(stream, "use_gaussian", use_gaussian ? "true" : "false")
+    ini.write_pair(stream, "use_bokeh", use_bokeh ? "true" : "false")
 
     io.write_string(stream, "\n")
 

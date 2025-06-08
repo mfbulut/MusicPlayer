@@ -31,7 +31,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
             fx.begin_render_to_texture(&background, {0, 128, 0, 0})
             fx.use_texture(cover)
             fx.set_scissor(0, 0, 1024, 1024)
-            fx.use_shader(use_gaussian ? gaussian_shader : bokeh_shader)
+            fx.use_shader(use_bokeh ? bokeh_shader : gaussian_shader)
             fx.draw_texture(0, 0, 1024, 1024, fx.WHITE)
 
             fx.end_render_to_texture()
