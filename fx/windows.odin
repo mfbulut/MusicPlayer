@@ -101,7 +101,7 @@ load_icon_by_size :: proc(desired_size: int) -> win.HICON {
 }
 
 window_styles :: win.WS_POPUP | win.WS_VISIBLE
-chroma_key :: Color{16, 0, 16, 255}
+chroma_key :: Color{16, 0, 16, 0}
 
 init :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
@@ -677,14 +677,23 @@ window_size :: proc() -> (int, int) {
 }
 
 maximize_or_restore_window :: proc() {
-    if win.IsZoomed(ctx.hwnd) {
-        win.ShowWindow(ctx.hwnd, win.SW_RESTORE);
-        ctx.is_minimized = false;
+    if ctx.is_minimized {
+        win.ShowWindow(ctx.hwnd, win.SW_RESTORE)
+        ctx.is_minimized = false
+        return
+    }
+
+    window_placement: win.WINDOWPLACEMENT
+    window_placement.length = size_of(win.WINDOWPLACEMENT)
+    win.GetWindowPlacement(ctx.hwnd, &window_placement)
+
+    if window_placement.showCmd == u32(win.SW_MAXIMIZE) {
+        win.ShowWindow(ctx.hwnd, win.SW_RESTORE)
     } else {
-        win.ShowWindow(ctx.hwnd, win.SW_MAXIMIZE);
-        ctx.is_minimized = false;
+        win.ShowWindow(ctx.hwnd, win.SW_MAXIMIZE)
     }
 }
+
 
 close_window :: proc() {
     win.PostMessageW(ctx.hwnd, win.WM_CLOSE, 0, 0);

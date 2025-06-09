@@ -34,8 +34,6 @@ Playlist :: struct {
     loaded: bool,
 }
 
-playlists : [dynamic]Playlist
-
 load_files :: proc(path: string, allocator : runtime.Allocator) {
     root_dir, read_err := os2.read_all_directory_by_path(path, allocator)
     if read_err != nil {
@@ -86,6 +84,12 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
         cover_path = filepath.join({dir_path, "cover.png"})
         if os.exists(cover_path) {
             playlist.cover_path = cover_path
+        } else {
+            delete(cover_path)
+            cover_path = filepath.join({dir_path, "cover.jpg"})
+            if os.exists(cover_path) {
+                playlist.cover_path = cover_path
+            }
         }
     }
 

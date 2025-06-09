@@ -71,8 +71,6 @@ draw_player_controls :: proc() {
     fx.draw_gradient_rect_rounded_horizontal_selective(0, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, CONTROLS_GRADIENT_DARK, CONTROLS_GRADIENT_BRIGHT, {.BOTTOM_LEFT})
     fx.draw_gradient_rect_rounded_horizontal_selective(f32(window_w) / 2, player_y, f32(window_w) / 2, PLAYER_HEIGHT, 8, CONTROLS_GRADIENT_BRIGHT, CONTROLS_GRADIENT_DARK, {.BOTTOM_RIGHT})
 
-    // fx.draw_rect(0, player_y, f32(window_w), 2, UI_ACCENT_COLOR)
-
     cover := player.current_track.audio_clip.cover
 
     if !player.current_track.audio_clip.has_cover && len(player.current_track.playlist) > 0 {
@@ -82,10 +80,8 @@ draw_player_controls :: proc() {
 
     startX : f32 = 20
     if cover.width > 0 {
-        fx.use_texture(cover)
-
         padding :: 7
-        fx.draw_texture_rounded(padding, player_y + padding, PLAYER_HEIGHT - padding * 2, PLAYER_HEIGHT - padding * 2, 12, fx.WHITE)
+        fx.draw_texture_rounded_cropped(cover, padding, player_y + padding, PLAYER_HEIGHT - padding * 2, PLAYER_HEIGHT - padding * 2, 12, fx.WHITE)
         startX += 70
 
         if is_hovering(10, player_y, PLAYER_HEIGHT - 10, PLAYER_HEIGHT) {
@@ -177,8 +173,7 @@ draw_player_controls :: proc() {
     volume_x := f32(window_w) - 150
     volume_y := player_y + 38
 
-    fx.use_texture(volume_icon)
-    fx.draw_texture(volume_x - 35, volume_y - 10, 24, 24, UI_TEXT_COLOR)
+    fx.draw_texture(volume_icon, volume_x - 35, volume_y - 10, 24, 24, UI_TEXT_COLOR)
 
     scroll_delta := fx.get_mouse_scroll()
     if scroll_delta != 0 {

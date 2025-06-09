@@ -2,8 +2,6 @@ package main
 
 import fx "../fx"
 
-update_background: bool
-
 draw_now_playing_view :: proc(x, y, w, h: f32) {
     track := player.current_track
 
@@ -29,10 +27,9 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     if cover.width > 0 {
         if update_background {
             fx.begin_render_to_texture(&background, {0, 128, 0, 0})
-            fx.use_texture(cover)
             fx.set_scissor(0, 0, 1024, 1024)
-            fx.use_shader(use_bokeh ? bokeh_shader : gaussian_shader)
-            fx.draw_texture(0, 0, 1024, 1024, fx.WHITE)
+            fx.use_shader(gaussian_shader)
+            fx.draw_texture_cropped(cover, 0, 0, 1024, 1024, fx.WHITE)
 
             fx.end_render_to_texture()
             update_background = false
@@ -47,20 +44,13 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         texture_aspect := f32(texture_w) / f32(texture_h)
         dest_aspect := f32(w) / f32(h)
 
-        if texture_aspect > dest_aspect {
-            new_w := h * texture_aspect
-            diff := (new_w - w) / 2
-            fx.draw_texture(x - diff, y, new_w, h, NOW_PLAYING_BACKDROP)
-        } else {
-            new_h := w / texture_aspect
-            diff := (new_h - h) / 2
-            fx.draw_texture(x, y - diff, w, new_h, NOW_PLAYING_BACKDROP)
-        }
+        fx.draw_texture_cropped(background.tx, x, y, w, h, fx.WHITE)
+
+        fx.draw_gradient_rect_vertical(x, y, w, h, NOW_PLAYING_BACKDROP_BRIGHT, NOW_PLAYING_BACKDROP_DARK)
 
         fx.disable_scissor()
 
-        fx.use_texture(cover)
-        fx.draw_texture_rounded(art_x, art_y, art_size, art_size, 12, fx.WHITE)
+        fx.draw_texture_rounded_cropped(cover, art_x, art_y, art_size, art_size, 12, fx.WHITE)
     } else {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }

@@ -87,8 +87,7 @@ draw_icon_button_rect :: proc(x, y, w, h : f32, icon: fx.Texture, color: fx.Colo
 
     size := h - padding * 2
 
-    fx.use_texture(icon)
-    fx.draw_texture(x + w / 2 - size / 2, y + padding, size, size, fx.Color{215, 215, 230, 196})
+    fx.draw_texture(icon, x + w / 2 - size / 2, y + padding, size, size, fx.Color{215, 215, 230, 196})
 
     return is_clickled
 }
@@ -111,9 +110,8 @@ draw_icon_button :: proc(btn: IconButton) -> bool {
 
     fx.draw_circle(btn.x + btn.size/2, btn.y + btn.size/2, btn.size/2, color)
 
-    fx.use_texture(btn.icon)
     padding :: 10
-    fx.draw_texture(btn.x + padding, btn.y + padding, btn.size - padding * 2, btn.size - padding * 2, UI_TEXT_COLOR)
+    fx.draw_texture(btn.icon, btn.x + padding, btn.y + padding, btn.size - padding * 2, btn.size - padding * 2, UI_TEXT_COLOR)
 
     return is_hovered && fx.mouse_pressed(.LEFT)
 }

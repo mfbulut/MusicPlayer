@@ -19,8 +19,7 @@ draw_sidebar :: proc(x_offset: f32) {
         ui_state.current_view = .SEARCH
     }
 
-    fx.use_texture(search_icon)
-    fx.draw_texture(search_btn.x + 20, search_btn.y + search_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
+    fx.draw_texture(search_icon, search_btn.x + 20, search_btn.y + search_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 50
 
@@ -36,8 +35,7 @@ draw_sidebar :: proc(x_offset: f32) {
         ui_state.current_view = .NOW_PLAYING
     }
 
-    fx.use_texture(play_icon)
-    fx.draw_texture(now_playing_btn.x + 20, now_playing_btn.y + now_playing_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
+    fx.draw_texture(play_icon, now_playing_btn.x + 20, now_playing_btn.y + now_playing_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 50
 
@@ -54,8 +52,7 @@ draw_sidebar :: proc(x_offset: f32) {
         ui_state.current_view = .LIKED
     }
 
-    fx.use_texture(liked_icon)
-    fx.draw_texture(liked_btn.x + 20, liked_btn.y + liked_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
+    fx.draw_texture(liked_icon, liked_btn.x + 20, liked_btn.y + liked_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 50
 
@@ -71,8 +68,7 @@ draw_sidebar :: proc(x_offset: f32) {
         ui_state.current_view = .QUEUE
     }
 
-    fx.use_texture(queue_icon)
-    fx.draw_texture(queue_btn.x + 20, queue_btn.y + queue_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
+    fx.draw_texture(queue_icon, queue_btn.x + 20, queue_btn.y + queue_btn.h/2 - 8, 16, 16, UI_TEXT_COLOR)
 
     y_offset += 60
 

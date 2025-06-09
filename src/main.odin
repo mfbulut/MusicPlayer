@@ -8,6 +8,7 @@ import "core:mem"
 import "core:os"
 import "core:os/os2"
 import "core:strings"
+import "core:math"
 
 UI_PRIMARY_COLOR      := fx.Color{24, 14, 44, 255}
 UI_SECONDARY_COLOR    := fx.Color{95, 58, 137, 255}
@@ -16,7 +17,7 @@ UI_ACCENT_COLOR       := fx.Color{118, 67, 175, 255}
 UI_HOVER_COLOR        := fx.Color{105, 68, 147, 255}
 
 UI_TEXT_COLOR         := fx.Color{235, 237, 240, 255}
-UI_TEXT_SECONDARY     := fx.Color{157, 164, 178, 255}
+UI_TEXT_SECONDARY     := fx.Color{175, 180, 195, 255}
 
 CONTROLS_GRADIENT_BRIGHT   := fx.Color{44, 27, 71, 255}
 CONTROLS_GRADIENT_DARK     := fx.Color{24, 15, 39, 255}
@@ -27,7 +28,8 @@ TRACK_GRADIENT_DARK        := fx.Color{44, 27, 73, 255}
 BACKGROUND_GRADIENT_BRIGHT := fx.Color{44, 27, 71, 255}
 BACKGROUND_GRADIENT_DARK   := fx.Color{24, 15, 39, 255}
 
-NOW_PLAYING_BACKDROP  :: fx.Color{108, 108, 108, 255}
+NOW_PLAYING_BACKDROP_BRIGHT  :: fx.Color{0, 0, 0, 108}
+NOW_PLAYING_BACKDROP_DARK    :: fx.Color{0, 0, 0, 196}
 
 SIDEBAR_WIDTH : f32 : 220
 TITLE_HEIGHT  : f32 : 40
@@ -53,6 +55,7 @@ UIState :: struct {
 
     show_lyrics: bool,
     follow_lyrics: bool,
+    theme : int,
 
     search_query: string,
     search_focus: bool,
@@ -106,7 +109,7 @@ draw_main_content :: proc(sidebar_width: f32) {
 }
 
 switch_theme :: proc() {
-    if current_theme == 0 {
+    if ui_state.theme == 0 {
         UI_PRIMARY_COLOR      = fx.Color{24, 14, 44, 255}
         UI_SECONDARY_COLOR    = fx.Color{95, 58, 137, 255}
 
@@ -114,7 +117,7 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{105, 68, 147, 255}
 
         UI_TEXT_COLOR         = fx.Color{235, 237, 240, 255}
-        UI_TEXT_SECONDARY     = fx.Color{157, 164, 178, 255}
+        UI_TEXT_SECONDARY = fx.Color{175, 180, 195, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{44, 27, 71, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{24, 15, 39, 255}
@@ -124,7 +127,7 @@ switch_theme :: proc() {
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{44, 27, 71, 255}
         BACKGROUND_GRADIENT_DARK   = fx.Color{24, 15, 39, 255}
-    } else if current_theme == 1 {
+    } else if ui_state.theme == 1 {
         UI_PRIMARY_COLOR      = fx.Color{10, 42, 51, 255}
         UI_SECONDARY_COLOR    = fx.Color{25, 115, 127, 255}
 
@@ -132,7 +135,7 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{18, 90, 99, 255}
 
         UI_TEXT_COLOR         = fx.Color{220, 224, 230, 255}
-        UI_TEXT_SECONDARY     = fx.Color{140, 148, 160, 255}
+        UI_TEXT_SECONDARY = fx.Color{170, 185, 190, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{15, 46, 55, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{10, 32, 40, 255}
@@ -142,7 +145,7 @@ switch_theme :: proc() {
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{15, 46, 55, 255}
         BACKGROUND_GRADIENT_DARK   = fx.Color{8, 30, 37, 255}
-    } else if current_theme == 2 {
+    } else if ui_state.theme == 2 {
         UI_PRIMARY_COLOR      = fx.Color{14, 44, 24, 255}
         UI_SECONDARY_COLOR    = fx.Color{58, 137, 95, 255}
 
@@ -150,7 +153,7 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{68, 147, 105, 255}
 
         UI_TEXT_COLOR         = fx.Color{235, 237, 240, 255}
-        UI_TEXT_SECONDARY     = fx.Color{157, 164, 178, 255}
+        UI_TEXT_SECONDARY = fx.Color{170, 185, 180, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{27, 71, 44, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{15, 39, 24, 255}
@@ -160,7 +163,7 @@ switch_theme :: proc() {
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{27, 71, 44, 255}
         BACKGROUND_GRADIENT_DARK   = fx.Color{15, 39, 24, 255}
-    } else if current_theme == 3 {
+    } else if ui_state.theme == 3 {
         UI_PRIMARY_COLOR      = fx.Color{30, 12, 10, 255}
         UI_SECONDARY_COLOR    = fx.Color{90, 38, 30, 255}
 
@@ -168,7 +171,7 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{80, 38, 28, 255}
 
         UI_TEXT_COLOR         = fx.Color{190, 190, 190, 255}
-        UI_TEXT_SECONDARY     = fx.Color{120, 125, 135, 255}
+        UI_TEXT_SECONDARY = fx.Color{180, 175, 170, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{50, 20, 15, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{30, 12, 10, 255}
@@ -178,7 +181,7 @@ switch_theme :: proc() {
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{50, 20, 15, 255}
         BACKGROUND_GRADIENT_DARK   = fx.Color{30, 12, 10, 255}
-    } else if current_theme == 4 {
+    } else if ui_state.theme == 4 {
         UI_PRIMARY_COLOR      = fx.Color{18, 28, 78, 255}
         UI_SECONDARY_COLOR    = fx.Color{55, 60, 155, 255}
 
@@ -186,7 +189,7 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{70, 80, 175, 255}
 
         UI_TEXT_COLOR         = fx.Color{230, 240, 255, 255}
-        UI_TEXT_SECONDARY     = fx.Color{150, 165, 200, 255}
+        UI_TEXT_SECONDARY = fx.Color{175, 180, 200, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{30, 35, 100, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{15, 20, 60, 255}
@@ -199,18 +202,22 @@ switch_theme :: proc() {
     }
 }
 
+ease_in_out_cubic :: proc(t: f32) -> f32 {
+    if t < 0.5 {
+        return 4 * t * t * t
+    } else {
+        return 1 - math.pow(-2 * t + 2, 3) / 2
+    }
+}
+
+sidebar_anim_progress: f32 = 1.0
 
 frame :: proc(dt: f32) {
     window_w, window_h := fx.window_size()
 
     if fx.key_pressed(.F4) {
-        current_theme = (current_theme + 1) % 5
+        ui_state.theme = (ui_state.theme + 1) % 5
         switch_theme()
-    }
-
-    if fx.key_pressed(.F3) {
-        use_bokeh = !use_bokeh
-        update_background = true
     }
 
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
@@ -221,11 +228,16 @@ frame :: proc(dt: f32) {
     update_player(dt)
     update_smooth_scrolling(dt)
 
+    sidebar_anim_speed: f32 = 4.0
+
     if ui_state.hide_sidebar {
-        ui_state.sidebar_width = clamp(ui_state.sidebar_width - dt * 2500, 0, SIDEBAR_WIDTH)
+        sidebar_anim_progress = clamp(sidebar_anim_progress - dt * sidebar_anim_speed, 0, 1)
     } else {
-        ui_state.sidebar_width = clamp(ui_state.sidebar_width + dt * 2500, 0, SIDEBAR_WIDTH)
+        sidebar_anim_progress = clamp(sidebar_anim_progress + dt * sidebar_anim_speed, 0, 1)
     }
+
+    eased_progress := ease_in_out_cubic(sidebar_anim_progress)
+    ui_state.sidebar_width = eased_progress * SIDEBAR_WIDTH
 
     fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 
@@ -234,10 +246,10 @@ frame :: proc(dt: f32) {
     draw_main_content(ui_state.sidebar_width)
     draw_player_controls()
 
-    if !all_covers_loaded {
-        if !loading_covers do return
-        all_covers_loaded = check_all_covers_loaded()
-        if !all_covers_loaded {
+    if loading_covers {
+        loading_covers = !check_all_covers_loaded()
+
+        if loading_covers {
             process_loaded_covers()
         } else {
             cleanup_cover_loading()
@@ -262,48 +274,6 @@ frame :: proc(dt: f32) {
     }
 }
 
-previous_icon_qoi := #load("assets/previous.qoi")
-forward_icon_qoi  := #load("assets/forward.qoi")
-pause_icon_qoi    := #load("assets/pause.qoi")
-play_icon_qoi     := #load("assets/play.qoi")
-volume_icon_qoi   := #load("assets/volume.qoi")
-shuffle_icon_qoi  := #load("assets/shuffle.qoi")
-search_icon_qoi   := #load("assets/search.qoi")
-liked_icon_qoi    := #load("assets/liked.qoi")
-empty_icon_qoi    := #load("assets/liked_empty.qoi")
-queue_icon_qoi    := #load("assets/queue.qoi")
-
-exit_icon_qoi     := #load("assets/exit.qoi")
-maximize_icon_qoi := #load("assets/maximize.qoi")
-minimize_icon_qoi := #load("assets/minimize.qoi")
-
-previous_icon : fx.Texture
-forward_icon  : fx.Texture
-pause_icon    : fx.Texture
-play_icon     : fx.Texture
-volume_icon   : fx.Texture
-shuffle_icon  : fx.Texture
-liked_icon    : fx.Texture
-liked_empty   : fx.Texture
-search_icon   : fx.Texture
-queue_icon    : fx.Texture
-
-exit_icon       : fx.Texture
-maximize_icon   : fx.Texture
-minimize_icon   : fx.Texture
-
-bokeh_shader_hlsl : []u8 = #load("shaders/bokeh_blur.hlsl")
-gaussian_shader_hlsl : []u8 = #load("shaders/gaussian_blur.hlsl")
-
-use_bokeh : bool
-gaussian_shader : fx.Shader
-bokeh_shader : fx.Shader
-
-loading_covers: bool
-all_covers_loaded: bool
-background : fx.RenderTexture
-music_dir : string
-
 drop_callback  :: proc(files: []string) {
     for filepath in files {
         file := os2.stat(filepath, context.allocator) or_continue
@@ -317,29 +287,45 @@ drop_callback  :: proc(files: []string) {
     }
 }
 
+previous_icon_qoi :: #load("assets/previous.qoi")
+forward_icon_qoi  :: #load("assets/forward.qoi")
+pause_icon_qoi    :: #load("assets/pause.qoi")
+play_icon_qoi     :: #load("assets/play.qoi")
+volume_icon_qoi   :: #load("assets/volume.qoi")
+shuffle_icon_qoi  :: #load("assets/shuffle.qoi")
+search_icon_qoi   :: #load("assets/search.qoi")
+liked_icon_qoi    :: #load("assets/liked.qoi")
+empty_icon_qoi    :: #load("assets/liked_empty.qoi")
+queue_icon_qoi    :: #load("assets/queue.qoi")
+exit_icon_qoi     :: #load("assets/exit.qoi")
+maximize_icon_qoi :: #load("assets/maximize.qoi")
+minimize_icon_qoi :: #load("assets/minimize.qoi")
+
+gaussian_shader_hlsl :: #load("shaders/gaussian_blur.hlsl")
+
+previous_icon : fx.Texture
+forward_icon  : fx.Texture
+pause_icon    : fx.Texture
+play_icon     : fx.Texture
+volume_icon   : fx.Texture
+shuffle_icon  : fx.Texture
+liked_icon    : fx.Texture
+liked_empty   : fx.Texture
+search_icon   : fx.Texture
+queue_icon    : fx.Texture
+exit_icon     : fx.Texture
+maximize_icon : fx.Texture
+minimize_icon : fx.Texture
+gaussian_shader : fx.Shader
+background : fx.RenderTexture
+
+playlists : [dynamic]Playlist
+
+loading_covers: bool
+update_background: bool
+music_dir : string
+
 main :: proc() {
-	when false {
-		track: mem.Tracking_Allocator
-		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
-
-		defer {
-			if len(track.allocation_map) > 0 {
-				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
-				for _, entry in track.allocation_map {
-					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
-				}
-			}
-			if len(track.bad_free_array) > 0 {
-				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
-				for entry in track.bad_free_array {
-					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
-				}
-			}
-			mem.tracking_allocator_destroy(&track)
-		}
-	}
-
     fx.init("Music Player", 1280, 720)
 
     previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
@@ -355,9 +341,11 @@ main :: proc() {
     maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
     minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
     queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
-    background    = fx.create_render_texture(1024, 1024)
-    bokeh_shader  = fx.load_shader(bokeh_shader_hlsl)
     gaussian_shader = fx.load_shader(gaussian_shader_hlsl)
+    background    = fx.create_render_texture(1024, 1024)
+
+    load_state()
+    switch_theme()
 
     fx.run_manual(proc() {
         frame(0)
@@ -366,9 +354,6 @@ main :: proc() {
     })
 
     music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
-
-    load_state()
-    switch_theme()
 
     if len(os.args) > 1 {
         music_dir = os.args[1]
@@ -386,10 +371,7 @@ main :: proc() {
     init_cover_loading()
     loading_covers = true
     search_tracks("")
-
     fx.set_file_drop_callback(drop_callback)
-
     fx.run(frame)
-
     save_state()
 }

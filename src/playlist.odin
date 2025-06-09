@@ -63,8 +63,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 
 draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) {
     if playlist.loaded {
-        fx.use_texture(playlist.cover)
-        fx.draw_texture_rounded(x + 40, y + 10, 100, 100, 12, fx.WHITE)
+        fx.draw_texture_rounded(playlist.cover, x + 40, y + 10, 100, 100, 12, fx.WHITE)
 
         fx.draw_text(playlist.name, x + 160, y + 30, 32, UI_TEXT_COLOR)
         fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 160, y + 70, 16, UI_TEXT_SECONDARY)

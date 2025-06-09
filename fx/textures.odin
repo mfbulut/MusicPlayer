@@ -29,42 +29,7 @@ load_texture :: proc(filepath: string, generate_mipmaps := true) -> (Texture, bo
     return Texture{}, false
 }
 
-load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture {
-    img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
-
-    if err != nil {
-        w, h, channels_in_file: i32
-        pixels_ptr := stb.load_from_memory(&data[0], i32(len(data)), &w, &h, &channels_in_file, 4)
-
-        if pixels_ptr == nil {
-            fmt.printfln("[ERROR] Failed to load texture from bytes using both image and STB loaders")
-            return Texture{}
-        }
-
-        pixel_count := int(w * h)
-        rgba_pixels := make([][4]u8, pixel_count)
-
-        for i in 0..<pixel_count {
-            rgba_pixels[i] = {
-                pixels_ptr[i * 4 + 0],
-                pixels_ptr[i * 4 + 1],
-                pixels_ptr[i * 4 + 2],
-                pixels_ptr[i * 4 + 3],
-            }
-        }
-
-        stb.image_free(pixels_ptr)
-
-        fallback_img, ok := image.pixels_to_image(rgba_pixels, int(w), int(h))
-        if !ok {
-            fmt.printfln("[ERROR] Failed to convert STB pixels to image")
-            return Texture{}
-        }
-
-        img = new(image.Image)
-        img^ = fallback_img
-    }
-
+load_texture_from_image :: proc(img: ^image.Image, generate_mipmaps := true) -> Texture {
     tex := Texture{}
     tex.width  = img.width
     tex.height = img.height
@@ -117,7 +82,52 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture
 
     tex.texture = texture
     tex.texture_view = texture_view
+
     return tex
+}
+load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture {
+    img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
+
+
+    if err != nil {
+        w, h, channels_in_file: i32
+        pixels_ptr := stb.load_from_memory(&data[0], i32(len(data)), &w, &h, &channels_in_file, 4)
+
+        if pixels_ptr == nil {
+            fmt.printfln("[ERROR] Failed to load texture from bytes using both image and STB loaders")
+            return Texture{}
+        }
+
+        pixel_count := int(w * h)
+        rgba_pixels := make([][4]u8, pixel_count)
+
+        for i in 0..<pixel_count {
+            rgba_pixels[i] = {
+                pixels_ptr[i * 4 + 0],
+                pixels_ptr[i * 4 + 1],
+                pixels_ptr[i * 4 + 2],
+                pixels_ptr[i * 4 + 3],
+            }
+        }
+
+        stb.image_free(pixels_ptr)
+
+        fallback_img, ok := image.pixels_to_image(rgba_pixels, int(w), int(h))
+        if !ok {
+            fmt.printfln("[ERROR] Failed to convert STB pixels to image")
+            return Texture{}
+        }
+
+        texture := load_texture_from_image(&fallback_img)
+        delete(rgba_pixels)
+        return texture
+    } else {
+        texture := load_texture_from_image(img)
+        image.destroy(img)
+        return texture
+    }
+
+    return Texture{}
 }
 
 unload_texture :: proc(tex: ^Texture) {

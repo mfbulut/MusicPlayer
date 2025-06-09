@@ -24,8 +24,6 @@ liked_playlist : Playlist = Playlist {
     tracks = make([dynamic]Track),
 }
 
-current_theme : int
-
 SAVE_FILE :: "songs.ini"
 
 load_state :: proc(){
@@ -53,13 +51,9 @@ load_state :: proc(){
                 }
             }
 
-            if use_bokeh_str, gaussian_ok := settings_data["use_bokeh"]; gaussian_ok {
-                use_bokeh = use_bokeh_str == "true"
-            }
-
-            if theme_str, theme_ok := settings_data["current_theme"]; theme_ok {
+            if theme_str, theme_ok := settings_data["theme"]; theme_ok {
                 if theme, parse_ok := strconv.parse_int(theme_str); parse_ok {
-                    current_theme = theme
+                    ui_state.theme = theme
                 }
             }
         }
@@ -95,8 +89,7 @@ save_state :: proc() {
     ini.write_section(stream, "settings")
     ini.write_pair(stream, "path", music_dir)
     ini.write_pair(stream, "volume", fmt.aprintf("%.6f", player.volume))
-    ini.write_pair(stream, "use_bokeh", use_bokeh ? "true" : "false")
-    ini.write_pair(stream, "current_theme", fmt.aprintf("%d", current_theme))
+    ini.write_pair(stream, "theme", fmt.aprintf("%d", ui_state.theme))
 
     io.write_string(stream, "\n")
 
