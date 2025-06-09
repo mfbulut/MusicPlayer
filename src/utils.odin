@@ -108,7 +108,7 @@ draw_icon_button :: proc(btn: IconButton) -> bool {
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_circle(btn.x + btn.size/2, btn.y + btn.size/2, btn.size/2, color)
+    fx.draw_gradient_circle_radial(btn.x + btn.size/2, btn.y + btn.size/2, btn.size/2, brighten(color, 10), color)
 
     padding :: 10
     fx.draw_texture(btn.icon, btn.x + padding, btn.y + padding, btn.size - padding * 2, btn.size - padding * 2, UI_TEXT_COLOR)
@@ -125,16 +125,16 @@ ProgressBar :: struct {
 
 draw_progress_bar :: proc(bar: ProgressBar){
     mouse_x, _ := fx.get_mouse()
-    if fx.mouse_held(.LEFT) {
-        if is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
-            seek_to_position((f32(mouse_x) - bar.x) / bar.w * player.duration)
-        }
+    progress_width := bar.w * bar.progress
+
+    if fx.mouse_held(.LEFT) && is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
+        progress_width = (f32(mouse_x) - bar.x)
+        seek_to_position(progress_width / bar.w * player.duration)
     }
 
     fx.draw_rect_rounded(bar.x, bar.y, bar.w, bar.h, bar.h/2, bar.bg_color)
 
     if bar.progress > 0 {
-        progress_width := bar.w * bar.progress
         fx.draw_rect_rounded(bar.x, bar.y, progress_width, bar.h, bar.h/2, bar.color)
     }
 }
@@ -281,6 +281,10 @@ darken :: proc(color : fx.Color, amount : int = 20) -> fx.Color {
 
 brighten :: proc(color : fx.Color, amount : int = 20) -> fx.Color {
     return fx.Color{u8(min(int(color.r) + amount, 255)), u8(min(int(color.g) + amount, 255)), u8(min(int(color.b) + amount, 255)), color.a}
+}
+
+set_alpha :: proc(color : fx.Color, val : f32) -> fx.Color {
+    return fx.Color{u8(f32(color.r) * val) , u8(f32(color.g) * val), u8(f32(color.b) * val), u8(val * 255)}
 }
 
 is_inside :: proc(px, py, x, y, w, h: f32) -> bool {

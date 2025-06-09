@@ -100,15 +100,16 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     if has_lyrics {
         toggle_text := ui_state.show_lyrics ? "Hide Lyrics" : "Show Lyrics"
         toggle_width := fx.measure_text(toggle_text, 14) + 6
+
         toggle_btn := Button{
             x = x + content_split/2 - toggle_width/2 - 10,
             y = progress_y + 30,
             w = toggle_width + 30,
             h = 35,
             text = toggle_text,
-            color = UI_SECONDARY_COLOR,
-            hover_color = UI_HOVER_COLOR,
-            text_color = UI_TEXT_SECONDARY,
+            color = set_alpha(UI_SECONDARY_COLOR, 0.4),
+            hover_color = set_alpha(UI_HOVER_COLOR, 0.4),
+            text_color = set_alpha(UI_TEXT_SECONDARY, 0.8),
         }
 
         if draw_button(toggle_btn) {
