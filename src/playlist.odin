@@ -7,21 +7,18 @@ import "core:fmt"
 draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue := false) {
     hover := is_hovering(x, y, w, h)
     bg_color := TRACK_GRADIENT_BRIGHT
-    bg_right := TRACK_GRADIENT_DARK
 
     if player.current_track.name == track.name {
-        bg_color = UI_ACCENT_COLOR
-        bg_right = brighten(TRACK_GRADIENT_DARK, 10)
-    } else if hover {
-        bg_color = brighten(bg_color, 8)
-        bg_right = brighten(TRACK_GRADIENT_DARK, 8)
+        bg_color = UI_SECONDARY_COLOR
     }
+
+    hover_color := brighten(bg_color, 8)
 
     search_btn := Button{
         x = x, y = y, w = w, h = h,
         text = "",
         color = bg_color,
-        hover_color = bg_color,
+        hover_color = hover_color,
         text_color = UI_TEXT_COLOR,
         gradient = -10,
     }
