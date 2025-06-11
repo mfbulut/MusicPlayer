@@ -58,7 +58,6 @@ find_playlist_by_name :: proc(name: string) -> Playlist {
             return playlist
         }
     }
-    fmt.println("Can't find playlist: ", name)
     return Playlist{}
 }
 
@@ -180,10 +179,21 @@ parse_lrc_time :: proc(time_str: string) -> (f32, bool) {
     return total_seconds, true
 }
 
+get_lrc_path :: proc(music_path: string) -> string {
+    extensions := []string{".mp3", ".wav", ".flac", ".opus", ".ogg"}
+    for ext in extensions {
+        if strings.ends_with(music_path, ext) {
+            new, _ := strings.replace(music_path, ext, ".lrc", 1, context.temp_allocator)
+            return new
+        }
+    }
+    return ""
+}
+
 load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
     lyrics := make([dynamic]Lyrics)
 
-    lrc_path, _ := strings.replace(music_path, ".mp3", ".lrc", 1, context.temp_allocator)
+    lrc_path := get_lrc_path(music_path)
 
     lrc_data, read_ok := os.read_entire_file_from_filename(lrc_path, context.temp_allocator)
     if !read_ok {

@@ -36,7 +36,6 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
     }
 }
 
-// Handle progress bar dragging and clicking
 handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
     mouse_x, mouse_y := fx.get_mouse()
 
@@ -93,11 +92,14 @@ draw_player_controls :: proc() {
         }
     }
 
-    max_size : f32 = 300
-    track_title := truncate_text(player.current_track.name, max_size, 24)
+    selected_title := player.current_track.audio_clip.tags.title if player.current_track.audio_clip.has_tags else player.current_track.name
+    selected_album := player.current_track.audio_clip.tags.album if player.current_track.audio_clip.has_tags else player.current_track.playlist
+
+    max_size : f32 = 320
+    track_title := truncate_text(selected_title, max_size, 24)
     title_end := startX + fx.measure_text(track_title, 24)
 
-    track_playlist := truncate_text(player.current_track.playlist, max_size, 16)
+    track_playlist := truncate_text(selected_album, max_size, 16)
     title_end = max(title_end, startX + fx.measure_text(track_playlist, 16))
     controls_x := max(title_end + 70, f32(window_w) / 2 - 80)
 
@@ -108,9 +110,10 @@ draw_player_controls :: proc() {
 
     controls_y := player_y + 20
 
-    track_title = truncate_text(player.current_track.name, max_size, 24)
+    track_title = truncate_text(selected_title, max_size, 24)
     fx.draw_text(track_title, startX, player_y + 15, 24, UI_TEXT_COLOR)
-    track_playlist = truncate_text(player.current_track.playlist, max_size, 16)
+
+    track_playlist = truncate_text(selected_album, max_size, 16)
     fx.draw_text(track_playlist, startX, player_y + 45, 16, UI_TEXT_SECONDARY)
 
     prev_btn := IconButton{

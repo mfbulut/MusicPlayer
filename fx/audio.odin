@@ -7,6 +7,19 @@ import "core:os"
 import "core:strings"
 import fp "core:path/filepath"
 
+import "core:unicode/utf8"
+
+ID3_Tags :: struct {
+    title:       string,
+    artist:      string,
+    album:       string,
+    year:        string,
+    genre:       string,
+    track:       string,
+    comment:     string,
+    album_artist: string,
+}
+
 Audio :: struct {
     duration: f32,
     sound: ^miniaudio.sound,
@@ -15,6 +28,10 @@ Audio :: struct {
     cover: Texture,
     loaded: bool,
     has_cover: bool,
+
+
+    tags: ID3_Tags,
+    has_tags: bool,
 
     total_frames: u64,
     sample_rate: u32,
@@ -131,8 +148,13 @@ load_audio :: proc(filepath: string) -> Audio {
     clip.loaded = true
 
     if extension == ".mp3" {
-        cover, ok := load_album_art_mp3(file_data)
+        tags, tags_ok := load_id3_tags(file_data)
+        if tags_ok {
+            clip.tags = tags
+            clip.has_tags = true
+        }
 
+        cover, ok := load_album_art_mp3(file_data)
         if ok {
             clip.cover = cover
             clip.has_cover = true
@@ -150,6 +172,8 @@ load_audio :: proc(filepath: string) -> Audio {
         stem := fp.stem(filepath);
         dir  := fp.dir(filepath);
         path := strings.join({dir, "/", stem, ".png"}, "");
+        
+        // TODO: add other formats
 
         cover, ok := load_texture(path)
         if ok {
@@ -171,6 +195,19 @@ unload_audio :: proc(clip: ^Audio) {
         clip.has_cover = false
     }
 
+
+    if clip.has_tags {
+        delete(clip.tags.title)
+        delete(clip.tags.artist)
+        delete(clip.tags.album)
+        delete(clip.tags.year)
+        delete(clip.tags.genre)
+        delete(clip.tags.track)
+        delete(clip.tags.comment)
+        delete(clip.tags.album_artist)
+        clip.has_tags = false
+    }
+
     if clip.sound != nil {
         miniaudio.sound_uninit(clip.sound)
         free(clip.sound)
@@ -189,6 +226,14 @@ unload_audio :: proc(clip: ^Audio) {
     }
 
     clip.loaded = false
+}
+
+
+get_tags :: proc(clip: ^Audio) -> (ID3_Tags, bool) {
+    if !clip.loaded || !clip.has_tags {
+        return {}, false
+    }
+    return clip.tags, true
 }
 
 play_audio :: proc(clip: ^Audio) -> bool {
@@ -247,9 +292,7 @@ set_time :: proc(clip: ^Audio, time_seconds: f32) -> bool {
         return false
     }
 
-
     frame_position := u64(time_seconds * f32(clip.sample_rate))
-
 
     if frame_position > clip.total_frames {
         frame_position = clip.total_frames
@@ -271,7 +314,6 @@ get_time :: proc(clip: ^Audio) -> f32 {
         return 0.0
     }
 
-
     if cursor > clip.total_frames {
         cursor = clip.total_frames
     }
@@ -283,7 +325,6 @@ get_duration :: proc(clip: ^Audio) -> f32 {
     if !clip.loaded {
         return 0.0
     }
-
 
     return clip.duration
 }
@@ -317,6 +358,155 @@ ID3_Frame_Header :: struct {
     id: [4]u8,
     size: int,
     flags: [2]u8,
+}
+
+
+
+bytes_to_string :: proc(data: []u8) -> (string, bool) {
+    if len(data) == 0 {
+        return "", false
+    }
+
+
+    start_pos := 0
+    if data[0] == 0x00 || data[0] == 0x01 || data[0] == 0x02 || data[0] == 0x03 {
+        start_pos = 1
+    }
+
+    end_pos := len(data)
+    for i in start_pos..<len(data) {
+        if data[i] == 0 {
+            end_pos = i
+            break
+        }
+    }
+
+    if end_pos <= start_pos {
+        return "", false
+    }
+
+    text_data := data[start_pos:end_pos]
+    text_str := string(text_data)
+
+    if !utf8.valid_string(text_str) {
+        return "", false
+    }
+
+    return strings.clone(text_str), true
+}
+
+
+load_id3_tags :: proc(buffer: []u8) -> (tags: ID3_Tags, success: bool) {
+    if !strings.has_prefix(string(buffer[:3]), "ID3") {
+        return
+    }
+
+    version := buffer[3]
+    size := (int(buffer[6]) & 0x7F) << 21 |
+            (int(buffer[7]) & 0x7F) << 14 |
+            (int(buffer[8]) & 0x7F) << 7  |
+            (int(buffer[9]) & 0x7F)
+
+    pos := 10
+
+    if buffer[5] & 0x40 != 0 {
+        if pos + 4 > len(buffer) {
+            return
+        }
+        extended_size := int(buffer[pos]) << 24 |
+                        int(buffer[pos+1]) << 16 |
+                        int(buffer[pos+2]) << 8 |
+                        int(buffer[pos+3])
+        pos += 4 + extended_size
+    }
+
+    for pos < size && pos + 10 < len(buffer) {
+        frame: ID3_Frame_Header
+
+        frame.id[0] = buffer[pos+0]
+        frame.id[1] = buffer[pos+1]
+        frame.id[2] = buffer[pos+2]
+        frame.id[3] = buffer[pos+3]
+        frame_id := string(frame.id[:])
+
+
+        if frame.id[0] == 0 && frame.id[1] == 0 && frame.id[2] == 0 && frame.id[3] == 0 {
+            break
+        }
+
+        frame.size = 0
+        if version >= 4 {
+
+            frame.size = (int(buffer[pos+4]) & 0x7F) << 21 |
+                        (int(buffer[pos+5]) & 0x7F) << 14 |
+                        (int(buffer[pos+6]) & 0x7F) << 7  |
+                        (int(buffer[pos+7]) & 0x7F)
+        } else {
+
+            frame.size = int(buffer[pos+4]) << 24 |
+                        int(buffer[pos+5]) << 16 |
+                        int(buffer[pos+6]) << 8  |
+                        int(buffer[pos+7])
+        }
+
+        frame.flags[0] = buffer[pos+8]
+        frame.flags[1] = buffer[pos+9]
+
+        if pos + 10 + frame.size > len(buffer) {
+            break
+        }
+
+        frame_data := buffer[pos+10:pos+10+frame.size]
+
+
+        switch frame_id {
+        case "TIT2":
+            tags.title = bytes_to_string(frame_data) or_return
+        case "TPE1":
+            tags.artist = bytes_to_string(frame_data) or_return
+        case "TALB":
+            tags.album = bytes_to_string(frame_data) or_return
+        case "TDRC", "TYER":
+            tags.year = bytes_to_string(frame_data) or_return
+        case "TCON":
+            genre_str := bytes_to_string(frame_data) or_return
+
+            if strings.has_prefix(genre_str, "(") && strings.has_suffix(genre_str, ")") {
+
+                tags.genre = genre_str
+            } else {
+                tags.genre = genre_str
+            }
+        case "TRCK":
+            tags.track = bytes_to_string(frame_data) or_return
+        case "COMM":
+
+            if len(frame_data) > 4 {
+
+                comment_start := 4
+
+                for i in comment_start..<len(frame_data) {
+                    if frame_data[i] == 0 {
+                        comment_start = i + 1
+                        break
+                    }
+                }
+                if comment_start < len(frame_data) {
+                    tags.comment = bytes_to_string(frame_data[comment_start:]) or_return
+                }
+            }
+        case "TPE2":
+            tags.album_artist = bytes_to_string(frame_data) or_return
+        }
+
+        pos += 10 + frame.size
+    }
+
+    has_any_tags := tags.title != "" || tags.artist != "" || tags.album != "" ||
+                   tags.year != "" || tags.genre != "" || tags.track != "" ||
+                   tags.comment != "" || tags.album_artist != ""
+
+    return tags, has_any_tags
 }
 
 load_album_art_mp3 :: proc(buffer: []u8) -> (Texture, bool) {
@@ -441,7 +631,6 @@ load_album_art_from_flac :: proc(buffer: []u8) -> (Texture, bool) {
             cursor += 4
 
             cursor += desc_length
-
 
             cursor += 4 * 4
 

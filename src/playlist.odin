@@ -17,15 +17,22 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
         bg_right = brighten(TRACK_GRADIENT_DARK, 8)
     }
 
-    // fx.draw_gradient_rect_rounded_horizontal(x, y, w, h, 12, bg_color, bg_right)
-    fx.draw_gradient_rect_rounded_vertical(x, y, w, h, 12, bg_color, bg_right)
+    search_btn := Button{
+        x = x, y = y, w = w, h = h,
+        text = "",
+        color = bg_color,
+        hover_color = bg_color,
+        text_color = UI_TEXT_COLOR,
+        gradient = -10,
+    }
+
+    draw_button(search_btn)
 
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
-
     track_title := truncate_text(track.name, w - 70, 20)
-    fx.draw_text(track_title, x + 20, y + 5, 20, text_color)
-    fx.draw_text(track.playlist, x + 20, y + 35, 16, secondary_color)
+    fx.draw_text(track_title, x + 20, y + 7, 20, text_color)
+    fx.draw_text(track.playlist, x + 20, y + 33, 16, secondary_color)
 
     is_liked := is_song_liked(track.name, track.playlist)
 

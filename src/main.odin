@@ -96,7 +96,7 @@ draw_main_content :: proc(sidebar_width: f32) {
 
     switch ui_state.current_view {
     case .SEARCH:
-        draw_search_view(content_x, 0, content_w, content_h)
+        draw_search_view(content_x, 10, content_w, content_h - 10)
     case .PLAYLIST_DETAIL:
         draw_playlist_view(content_x, 0, content_w, content_h, find_playlist_by_name(ui_state.selected_playlist))
     case .NOW_PLAYING:
@@ -129,16 +129,16 @@ switch_theme :: proc() {
         BACKGROUND_GRADIENT_DARK   = fx.Color{24, 15, 39, 255}
     } else if ui_state.theme == 1 {
         UI_PRIMARY_COLOR      = fx.Color{10, 42, 51, 255}
-        UI_SECONDARY_COLOR    = fx.Color{25, 115, 127, 255}
+        UI_SECONDARY_COLOR    = fx.Color{25, 110, 123, 255}
 
-        UI_ACCENT_COLOR       = fx.Color{25, 115, 127, 255}
+        UI_ACCENT_COLOR       = fx.Color{25, 130, 145, 255}
         UI_HOVER_COLOR        = fx.Color{18, 90, 99, 255}
 
         UI_TEXT_COLOR         = fx.Color{220, 224, 230, 255}
         UI_TEXT_SECONDARY = fx.Color{170, 185, 190, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{15, 46, 55, 255}
-        CONTROLS_GRADIENT_DARK     = fx.Color{10, 32, 40, 255}
+        CONTROLS_GRADIENT_DARK     = fx.Color{10, 35, 42, 255}
 
         TRACK_GRADIENT_BRIGHT      = fx.Color{25, 85, 97, 255}
         TRACK_GRADIENT_DARK        = fx.Color{18, 55, 64, 255}
@@ -301,7 +301,7 @@ exit_icon_qoi     :: #load("assets/exit.qoi")
 maximize_icon_qoi :: #load("assets/maximize.qoi")
 minimize_icon_qoi :: #load("assets/minimize.qoi")
 
-gaussian_shader_hlsl :: #load("shaders/gaussian_blur.hlsl")
+blur_shader_hlsl :: #load("shaders/gaussian_blur.hlsl")
 
 previous_icon : fx.Texture
 forward_icon  : fx.Texture
@@ -316,7 +316,7 @@ queue_icon    : fx.Texture
 exit_icon     : fx.Texture
 maximize_icon : fx.Texture
 minimize_icon : fx.Texture
-gaussian_shader : fx.Shader
+blur_shader : fx.Shader
 background : fx.RenderTexture
 
 playlists : [dynamic]Playlist
@@ -341,7 +341,7 @@ main :: proc() {
     maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
     minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
     queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
-    gaussian_shader = fx.load_shader(gaussian_shader_hlsl)
+    blur_shader = fx.load_shader(blur_shader_hlsl)
     background    = fx.create_render_texture(1024, 1024)
 
     load_state()

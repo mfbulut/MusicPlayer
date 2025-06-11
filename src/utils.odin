@@ -3,13 +3,17 @@ package main
 import fx "../fx"
 
 import "core:fmt"
+import "core:math"
 
 Button :: struct {
     x, y, w, h: f32,
     text: string,
     color: fx.Color,
+    color_dark: fx.Color,
     hover_color: fx.Color,
     text_color: fx.Color,
+    expand : bool,
+    gradient : int
 }
 
 truncated_text_buffer: [256]u8
@@ -38,21 +42,56 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
     return string(truncated_text_buffer[:target_len])
 }
 
+ANIM_ARRAY_SIZE :: 1024 * 16
+g_anim_values: [ANIM_ARRAY_SIZE]f32
+
+hash_button :: proc(x, y, w, h: u32) -> u8 {
+    hash := u32(2166136261)
+    hash = (hash ~ x) * 11621
+    hash = (hash ~ y) * 14537
+    hash = (hash ~ w) * 7643
+    hash = (hash ~ h) * 6661
+    return u8(hash % ANIM_ARRAY_SIZE)
+}
+
 draw_button :: proc(btn: Button, text_offset := 0) -> bool {
     mouse_x, mouse_y := fx.get_mouse()
     is_hovered := is_hovering(btn.x, btn.y, btn.w, btn.h)
-
     is_valid := is_valid(f32(mouse_x), f32(mouse_y))
+    is_clicked := is_hovered && fx.mouse_pressed(.LEFT) && is_valid
 
-    is_clickled := is_hovered && fx.mouse_pressed(.LEFT) && is_valid
+    hash_idx := hash_button(u32(btn.x), u32(btn.y), u32(btn.w), u32(btn.h))
 
-    color := btn.color
-    if is_hovered && is_valid {
-        color = btn.hover_color
-        fx.set_cursor(.CLICK)
+    target_hover := f32(1.0) if (is_hovered && is_valid) else f32(0.0)
+    current_hover := &g_anim_values[hash_idx]
+
+    animation_speed: f32 : 8.0
+    dt := fx.delta_time()
+    current_hover^ = lerp(current_hover^, target_hover, 1.0 - math.pow(0.01, dt * animation_speed))
+
+    color := lerp_color(btn.color, btn.hover_color, current_hover^)
+
+    if btn.expand {
+        scale_factor := 1.0 + (current_hover^ * 0.01)
+        scaled_x := btn.x - (btn.w * (scale_factor - 1.0) * 0.5)
+        scaled_y := btn.y - (btn.h * (scale_factor - 1.0) * 0.5)
+        scaled_w := btn.w * scale_factor
+        scaled_h := btn.h * scale_factor
+
+        fx.draw_gradient_rect_rounded_vertical(
+            scaled_x, scaled_y, scaled_w, scaled_h,
+            8, color, darken(color, 20 + btn.gradient)
+        )
+    } else {
+        fx.draw_gradient_rect_rounded_vertical(
+            btn.x, btn.y, btn.w, btn.h,
+            8, color, darken(color, 20 + btn.gradient)
+        )
     }
 
-    fx.draw_gradient_rect_rounded_vertical(btn.x, btn.y, btn.w, btn.h, 8, color, darken(color, 20))
+    if is_hovered && is_valid {
+        fx.set_cursor(.CLICK)
+    }
 
     text := truncate_text(btn.text, btn.w - 15, 16)
     text_x := btn.x
@@ -65,9 +104,9 @@ draw_button :: proc(btn: Button, text_offset := 0) -> bool {
         text_x += f32(text_offset)
         fx.draw_text(text, text_x, text_y, 16, btn.text_color)
     }
-    return is_clickled
-}
 
+    return is_clicked
+}
 
 draw_icon_button_rect :: proc(x, y, w, h : f32, icon: fx.Texture, color: fx.Color, hover_color: fx.Color, is_exit:= false, padding : f32 = 6) -> bool {
     is_hovered := is_hovering(x, y, w, h)
@@ -97,21 +136,56 @@ IconButton :: struct {
     icon: fx.Texture,
     color: fx.Color,
     hover_color: fx.Color,
+    expand: bool
 }
 
 draw_icon_button :: proc(btn: IconButton) -> bool {
     is_hovered := is_hovering(btn.x, btn.y, btn.size, btn.size)
 
-    color := btn.color
+    hash_idx := hash_button(u32(btn.x), u32(btn.y), u32(btn.size), u32(btn.size))
+
+    target_hover := f32(1.0) if is_hovered else f32(0.0)
+    current_hover := &g_anim_values[hash_idx]
+
+    animation_speed: f32 : 8.0
+    dt := fx.delta_time()
+    current_hover^ = lerp(current_hover^, target_hover, 1.0 - math.pow(0.01, dt * animation_speed))
+
+    color := lerp_color(btn.color, btn.hover_color, current_hover^)
+
+    scale_factor : f32 = 1.0
+
+    if btn.expand {
+        scale_factor = 1.0 + (current_hover^ * 0.05)
+    }
+
+    scaled_size := btn.size * scale_factor
+    offset := (scaled_size - btn.size) * 0.5
+    scaled_x := btn.x - offset
+    scaled_y := btn.y - offset
+
     if is_hovered {
-        color = btn.hover_color
         fx.set_cursor(.CLICK)
     }
 
-    fx.draw_gradient_circle_radial(btn.x + btn.size/2, btn.y + btn.size/2, btn.size/2, brighten(color, 10), color)
+    fx.draw_gradient_circle_radial(
+        scaled_x + scaled_size/2,
+        scaled_y + scaled_size/2,
+        scaled_size/2,
+        brighten(color, 10),
+        color
+    )
 
     padding :: 10
-    fx.draw_texture(btn.icon, btn.x + padding, btn.y + padding, btn.size - padding * 2, btn.size - padding * 2, UI_TEXT_COLOR)
+    icon_padding := padding * scale_factor
+    fx.draw_texture(
+        btn.icon,
+        scaled_x + icon_padding,
+        scaled_y + icon_padding,
+        scaled_size - icon_padding * 2,
+        scaled_size - icon_padding * 2,
+        UI_TEXT_COLOR
+    )
 
     return is_hovered && fx.mouse_pressed(.LEFT)
 }
@@ -281,6 +355,19 @@ darken :: proc(color : fx.Color, amount : int = 20) -> fx.Color {
 
 brighten :: proc(color : fx.Color, amount : int = 20) -> fx.Color {
     return fx.Color{u8(min(int(color.r) + amount, 255)), u8(min(int(color.g) + amount, 255)), u8(min(int(color.b) + amount, 255)), color.a}
+}
+
+lerp_color :: proc(a, b: fx.Color, t: f32) -> fx.Color {
+    return fx.Color{
+        r = u8(f32(a.r) + (f32(b.r) - f32(a.r)) * t),
+        g = u8(f32(a.g) + (f32(b.g) - f32(a.g)) * t),
+        b = u8(f32(a.b) + (f32(b.b) - f32(a.b)) * t),
+        a = u8(f32(a.a) + (f32(b.a) - f32(a.a)) * t),
+    }
+}
+
+lerp :: proc(a, b, t: f32) -> f32 {
+    return a + (b - a) * t
 }
 
 set_alpha :: proc(color : fx.Color, val : f32) -> fx.Color {

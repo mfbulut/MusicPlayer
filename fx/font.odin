@@ -9,7 +9,8 @@ import D3D "vendor:directx/d3d_compiler"
 
 font_hlsl := #load("font.hlsl")
 
-// .\msdf-atlas-gen.exe -font .\BrittiSansTrial-Semibold-BF6757bfd443a8a.otf -format png -imageout font.png -csv font.csv -size 128 -outerempadding 0.1 -pxrange 8 -yorigin top
+// msdf-atlas-gen.exe -font .\Inter.ttf -format png -imageout font.png -csv font.csv -size 128 -outerempadding 0.1 -pxrange 8 -yorigin top -charset .\ascii-tr.txt
+
 font_csv : string = #load("font.csv")
 font_png : []u8   = #load("font.png")
 font_texture : Texture

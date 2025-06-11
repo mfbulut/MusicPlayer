@@ -427,7 +427,7 @@ is_in_title_bar :: proc(x, y: int) -> bool {
 	title_bar_left := side_bar_w
 	title_bar_right := ctx.window.w - 150
 
-	title_bar_height := 40
+	title_bar_height := 30
 	return y < title_bar_height && x >= title_bar_left && x < title_bar_right
 }
 
@@ -674,6 +674,10 @@ set_char_callback :: proc(callback : proc(char : u8)) {
 
 window_size :: proc() -> (int, int) {
 	return ctx.window.w, ctx.window.h
+}
+
+delta_time :: proc() -> f32 {
+	return ctx.delta_time
 }
 
 maximize_or_restore_window :: proc() {

@@ -28,7 +28,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         if update_background {
             fx.begin_render_to_texture(&background, {0, 128, 0, 0})
             fx.set_scissor(0, 0, 1024, 1024)
-            fx.use_shader(gaussian_shader)
+            fx.use_shader(blur_shader)
             fx.draw_texture_cropped(cover, 0, 0, 1024, 1024, fx.WHITE)
 
             fx.end_render_to_texture()
@@ -54,14 +54,19 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     } else {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
+    
+
+    selected_title := track.audio_clip.tags.title if track.audio_clip.has_tags else track.name
+    selected_album := track.audio_clip.tags.album if track.audio_clip.has_tags else track.playlist
 
     info_y := art_y + art_size + 30
-    track_name := truncate_text(track.name, content_split - 50, 24)
+    track_name := truncate_text(selected_title, content_split - 50, 24)
     track_name_width := fx.measure_text(track_name, 24)
     fx.draw_text(track_name, x + content_split/2 - track_name_width/2, info_y, 24, UI_TEXT_COLOR)
 
-    playlist_name_width := fx.measure_text(track.playlist, 16)
-    fx.draw_text(track.playlist, x + content_split/2 - playlist_name_width/2, info_y + 30, 16, UI_TEXT_SECONDARY)
+    playlist_name := truncate_text(selected_album, content_split - 50, 16)
+    playlist_name_width := fx.measure_text(playlist_name, 16)
+    fx.draw_text(playlist_name, x + content_split/2 - playlist_name_width/2, info_y + 30, 16, UI_TEXT_SECONDARY)
 
     if is_hovering(x + content_split/2 - playlist_name_width/2, info_y + 30, playlist_name_width, 18) {
         fx.set_cursor(.CLICK)
@@ -178,7 +183,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
                 }
 
                 if bg_color.a > 0 {
-                    fx.draw_rect_rounded(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color)
+                    fx.draw_gradient_rect_rounded_vertical(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color, darken(bg_color, 10))
                 }
 
                 fx.draw_text_wrapped(lyric.text, lyrics_x + 20, line_y, lyrics_w - 55, 16, text_color)

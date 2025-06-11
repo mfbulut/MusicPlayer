@@ -13,6 +13,7 @@ draw_sidebar :: proc(x_offset: f32) {
         color = ui_state.current_view == .SEARCH ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .SEARCH ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
+        expand = true,
     }
 
     if draw_button(search_btn, 40) {
@@ -29,6 +30,7 @@ draw_sidebar :: proc(x_offset: f32) {
         color = ui_state.current_view == .NOW_PLAYING ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .NOW_PLAYING ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
+        expand = true,
     }
 
     if draw_button(now_playing_btn, 40) {
@@ -45,6 +47,7 @@ draw_sidebar :: proc(x_offset: f32) {
         color = ui_state.current_view == .LIKED ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .LIKED ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
+        expand = true,
     }
 
     if draw_button(liked_btn, 40) {
@@ -62,6 +65,7 @@ draw_sidebar :: proc(x_offset: f32) {
         color = ui_state.current_view == .QUEUE ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
         hover_color = ui_state.current_view == .QUEUE ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
         text_color = UI_TEXT_COLOR,
+        expand = true,
     }
 
     if draw_button(queue_btn, 40) {
@@ -102,6 +106,7 @@ draw_sidebar :: proc(x_offset: f32) {
                 color = ui_state.selected_playlist == playlist.name ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
                 hover_color = ui_state.selected_playlist == playlist.name ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
                 text_color = UI_TEXT_COLOR,
+                expand = true,
             }
 
             if draw_button(playlist_btn, 15) {
