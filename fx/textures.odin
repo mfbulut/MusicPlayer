@@ -1,13 +1,13 @@
 package fx
 
 import D3D11 "vendor:directx/d3d11"
+
 import "core:os"
 import "core:fmt"
 import "core:image"
 import "core:image/png"
 import "core:image/qoi"
 import "core:math"
-
 
 import stb "vendor:stb/image"
 
@@ -20,6 +20,7 @@ Texture :: struct {
 
 load_texture :: proc(filepath: string, generate_mipmaps := true) -> (Texture, bool) {
     image_data, ok := os.read_entire_file(filepath)
+
     if ok {
         texture := load_texture_from_bytes(image_data, generate_mipmaps)
         delete(image_data)
@@ -85,6 +86,7 @@ load_texture_from_image :: proc(img: ^image.Image, generate_mipmaps := true) -> 
 
     return tex
 }
+
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true) -> Texture {
     img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
 

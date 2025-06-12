@@ -22,7 +22,7 @@ ResizeState :: enum {
 }
 
 Context :: struct {
-	hwnd: 	     win.HWND,
+	hwnd: win.HWND,
 	is_running : bool,
 	is_minimized: bool,
 	frame_proc : proc(dt : f32),
@@ -41,7 +41,6 @@ Context :: struct {
 	mouse_scroll : int,
 	last_click_time: time.Time,
 	last_click_pos: struct { x, y: int },
-
 
 	resize_state: ResizeState,
 	resize_mouse_offset: struct { x, y: i32 },
@@ -495,10 +494,10 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
                abs(ctx.mouse_pos.x - ctx.last_click_pos.x) <= 5 &&
                abs(ctx.mouse_pos.y - ctx.last_click_pos.y) <= 5 {
 
-                maximize_or_restore_window()
+               maximize_or_restore_window()
 
-                ctx.last_click_time = {}
-                ctx.last_click_pos = {}
+               ctx.last_click_time = {}
+               ctx.last_click_pos = {}
             } else {
             	if !ctx.is_resizing {
 	                win.SendMessageW(hwnd, win.WM_NCLBUTTONDOWN, win.HTCAPTION, 0)
@@ -546,6 +545,9 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 			ctx.is_minimized = true
 		} else if wparam == win.SIZE_RESTORED || wparam == win.SIZE_MAXIMIZED {
 			ctx.is_minimized = false
+			for &state in ctx.mouse_state {
+				state &= ~KEY_STATE_HELD
+			}
 
 			new_width := cast(int) win.LOWORD(lparam)
 			new_height := cast(int) win.HIWORD(lparam)
@@ -554,7 +556,7 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 				ctx.window.w = new_width
 				ctx.window.h = new_height
 
-				if ctx.is_running && swapchain != nil {
+				if swapchain != nil {
 					resize_swapchain(new_width, new_height)
 				}
 			}
@@ -593,6 +595,7 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		if ctx.text_callback != nil && char >= 32 && char != 127 {
 			ctx.text_callback(char)
 		}
+		return 0
 
 	case win.WM_DROPFILES:
 		hdrop := win.HDROP(wparam)
@@ -628,12 +631,11 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 
 		ctx.is_hovering_files = false
 		return 0
-
 	case:
-		return win.DefWindowProcW(hwnd, message, wparam, lparam)
+
 	}
 
-    return 0
+	return win.DefWindowProcW(hwnd, message, wparam, lparam)
 }
 
 KEY_STATE_HELD:     u8: 0x0001

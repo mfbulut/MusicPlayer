@@ -201,7 +201,7 @@ draw_progress_bar :: proc(bar: ProgressBar){
     mouse_x, _ := fx.get_mouse()
     progress_width := bar.w * bar.progress
 
-    if fx.mouse_held(.LEFT) && is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
+    if fx.mouse_pressed(.LEFT) && is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
         progress_width = (f32(mouse_x) - bar.x)
         seek_to_position(progress_width / bar.w * player.duration)
     }
