@@ -223,9 +223,9 @@ draw_progress_bar :: proc(bar: ProgressBar){
         popup_x := f32(mouse_x) - text_w / 2
         popup_y := bar.y - 25
 
-        fx.draw_rect_rounded(popup_x - 5, popup_y - 2, text_w + 10, 20, 6, fx.Color{20, 20, 20, 220})
+        fx.draw_rect_rounded(popup_x - 5, popup_y, text_w + 10, 20, 6, darken(UI_PRIMARY_COLOR, 10))
 
-        fx.draw_text(time_text, popup_x, popup_y, 14, fx.Color{255, 255, 255, 255})
+        fx.draw_text(time_text, popup_x, popup_y + 2, 14, fx.Color{255, 255, 255, 255})
     }
 }
 
@@ -237,9 +237,9 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
     new_value := value
 
     if is_hover {
-        fx.draw_rect_rounded(x, y, w, h, h/2, brighten(bg_color))
-        fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, brighten(fg_color))
-        fx.draw_circle(handle_x + 2, y + h / 2, 4, brighten(fg_color))
+        fx.draw_rect_rounded(x, y, w, h, h/2, brighten(bg_color, 10))
+        fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, brighten(fg_color, 10))
+        fx.draw_circle(handle_x + 2, y + h / 2, 4, brighten(fg_color, 10))
 
         if fx.mouse_held(.LEFT) {
             new_value = clamp((f32(mouse_x) - x) / w, 0, 1)
@@ -249,8 +249,8 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
             popup_x := f32(mouse_x) - text_w / 2
             popup_y := y - 27
 
-            fx.draw_rect_rounded(popup_x - 5, popup_y - 2, text_w + 10, 20, 6, fx.Color{20, 20, 20, 220})
-            fx.draw_text(vol_text, popup_x, popup_y, 14, fx.Color{255, 255, 255, 255})
+            fx.draw_rect_rounded(popup_x - 5, popup_y - 1, text_w + 10, 20, 6, darken(UI_PRIMARY_COLOR, 10))
+            fx.draw_text(vol_text, popup_x, popup_y + 2, 14, fx.Color{255, 255, 255, 255})
         }
     } else {
         fx.draw_rect_rounded(x, y, w, h, h/2, bg_color)

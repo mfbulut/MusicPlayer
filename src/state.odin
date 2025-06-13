@@ -56,6 +56,12 @@ load_state :: proc(){
                     ui_state.theme = theme
                 }
             }
+
+            if shuffle_str, shuffle_ok := settings_data["shuffle"]; shuffle_ok {
+                if shuffle, parse_ok := strconv.parse_bool(shuffle_str); parse_ok {
+                    player.shuffle = shuffle
+                }
+            }
         }
 
         for section_name, section_data in ini_map {
@@ -89,6 +95,7 @@ save_state :: proc() {
     ini.write_section(stream, "settings")
     ini.write_pair(stream, "path", music_dir)
     ini.write_pair(stream, "volume", fmt.aprintf("%.6f", player.volume))
+    ini.write_pair(stream, "shuffle", "true" if player.shuffle else "false")
     ini.write_pair(stream, "theme", fmt.aprintf("%d", ui_state.theme))
 
     io.write_string(stream, "\n")

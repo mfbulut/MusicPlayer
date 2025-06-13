@@ -198,10 +198,10 @@ draw_player_controls :: proc() {
 
         time_text := strings.concatenate({current_time, " / ", total_time}, context.temp_allocator)
         time_width := fx.measure_text(time_text, 16)
-        time_x: f32 = controls_x + 205
-        time_y := player_y + 30
+        time_x: f32 = volume_x - 132
+        time_y := player_y + 32
 
-        if time_x + time_width + 30 < volume_x {
+        if controls_x + 200 < time_x {
             handle_time_drag(time_x, time_y, time_width, 20)
 
             text_color := (ui_state.is_dragging_time || ui_state.is_dragging_progress) ? UI_TEXT_COLOR : UI_TEXT_SECONDARY

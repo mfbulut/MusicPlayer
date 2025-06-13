@@ -153,7 +153,7 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{68, 147, 105, 255}
 
         UI_TEXT_COLOR         = fx.Color{235, 237, 240, 255}
-        UI_TEXT_SECONDARY = fx.Color{170, 185, 180, 255}
+        UI_TEXT_SECONDARY     = fx.Color{170, 185, 180, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{27, 71, 44, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{15, 39, 24, 255}
@@ -316,8 +316,8 @@ queue_icon    : fx.Texture
 exit_icon     : fx.Texture
 maximize_icon : fx.Texture
 minimize_icon : fx.Texture
-blur_shader : fx.Shader
-background : fx.RenderTexture
+blur_shader   : fx.Shader
+background    : fx.RenderTexture
 
 playlists : [dynamic]Playlist
 
@@ -341,7 +341,7 @@ main :: proc() {
     maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
     minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
     queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
-    blur_shader = fx.load_shader(blur_shader_hlsl)
+    blur_shader   = fx.load_shader(blur_shader_hlsl)
     background    = fx.create_render_texture(1024, 1024)
 
     load_state()
@@ -354,10 +354,6 @@ main :: proc() {
     })
 
     music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
-
-    if len(os.args) > 1 {
-        music_dir = os.args[1]
-    }
 
     arena_mem := make([]byte, 8 * mem.Megabyte)
     arena: mem.Arena
