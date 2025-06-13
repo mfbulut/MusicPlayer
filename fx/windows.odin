@@ -326,6 +326,7 @@ run_manual :: proc(frame : proc()) {
 	for &state in ctx.key_state {
 		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
 	}
+
 	for &state in ctx.mouse_state {
 		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
 	}
@@ -545,9 +546,6 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 			ctx.is_minimized = true
 		} else if wparam == win.SIZE_RESTORED || wparam == win.SIZE_MAXIMIZED {
 			ctx.is_minimized = false
-			for &state in ctx.mouse_state {
-				state &= ~KEY_STATE_HELD
-			}
 
 			new_width := cast(int) win.LOWORD(lparam)
 			new_height := cast(int) win.HIWORD(lparam)
@@ -707,6 +705,10 @@ close_window :: proc() {
 
 minimize_window :: proc() {
     win.ShowWindow(ctx.hwnd, win.SW_MINIMIZE);
+
+	for &state in ctx.mouse_state {
+		state &= ~KEY_STATE_HELD
+	}
 }
 
 set_cursor :: proc(cursor: Cursor) {
