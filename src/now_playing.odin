@@ -54,7 +54,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     } else {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
-    
+
 
     selected_title := track.audio_clip.tags.title if track.audio_clip.has_tags else track.name
     selected_album := track.audio_clip.tags.album if track.audio_clip.has_tags else track.playlist
@@ -178,15 +178,23 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
                     bg_color = UI_SECONDARY_COLOR
                 } else if is_hovering {
                     text_color = UI_TEXT_COLOR
-                    bg_color = brighten(BACKGROUND_GRADIENT_BRIGHT)
                     fx.set_cursor(.CLICK)
                 }
 
-                if bg_color.a > 0 {
-                    fx.draw_gradient_rect_rounded_vertical(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color, darken(bg_color, 10))
+                track_btn := Button{
+                    x = lyrics_x + 10, y = line_y - 5, w = lyrics_w - 35, h = line_height,
+                    text = "",
+                    color = bg_color,
+                    hover_color = brighten(bg_color),
+                    text_color = UI_TEXT_COLOR,
+                    gradient = -5,
                 }
 
-                fx.draw_text_wrapped(lyric.text, lyrics_x + 20, line_y, lyrics_w - 55, 16, text_color)
+                draw_button(track_btn)
+
+                // fx.draw_gradient_rect_rounded_vertical(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color, darken(bg_color, 10))
+
+                fx.draw_text_wrapped(lyric.text, lyrics_x + 20, line_y + 3, lyrics_w - 55, 16, text_color)
 
                 if fx.mouse_pressed(.LEFT) && is_hovering {
                     seek_to_lyric(i, track.lyrics[:])

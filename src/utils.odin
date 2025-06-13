@@ -45,13 +45,28 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
 ANIM_ARRAY_SIZE :: 1024 * 16
 g_anim_values: [ANIM_ARRAY_SIZE]f32
 
-hash_button :: proc(x, y, w, h: u32) -> u8 {
+hash_button :: proc(x, y, w, h: u32) -> u32 {
     hash := u32(2166136261)
-    hash = (hash ~ x) * 11621
-    hash = (hash ~ y) * 14537
-    hash = (hash ~ w) * 7643
-    hash = (hash ~ h) * 6661
-    return u8(hash % ANIM_ARRAY_SIZE)
+
+    hash = (hash ~ x) * 16777619
+    hash = hash ~ (hash >> 13)
+
+    hash = (hash ~ y) * 16777619
+    hash = hash ~ (hash >> 13)
+
+    hash = (hash ~ w) * 16777619
+    hash = hash ~ (hash >> 13)
+
+    hash = (hash ~ h) * 16777619
+    hash = hash ~ (hash >> 13)
+
+    hash = hash ~ (hash >> 16)
+    hash = hash * 0x85ebca6b
+    hash = hash ~ (hash >> 13)
+    hash = hash * 0xc2b2ae35
+    hash = hash ~ (hash >> 16)
+
+    return hash % ANIM_ARRAY_SIZE
 }
 
 draw_button :: proc(btn: Button, text_offset := 0) -> bool {
