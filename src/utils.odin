@@ -198,10 +198,12 @@ ProgressBar :: struct {
 }
 
 draw_progress_bar :: proc(bar: ProgressBar){
-    mouse_x, _ := fx.get_mouse()
+    mouse_x, mouse_y := fx.get_mouse()
     progress_width := bar.w * bar.progress
 
-    if fx.mouse_pressed(.LEFT) && is_hovering(bar.x - 30, bar.y - 10, bar.w + 60, bar.h + 20) {
+    hovered := is_hovering(bar.x - 10, bar.y - 10, bar.w + 20, bar.h + 25)
+
+    if fx.mouse_pressed(.LEFT) && hovered {
         progress_width = (f32(mouse_x) - bar.x)
         seek_to_position(progress_width / bar.w * player.duration)
     }
@@ -211,30 +213,54 @@ draw_progress_bar :: proc(bar: ProgressBar){
     if bar.progress > 0 {
         fx.draw_rect_rounded(bar.x, bar.y, progress_width, bar.h, bar.h/2, bar.color)
     }
+
+    if hovered {
+        relative_x := clamp(f32(mouse_x) - bar.x, 0, bar.w)
+        hover_time := relative_x / bar.w * player.duration
+        time_text := format_time(hover_time)
+
+        text_w := fx.measure_text(time_text, 14)
+        popup_x := f32(mouse_x) - text_w / 2
+        popup_y := bar.y - 25
+
+        fx.draw_rect_rounded(popup_x - 5, popup_y - 2, text_w + 10, 20, 6, fx.Color{20, 20, 20, 220})
+
+        fx.draw_text(time_text, popup_x, popup_y, 14, fx.Color{255, 255, 255, 255})
+    }
 }
 
 draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -> f32 {
     handle_x := x + (w - h) * value
+    mouse_x, mouse_y := fx.get_mouse()
+    is_hover := is_hovering(x - 10, y - 30, w + 20, h + 60)
 
-    mouse_x, _ := fx.get_mouse()
+    new_value := value
 
-    if is_hovering(x - 10, y - 30, w + 20, h + 60) {
-        fx.draw_rect_rounded(x, y, w, h, h/2,  brighten(bg_color))
+    if is_hover {
+        fx.draw_rect_rounded(x, y, w, h, h/2, brighten(bg_color))
         fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, brighten(fg_color))
         fx.draw_circle(handle_x + 2, y + h / 2, 4, brighten(fg_color))
 
         if fx.mouse_held(.LEFT) {
-            new_value := (f32(mouse_x) - x) / w
-            return clamp(new_value, 0, 1)
+            new_value = clamp((f32(mouse_x) - x) / w, 0, 1)
+
+            vol_text := fmt.tprintf("%%%d", int(new_value * 100))
+            text_w := fx.measure_text(vol_text, 14)
+            popup_x := f32(mouse_x) - text_w / 2
+            popup_y := y - 27
+
+            fx.draw_rect_rounded(popup_x - 5, popup_y - 2, text_w + 10, 20, 6, fx.Color{20, 20, 20, 220})
+            fx.draw_text(vol_text, popup_x, popup_y, 14, fx.Color{255, 255, 255, 255})
         }
     } else {
-        fx.draw_rect_rounded(x, y, w, h, h/2,  bg_color)
+        fx.draw_rect_rounded(x, y, w, h, h/2, bg_color)
         fx.draw_rect_rounded(x, y, handle_x - x + 4, h, h/2, darken(fg_color, 30))
         fx.draw_circle(handle_x + 2, y + h / 2, 4, darken(fg_color, 30))
     }
 
-    return value
+    return new_value
 }
+
 
 format_time :: proc(seconds: f32) -> string {
     mins := int(seconds) / 60
