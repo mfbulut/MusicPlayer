@@ -62,6 +62,13 @@ load_state :: proc(){
                     player.shuffle = shuffle
                 }
             }
+
+            if hide_str, hide_ok := settings_data["hide_alerts"]; hide_ok {
+                if hide, parse_ok := strconv.parse_bool(hide_str); parse_ok {
+                    hide_alerts = hide
+                }
+            }
+
         }
 
         for section_name, section_data in ini_map {
@@ -97,6 +104,7 @@ save_state :: proc() {
     ini.write_pair(stream, "volume", fmt.aprintf("%.6f", player.volume))
     ini.write_pair(stream, "shuffle", "true" if player.shuffle else "false")
     ini.write_pair(stream, "theme", fmt.aprintf("%d", ui_state.theme))
+    ini.write_pair(stream, "hide_alerts", "true" if hide_alerts else "false")
 
     io.write_string(stream, "\n")
 

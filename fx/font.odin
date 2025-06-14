@@ -116,14 +116,14 @@ draw_char :: proc(char: int, x, y, size: f32, color: Color) -> f32 {
     return ch.advance * size
 }
 
-draw_text :: proc(text: string, x, y, size: f32, color: Color) {
+draw_text :: proc(text: string, x, y, size: f32, color: Color, boldness : f32 = 1.0) {
     if(verticies_count > 0) {
         end_render()
     }
 
     use_texture(font_texture)
 
-    update_constant_buffer({size / 128.0 * 8})
+    update_constant_buffer({size / 128.0 * 8 * boldness})
 
 	device_context->PSSetShader(font_shader, nil, 0)
 

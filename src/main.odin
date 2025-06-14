@@ -135,16 +135,16 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{18, 90, 99, 255}
 
         UI_TEXT_COLOR         = fx.Color{220, 224, 230, 255}
-        UI_TEXT_SECONDARY = fx.Color{170, 185, 190, 255}
+        UI_TEXT_SECONDARY     = fx.Color{170, 185, 190, 255}
 
-        CONTROLS_GRADIENT_BRIGHT   = fx.Color{15, 46, 55, 255}
-        CONTROLS_GRADIENT_DARK     = fx.Color{10, 35, 42, 255}
+        CONTROLS_GRADIENT_BRIGHT   = fx.Color{15, 48, 59, 255}
+        CONTROLS_GRADIENT_DARK     = fx.Color{10, 30, 35, 255}
 
-        TRACK_GRADIENT_BRIGHT      = fx.Color{25, 85, 97, 255}
+        TRACK_GRADIENT_BRIGHT      = fx.Color{22, 60, 72, 255}
         TRACK_GRADIENT_DARK        = fx.Color{18, 55, 64, 255}
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{15, 46, 55, 255}
-        BACKGROUND_GRADIENT_DARK   = fx.Color{8, 30, 37, 255}
+        BACKGROUND_GRADIENT_DARK   = fx.Color{8, 25, 32, 255}
     } else if ui_state.theme == 2 {
         UI_PRIMARY_COLOR      = fx.Color{12, 35, 18, 255}
         UI_SECONDARY_COLOR    = fx.Color{34, 85, 52, 255}
@@ -158,7 +158,7 @@ switch_theme :: proc() {
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{20, 55, 30, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{8, 25, 12, 255}
 
-        TRACK_GRADIENT_BRIGHT      = fx.Color{25, 70, 40, 255}
+        TRACK_GRADIENT_BRIGHT      = fx.Color{20, 60, 30, 255}
         TRACK_GRADIENT_DARK        = fx.Color{15, 45, 25, 255}
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{18, 45, 25, 255}
@@ -171,13 +171,13 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{80, 38, 28, 255}
 
         UI_TEXT_COLOR         = fx.Color{190, 190, 190, 255}
-        UI_TEXT_SECONDARY = fx.Color{180, 175, 170, 255}
+        UI_TEXT_SECONDARY     = fx.Color{180, 175, 170, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{50, 20, 15, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{30, 12, 10, 255}
 
-        TRACK_GRADIENT_BRIGHT      = fx.Color{85, 32, 20, 255}
-        TRACK_GRADIENT_DARK        = fx.Color{59, 23, 16, 255}
+        TRACK_GRADIENT_BRIGHT      = fx.Color{65, 25, 15, 255}
+        TRACK_GRADIENT_DARK        = fx.Color{39, 18, 12, 255}
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{50, 20, 15, 255}
         BACKGROUND_GRADIENT_DARK   = fx.Color{30, 12, 10, 255}
@@ -189,36 +189,33 @@ switch_theme :: proc() {
         UI_HOVER_COLOR        = fx.Color{70, 80, 175, 255}
 
         UI_TEXT_COLOR         = fx.Color{230, 240, 255, 255}
-        UI_TEXT_SECONDARY = fx.Color{175, 180, 200, 255}
+        UI_TEXT_SECONDARY     = fx.Color{175, 180, 200, 255}
 
         CONTROLS_GRADIENT_BRIGHT   = fx.Color{30, 35, 100, 255}
         CONTROLS_GRADIENT_DARK     = fx.Color{15, 20, 60, 255}
 
-        TRACK_GRADIENT_BRIGHT      = fx.Color{40, 45, 120, 255}
-        TRACK_GRADIENT_DARK        = fx.Color{30, 35, 100, 255}
+        TRACK_GRADIENT_BRIGHT      = fx.Color{35, 40, 95, 255}
+        TRACK_GRADIENT_DARK        = fx.Color{20, 23, 60, 255}
 
         BACKGROUND_GRADIENT_BRIGHT = fx.Color{30, 35, 85, 255}
         BACKGROUND_GRADIENT_DARK   = fx.Color{18, 22, 40, 255}
     }
 }
 
-ease_in_out_cubic :: proc(t: f32) -> f32 {
-    if t < 0.5 {
-        return 4 * t * t * t
-    } else {
-        return 1 - math.pow(-2 * t + 2, 3) / 2
-    }
-}
-
 sidebar_anim_progress: f32 = 1.0
 
 frame :: proc(dt: f32) {
+    dt := min(dt, 1.0 / 60)
     window_w, window_h := fx.window_size()
 
     if fx.key_pressed(.F4) {
         ui_state.theme = (ui_state.theme + 1) % 5
         switch_theme()
     }
+
+    // if fx.key_pressed(.T) {
+    //     show_alert({}, "Title", "lortep ipsul", 1)
+    // }
 
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
         ui_state.hide_sidebar = !ui_state.hide_sidebar
@@ -246,6 +243,9 @@ frame :: proc(dt: f32) {
     draw_main_content(ui_state.sidebar_width)
     draw_player_controls()
 
+    update_alert(dt)
+    draw_alert()
+
     if loading_covers {
         loading_covers = !check_all_covers_loaded()
 
@@ -256,15 +256,16 @@ frame :: proc(dt: f32) {
         }
     }
 
+
     if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
         fx.close_window()
     }
 
-    if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.BLANK, fx.Color{80, 64, 128, 255}, false, 6) {
+    if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
         fx.maximize_or_restore_window()
     }
 
-    if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.BLANK, fx.Color{80, 64, 128, 255}) {
+    if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
         fx.minimize_window()
     }
 

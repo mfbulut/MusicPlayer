@@ -125,6 +125,7 @@ draw_player_controls :: proc() {
 
     if draw_icon_button(prev_btn) || fx.key_pressed_global(.MEDIA_PREV_TRACK) {
         previous_track()
+        // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
     }
 
     play_btn := IconButton{
@@ -147,6 +148,7 @@ draw_player_controls :: proc() {
 
     if draw_icon_button(next_btn) || fx.key_pressed_global(.MEDIA_NEXT_TRACK) {
         next_track()
+        // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
     }
 
     shuffle_btn := IconButton{

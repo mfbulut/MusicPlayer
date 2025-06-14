@@ -29,7 +29,6 @@ Audio :: struct {
     loaded: bool,
     has_cover: bool,
 
-
     tags: ID3_Tags,
     has_tags: bool,
 
@@ -172,7 +171,7 @@ load_audio :: proc(filepath: string) -> Audio {
         stem := fp.stem(filepath);
         dir  := fp.dir(filepath);
         path := strings.join({dir, "/", stem, ".png"}, "");
-        
+
         // TODO: add other formats
 
         cover, ok := load_texture(path)

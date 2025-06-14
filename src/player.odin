@@ -50,11 +50,13 @@ unload_track_audio :: proc(track: ^Track) {
 play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
     if player.current_track.audio_clip.loaded {
         fx.stop_audio(&player.current_track.audio_clip)
-        fx.unload_audio(&player.current_track.audio_clip)
+        // fx.unload_audio(&player.current_track.audio_clip)
     }
 
     new_track := track
+
     load_track_audio(&new_track)
+
     new_track.lyrics = load_lyrics_for_track(new_track.path)
     player.current_track = new_track
     player.duration = fx.get_duration(&player.current_track.audio_clip)
@@ -90,6 +92,7 @@ next_track :: proc() {
     if len(player.queue.tracks) > 0 {
         track := pop(&player.queue.tracks)
         play_track(track, player.current_playlist, true)
+        // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
         return
     }
 

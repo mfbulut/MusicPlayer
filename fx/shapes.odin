@@ -138,6 +138,51 @@ draw_circle :: proc(center_x, center_y, radius: f32, color: Color, segments: int
     }
 }
 
+draw_line :: proc(x1, y1, x2, y2, thickness: f32, color: Color) {
+    if ctx.is_minimized do return
+
+    // Calculate direction vector
+    dx := x2 - x1
+    dy := y2 - y1
+    length := math.sqrt(dx*dx + dy*dy)
+
+    if length < 0.001 do return // Avoid division by zero for very short lines
+
+    // Normalize direction vector
+    norm_dx := dx / length
+    norm_dy := dy / length
+
+    // Calculate perpendicular vector for thickness
+    perp_x := -norm_dy * thickness * 0.5
+    perp_y := norm_dx * thickness * 0.5
+
+    // Calculate the four corners of the line rectangle
+    corner1_x := x1 + perp_x
+    corner1_y := y1 + perp_y
+    corner2_x := x1 - perp_x
+    corner2_y := y1 - perp_y
+    corner3_x := x2 - perp_x
+    corner3_y := y2 - perp_y
+    corner4_x := x2 + perp_x
+    corner4_y := y2 + perp_y
+
+    // Create two triangles to form the line rectangle
+    verts := []Vertex{
+        // First triangle
+        Vertex{{corner1_x, corner1_y}, {-1.0, 0.0}, color},
+        Vertex{{corner2_x, corner2_y}, {-1.0, 0.0}, color},
+        Vertex{{corner3_x, corner3_y}, {-1.0, 0.0}, color},
+
+        // Second triangle
+        Vertex{{corner1_x, corner1_y}, {-1.0, 0.0}, color},
+        Vertex{{corner3_x, corner3_y}, {-1.0, 0.0}, color},
+        Vertex{{corner4_x, corner4_y}, {-1.0, 0.0}, color}
+    }
+
+    copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
+    verticies_count += len(verts)
+}
+
 draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments: int = 8) {
     if ctx.is_minimized do return
 
