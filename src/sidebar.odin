@@ -117,7 +117,7 @@ draw_sidebar :: proc(x_offset: f32) {
             }
         }
 
-        scroll_y += 40
+        scroll_y += 41
     }
 
     fx.disable_scissor()

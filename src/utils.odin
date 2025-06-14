@@ -561,7 +561,6 @@ hide_alert :: proc() {
     g_alert.target_progress = 0.0
 }
 
-
 is_alert_visible :: proc() -> bool {
     return g_alert.animation_progress > 0.0
 }

@@ -70,21 +70,22 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
     }
 }
 
-
 draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) {
-    if playlist.loaded {
-        fx.draw_texture_rounded(playlist.cover, x + 40, y + 10, 100, 100, 12, fx.WHITE)
-        playlist_title := truncate_text(playlist.name, w - 180, 32)
-        fx.draw_text(playlist_title, x + 160, y + 30, 32, UI_TEXT_COLOR)
-        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 160, y + 70, 16, UI_TEXT_SECONDARY)
-    } else {
-        playlist_title := truncate_text(playlist.name, w - 60, 32)
-        fx.draw_text(playlist_title, x + 40, y + 30, 32, UI_TEXT_COLOR)
-        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 40, y + 70, 16, UI_TEXT_SECONDARY)
-    }
-
     list_y := y + 120
     list_h := h - 120
+
+    if playlist.loaded {
+        fx.draw_texture_rounded(playlist.cover, x + 40, y + 15, 100, 100, 12, fx.WHITE)
+        list_y += 10
+        list_h -= 10
+        playlist_title := truncate_text(playlist.name, w - 180, 32)
+        fx.draw_text(playlist_title, x + 160, y + 35, 32, UI_TEXT_COLOR)
+        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 160, y + 75, 16, UI_TEXT_SECONDARY)
+    } else {
+        playlist_title := truncate_text(playlist.name, w - 60, 32)
+        fx.draw_text(playlist_title, x + 40, y + 35, 32, UI_TEXT_COLOR)
+        fx.draw_text(fmt.tprintf("%d tracks", len(playlist.tracks)), x + 40, y + 75, 16, UI_TEXT_SECONDARY)
+    }
 
     track_count := len(playlist.tracks)
     track_height: f32 = 65
@@ -126,7 +127,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
     if playlist_max_scroll > 0 {
         indicator_x := x + w - 20
         indicator_y := list_y + 5
-        indicator_h := list_h - 10
+        indicator_h := list_h - 15
 
         draw_scrollbar(&ui_state.playlist_scrollbar, indicator_x, indicator_y, 4, indicator_h, playlist_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
     }
