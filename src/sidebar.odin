@@ -81,7 +81,7 @@ draw_sidebar :: proc(x_offset: f32) {
 
     playlist_count := len(playlists)
     sidebar_visible_height := f32(window_h) - y_offset - PLAYER_HEIGHT
-    sidebar_max_scroll := calculate_max_scroll(playlist_count, 40, sidebar_visible_height)
+    sidebar_max_scroll := calculate_max_scroll(playlist_count, 41, sidebar_visible_height)
 
     ui_state.sidebar_scrollbar.target = clamp(ui_state.sidebar_scrollbar.target, 0, sidebar_max_scroll)
     ui_state.sidebar_scrollbar.scroll = clamp(ui_state.sidebar_scrollbar.scroll, 0, sidebar_max_scroll)
