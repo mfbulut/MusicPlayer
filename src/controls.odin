@@ -123,7 +123,7 @@ draw_player_controls :: proc() {
         hover_color = UI_HOVER_COLOR,
     }
 
-    if draw_icon_button(prev_btn) || fx.key_pressed_global(.MEDIA_PREV_TRACK) {
+    if draw_icon_button(prev_btn) || fx.key_pressed(.MEDIA_PREV_TRACK) {
         previous_track()
         // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
     }
@@ -135,7 +135,7 @@ draw_player_controls :: proc() {
         hover_color = UI_HOVER_COLOR,
     }
 
-    if draw_icon_button(play_btn) || fx.key_pressed_global(fx.Key.MEDIA_PLAY_PAUSE) || fx.key_pressed(.SPACE) {
+    if draw_icon_button(play_btn) || fx.key_pressed(fx.Key.MEDIA_PLAY_PAUSE) || fx.key_pressed(.SPACE) {
         toggle_playback()
     }
 
@@ -146,7 +146,7 @@ draw_player_controls :: proc() {
         hover_color = UI_HOVER_COLOR,
     }
 
-    if draw_icon_button(next_btn) || fx.key_pressed_global(.MEDIA_NEXT_TRACK) {
+    if draw_icon_button(next_btn) || fx.key_pressed(.MEDIA_NEXT_TRACK) {
         next_track()
         // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
     }

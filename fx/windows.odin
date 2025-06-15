@@ -102,6 +102,10 @@ load_icon_by_size :: proc(desired_size: int) -> win.HICON {
 window_styles :: win.WS_POPUP | win.WS_VISIBLE
 chroma_key :: Color{16, 0, 16, 0}
 
+HOTKEY_NEXT :: 1001
+HOTKEY_PREV :: 1002
+HOTKEY_PLAY_PAUSE :: 1003
+
 init :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
 
@@ -154,6 +158,10 @@ init :: proc(title: string, width, height: int) {
 	init_dx()
 	init_audio()
 	set_scissor(0, 0, i32(width), i32(height))
+
+    win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
+    win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
+    win.RegisterHotKey(ctx.hwnd, HOTKEY_PLAY_PAUSE, 0, u32(Key.MEDIA_PLAY_PAUSE))
 
 	ctx.window.w = width
 	ctx.window.h = height
@@ -445,6 +453,20 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 		code := switch_keys(u32(wparam), lparam)
 		ctx.key_state[code] &= ~KEY_STATE_HELD
 		ctx.key_state[code] |=  KEY_STATE_RELEASED
+	case win.WM_HOTKEY:
+    	hotkey_id := win.LOWORD(wparam)
+
+	    key: Key
+	    switch hotkey_id {
+	    case HOTKEY_NEXT:
+	        key = .MEDIA_NEXT_TRACK
+	    case HOTKEY_PREV:
+	        key = .MEDIA_PREV_TRACK
+	    case HOTKEY_PLAY_PAUSE:
+	        key = .MEDIA_PLAY_PAUSE
+	    }
+
+	    ctx.key_state[key] = KEY_STATE_HELD | KEY_STATE_PRESSED
 
 	case win.WM_LBUTTONDOWN, win.WM_RBUTTONDOWN, win.WM_MBUTTONDOWN:
 	    button := switch_button(message)
@@ -727,16 +749,6 @@ set_cursor :: proc(cursor: Cursor) {
     }
 
     win.SetCursor(sys_cursor)
-}
-
-prev_state: [256]bool
-key_pressed_global :: proc(vKey: Key) -> bool {
-    state := i32(win.GetAsyncKeyState(i32(vKey)))
-    is_down := (state & 0x8000) != 0
-
-    result := is_down && !prev_state[vKey]
-    prev_state[vKey] = is_down
-    return result
 }
 
 Cursor :: enum u8 {
