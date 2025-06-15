@@ -243,7 +243,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
         }
     }
 
-    results_y := search_input_y + 75
+    results_y := search_input_y + 80
     results_h := h - (results_y - y)
 
     result_count := len(ui_state.search_results)
@@ -292,8 +292,8 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
             scroll_delta := fx.get_mouse_scroll()
             if scroll_delta != 0 {
-                mouse_x, _ := fx.get_mouse()
-                if f32(mouse_x) > x {
+                mouse_x, mouse_y := fx.get_mouse()
+                if f32(mouse_x) > x && f32(mouse_y) < y + h {
                     ui_state.search_scrollbar.target -= f32(scroll_delta) * 80
                     ui_state.search_scrollbar.target = clamp(ui_state.search_scrollbar.target, 0, search_max_scroll)
                 }

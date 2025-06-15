@@ -101,7 +101,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
 
     track_y := list_y - ui_state.playlist_scrollbar.scroll
 
-    mouse_x, _ := fx.get_mouse()
+    mouse_x, mouse_y := fx.get_mouse()
 
     for i in 0..<len(playlist.tracks) {
         track := playlist.tracks[i]
@@ -137,7 +137,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
 
         scroll_delta := fx.get_mouse_scroll()
         if scroll_delta != 0 {
-            if f32(mouse_x) > x {
+            if f32(mouse_x) > x && f32(mouse_y) < y + h {
                 ui_state.playlist_scrollbar.target -= f32(scroll_delta) * 80
                 ui_state.playlist_scrollbar.target = clamp(ui_state.playlist_scrollbar.target, 0, playlist_max_scroll)
             }
