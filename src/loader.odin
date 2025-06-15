@@ -61,6 +61,15 @@ find_playlist_by_name :: proc(name: string) -> Playlist {
     return Playlist{}
 }
 
+playlist_id :: proc(name: string) -> int {
+    for playlist, i in playlists {
+        if playlist.name == name {
+            return i
+        }
+    }
+    return -1
+}
+
 find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist {
     for &playlist in playlists {
         if playlist.name == dir_name {
@@ -246,6 +255,8 @@ print_playlist :: proc() {
     }
 }
 
+
+
 import "core:thread"
 import "core:sync"
 import "core:time"
@@ -257,25 +268,24 @@ Cover_Load_Result :: struct {
     success: bool,
 }
 
-MAX_COVER_QUEUE :: 128
-cover_load_queue: [MAX_COVER_QUEUE]Cover_Load_Result
-queue_count: int
+cover_load_queue: [dynamic]Cover_Load_Result
 cover_load_mutex: sync.Mutex
 cover_loading_thread: ^thread.Thread
 should_stop_loading: bool
 
 init_cover_loading :: proc() {
-    queue_count = 0
+    // Clear any existing queue
+    clear(&cover_load_queue)
 
+    // Add all unloaded playlists with cover paths to the queue
     for &playlist, i in playlists {
-        if !playlist.loaded && len(playlist.cover_path) > 0 && queue_count < MAX_COVER_QUEUE {
-            cover_load_queue[queue_count] = Cover_Load_Result{
+        if !playlist.loaded && len(playlist.cover_path) > 0 {
+            append(&cover_load_queue, Cover_Load_Result{
                 playlist_index = i,
                 cover_path = playlist.cover_path,
                 texture = {},
                 success = false,
-            }
-            queue_count += 1
+            })
         }
     }
 
@@ -284,7 +294,7 @@ init_cover_loading :: proc() {
 }
 
 cover_loading_worker :: proc(t: ^thread.Thread) {
-    for i := 0; i < queue_count && !should_stop_loading; i += 1 {
+    for i := 0; i < len(cover_load_queue) && !should_stop_loading; i += 1 {
         texture := fx.load_texture(cover_load_queue[i].cover_path) or_else fx.Texture{}
 
         sync.lock(&cover_load_mutex)
@@ -300,7 +310,7 @@ process_loaded_covers :: proc() {
     sync.lock(&cover_load_mutex)
     defer sync.unlock(&cover_load_mutex)
 
-    for i := 0; i < queue_count; i += 1 {
+    for i := 0; i < len(cover_load_queue); i += 1 {
         result := cover_load_queue[i]
         if result.success && result.playlist_index >= 0 && result.playlist_index < len(playlists) {
             playlists[result.playlist_index].cover = result.texture
@@ -322,4 +332,7 @@ cleanup_cover_loading :: proc() {
     should_stop_loading = true
     thread.join(cover_loading_thread)
     thread.destroy(cover_loading_thread)
+
+    // Clean up the dynamic array
+    delete(cover_load_queue)
 }

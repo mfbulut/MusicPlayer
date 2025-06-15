@@ -278,6 +278,15 @@ drop_callback  :: proc(files: []string) {
             load_files(filepath, context.allocator)
             ui_state.selected_playlist = file.name
             ui_state.current_view = .PLAYLIST_DETAIL
+
+            playlist_id := playlist_id(file.name)
+
+            if playlist_id >= 0 {
+                ok : bool
+                playlists[playlist_id].cover, ok = fx.load_texture(playlists[playlist_id].cover_path)
+                playlists[playlist_id].loaded = ok
+            }
+
         } else {
             process_music_file(file, true)
         }
