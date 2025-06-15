@@ -4,8 +4,6 @@ import fx "../fx"
 import "core:fmt"
 import "core:math"
 import "core:math/rand"
-import "core:thread"
-import "core:sync"
 
 PlayerState :: enum {
     STOPPED,
@@ -25,10 +23,6 @@ Player :: struct {
     queue: Playlist,
     shuffled_indices: []int,
     shuffle_position: int,
-
-    preload_thread: ^thread.Thread,
-    preload_mutex: sync.Mutex,
-    preload_active: bool,
 }
 
 player := Player {
@@ -37,21 +31,6 @@ player := Player {
     queue = {
         name = "Queue",
     },
-    preload_active = false,
-}
-
-load_track_audio_sync :: proc(track: ^Track) {
-    sync.lock(&player.preload_mutex)
-    defer sync.unlock(&player.preload_mutex)
-
-    if track.audio_clip.loaded {
-        return
-    }
-
-    clip := fx.load_audio(track.path)
-    track.audio_clip = clip
-    update_background = true
-    fx.use_shader({})
 }
 
 load_track_audio :: proc(track: ^Track) {
@@ -68,74 +47,7 @@ unload_track_audio :: proc(track: ^Track) {
     fx.unload_audio(&track.audio_clip)
 }
 
-preload_track_ptr: ^Track
-
-preload_worker :: proc() {
-    if preload_track_ptr != nil {
-        load_track_audio_sync(preload_track_ptr)
-    }
-
-    sync.lock(&player.preload_mutex)
-    player.preload_active = false
-    preload_track_ptr = nil
-    sync.unlock(&player.preload_mutex)
-}
-
-preload_next_track_async :: proc() {
-    sync.lock(&player.preload_mutex)
-    if player.preload_active {
-        sync.unlock(&player.preload_mutex)
-        return
-    }
-    player.preload_active = true
-    sync.unlock(&player.preload_mutex)
-
-    next_track_ptr: ^Track
-
-
-    if len(player.queue.tracks) > 0 {
-        next_track_ptr = &player.queue.tracks[len(player.queue.tracks) - 1]
-        if next_track_ptr.audio_clip.loaded {
-            sync.lock(&player.preload_mutex)
-            player.preload_active = false
-            sync.unlock(&player.preload_mutex)
-            return
-        }
-    } else if len(player.current_playlist.tracks) > 0 {
-
-        next_index: int
-
-        if player.shuffle {
-            if player.shuffle_position >= len(player.shuffled_indices) {
-                next_index = player.shuffled_indices[0]
-            } else {
-                next_index = player.shuffled_indices[player.shuffle_position]
-            }
-        } else {
-            next_index = (player.current_index + 1) % len(player.current_playlist.tracks)
-        }
-
-        next_track_ptr = &player.current_playlist.tracks[next_index]
-        if next_track_ptr.audio_clip.loaded {
-            sync.lock(&player.preload_mutex)
-            player.preload_active = false
-            sync.unlock(&player.preload_mutex)
-            return
-        }
-    } else {
-        sync.lock(&player.preload_mutex)
-        player.preload_active = false
-        sync.unlock(&player.preload_mutex)
-        return
-    }
-
-
-    preload_track_ptr = next_track_ptr
-    player.preload_thread = thread.create_and_start(preload_worker)
-}
-
-
-play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
+play_track :: proc(track: Track, playlist: Playlist, queue: bool = false, preserve_index: bool = false) {
     if player.current_track.audio_clip.loaded {
         fx.stop_audio(&player.current_track.audio_clip)
     }
@@ -156,14 +68,14 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
     if queue do return
     player.current_playlist = playlist
-    for t, i in playlist.tracks {
-        if track.name == t.name && track.path == t.path {
-            player.current_index = i
+
+    if !preserve_index {
+        for t, i in playlist.tracks {
+            if track.name == t.name && track.path == t.path {
+                player.current_index = i
+            }
         }
     }
-
-    cleanup_preloaded_tracks()
-    preload_next_track_async()
 }
 
 toggle_playback :: proc() {
@@ -213,9 +125,11 @@ previous_track :: proc() {
 
     if player.shuffle {
         player.shuffle_position -= 1
+
         if player.shuffle_position < 0 {
             player.shuffle_position = len(player.shuffled_indices) - 1
         }
+
         player.current_index = player.shuffled_indices[player.shuffle_position]
     } else {
         player.current_index = player.current_index - 1
@@ -225,7 +139,7 @@ previous_track :: proc() {
     }
 
     prev_track := player.current_playlist.tracks[player.current_index]
-    play_track(prev_track, player.current_playlist)
+    play_track(prev_track, player.current_playlist, false, true) // preserve_index = true
 }
 
 seek_to_position :: proc(position: f32) {
@@ -289,51 +203,4 @@ insert_as_last_track :: proc(track : Track) {
 
 insert_as_next_track :: proc(track : Track) {
     append(&player.queue.tracks, track)
-}
-
-cleanup_preloaded_tracks :: proc() {
-    for &track in player.current_playlist.tracks {
-        if track.path == player.current_track.path {
-            continue
-        }
-
-        is_next_track := false
-
-        if len(player.queue.tracks) > 0 {
-            queue_next := &player.queue.tracks[len(player.queue.tracks) - 1]
-            if track.path == queue_next.path {
-                is_next_track = true
-            }
-        } else if len(player.current_playlist.tracks) > 0 {
-            next_index: int
-            if player.shuffle {
-                if player.shuffle_position < len(player.shuffled_indices) {
-                    next_index = player.shuffled_indices[player.shuffle_position]
-                } else {
-                    next_index = player.shuffled_indices[0]
-                }
-            } else {
-                next_index = (player.current_index + 1) % len(player.current_playlist.tracks)
-            }
-
-            if &track == &player.current_playlist.tracks[next_index] {
-                is_next_track = true
-            }
-        }
-
-        if !is_next_track && track.audio_clip.loaded {
-            unload_track_audio(&track)
-        }
-    }
-}
-
-cleanup_player :: proc() {
-    sync.lock(&player.preload_mutex)
-    defer sync.unlock(&player.preload_mutex)
-
-    if player.preload_thread != nil && player.preload_active {
-        thread.join(player.preload_thread)
-        thread.destroy(player.preload_thread)
-        player.preload_thread = nil
-    }
 }
