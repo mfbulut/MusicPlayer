@@ -44,3 +44,6 @@ Lyrics downloaders
 Music downloaders
 * https://cobalt.tools/
 * https://github.com/yt-dlp/yt-dlp
+
+Album covers
+* https://covers.musichoarders.xyz/
