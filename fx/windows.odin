@@ -149,8 +149,9 @@ init :: proc(title: string, width, height: int) {
     win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
     win.RegisterHotKey(ctx.hwnd, HOTKEY_PLAY_PAUSE, 0, u32(Key.MEDIA_PLAY_PAUSE))
 
-	ctx.window.w = width
-	ctx.window.h = height
+	ctx.window.w = int(adjusted_width)
+	ctx.window.h = int(adjusted_height)
+	
 	ctx.is_running = true
 }
 
