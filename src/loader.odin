@@ -252,69 +252,61 @@ import "core:time"
 
 Cover_Load_Result :: struct {
     playlist_index: int,
+    cover_path: string,
     texture: fx.Texture,
     success: bool,
 }
 
-cover_load_queue: [dynamic]Cover_Load_Result
+MAX_COVER_QUEUE :: 128
+cover_load_queue: [MAX_COVER_QUEUE]Cover_Load_Result
+queue_count: int
 cover_load_mutex: sync.Mutex
 cover_loading_thread: ^thread.Thread
 should_stop_loading: bool
 
-cover_loading_worker :: proc(t: ^thread.Thread) {
-    for !should_stop_loading {
-        playlist_index := -1
-        cover_path: string
-        found := false
+init_cover_loading :: proc() {
+    queue_count = 0
 
-        for &playlist, i in playlists {
-            if !playlist.loaded && len(playlist.cover_path) > 0 {
-                playlist_index = i
-                cover_path = playlist.cover_path
-                found = true
-                break
+    for &playlist, i in playlists {
+        if !playlist.loaded && len(playlist.cover_path) > 0 && queue_count < MAX_COVER_QUEUE {
+            cover_load_queue[queue_count] = Cover_Load_Result{
+                playlist_index = i,
+                cover_path = playlist.cover_path,
+                texture = {},
+                success = false,
             }
+            queue_count += 1
         }
+    }
 
-        if !found {
-            time.sleep(100 * time.Millisecond)
-            continue
-        }
+    cover_loading_thread = thread.create(cover_loading_worker)
+    thread.start(cover_loading_thread)
+}
 
-        texture, _ := fx.load_texture(cover_path)
-
-        result := Cover_Load_Result{
-            playlist_index = playlist_index,
-            texture = texture,
-            success = true,
-        }
+cover_loading_worker :: proc(t: ^thread.Thread) {
+    for i := 0; i < queue_count && !should_stop_loading; i += 1 {
+        texture := fx.load_texture(cover_load_queue[i].cover_path) or_else fx.Texture{}
 
         sync.lock(&cover_load_mutex)
-        append(&cover_load_queue, result)
+        cover_load_queue[i].texture = texture
+        cover_load_queue[i].success = true
         sync.unlock(&cover_load_mutex)
 
         time.sleep(10 * time.Millisecond)
     }
 }
 
-init_cover_loading :: proc() {
-    cover_load_queue = make([dynamic]Cover_Load_Result)
-    cover_loading_thread = thread.create(cover_loading_worker)
-    thread.start(cover_loading_thread)
-}
-
 process_loaded_covers :: proc() {
     sync.lock(&cover_load_mutex)
     defer sync.unlock(&cover_load_mutex)
 
-    for result in cover_load_queue {
+    for i := 0; i < queue_count; i += 1 {
+        result := cover_load_queue[i]
         if result.success && result.playlist_index >= 0 && result.playlist_index < len(playlists) {
             playlists[result.playlist_index].cover = result.texture
             playlists[result.playlist_index].loaded = true
         }
     }
-
-    clear(&cover_load_queue)
 }
 
 check_all_covers_loaded :: proc() -> bool {
@@ -330,5 +322,4 @@ cleanup_cover_loading :: proc() {
     should_stop_loading = true
     thread.join(cover_loading_thread)
     thread.destroy(cover_loading_thread)
-    delete(cover_load_queue)
 }

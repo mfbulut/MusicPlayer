@@ -213,10 +213,6 @@ frame :: proc(dt: f32) {
         switch_theme()
     }
 
-    // if fx.key_pressed(.T) {
-    //     show_alert({}, "Title", "lortep ipsul", 1)
-    // }
-
     if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
         ui_state.hide_sidebar = !ui_state.hide_sidebar
         fx.set_sidebar_size(ui_state.hide_sidebar ? 0 : 200)
