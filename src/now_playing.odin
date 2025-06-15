@@ -139,6 +139,14 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)
 
+        if fx.key_pressed(.LEFT) {
+            seek_to_lyric(max(current_lyric_index - 1, 0), track.lyrics[:])
+        }
+
+        if fx.key_pressed(.RIGHT) {
+            seek_to_lyric(min(current_lyric_index + 1, len(track.lyrics) - 1), track.lyrics[:])
+        }
+
         ui_state.lyrics_scrollbar.scroll = max(ui_state.lyrics_scrollbar.scroll, 0)
         line_y := lyrics_content_y + 10 - ui_state.lyrics_scrollbar.scroll
 

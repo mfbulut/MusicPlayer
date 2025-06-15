@@ -5,64 +5,6 @@ import fx "../fx"
 import "core:strings"
 import "core:math"
 
-handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
-    mouse_x, _ := fx.get_mouse()
-
-    is_hovering := is_hovering(time_x, time_y, time_width, time_height)
-
-    if fx.mouse_pressed(.LEFT) && is_hovering {
-        ui_state.is_dragging_time = true
-        ui_state.drag_start_time_x = f32(mouse_x)
-        ui_state.drag_start_position = player.position
-    }
-
-    if !fx.mouse_held(.LEFT) {
-        ui_state.is_dragging_time = false
-    }
-
-    if ui_state.is_dragging_time {
-        mouse_delta := f32(mouse_x) - ui_state.drag_start_time_x
-
-        time_delta := mouse_delta * 0.1
-
-        new_position := ui_state.drag_start_position + time_delta
-        new_position = clamp(new_position, 0, player.duration)
-
-        seek_to_position(new_position)
-    }
-
-    if is_hovering {
-        fx.set_cursor(.HORIZONTAL_RESIZE)
-    }
-}
-
-handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
-    mouse_x, mouse_y := fx.get_mouse()
-
-    progress_bar_height: f32 = 10
-    is_over_progress := f32(mouse_y) >= player_y - progress_bar_height && f32(mouse_y) <= player_y + 5
-
-    if fx.mouse_pressed(.LEFT) && is_over_progress && !ui_state.is_dragging_time {
-        ui_state.is_dragging_progress = true
-    }
-
-    if !fx.mouse_held(.LEFT) {
-        ui_state.is_dragging_progress = false
-    }
-
-    if ui_state.is_dragging_progress {
-        // Calculate the position based on mouse x position
-        drag_ratio := f32(mouse_x) / f32(window_w)
-        drag_ratio = clamp(drag_ratio, 0, 1)
-
-        new_position := drag_ratio * player.duration
-        seek_to_position(new_position)
-
-    } else if is_over_progress {
-        fx.set_cursor(.CLICK)
-    }
-}
-
 draw_player_controls :: proc() {
     window_w, window_h := fx.window_size()
     player_y := f32(window_h) - PLAYER_HEIGHT
@@ -125,7 +67,6 @@ draw_player_controls :: proc() {
 
     if draw_icon_button(prev_btn) || fx.key_pressed(.MEDIA_PREV_TRACK) {
         previous_track()
-        // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
     }
 
     play_btn := IconButton{
@@ -148,7 +89,6 @@ draw_player_controls :: proc() {
 
     if draw_icon_button(next_btn) || fx.key_pressed(.MEDIA_NEXT_TRACK) {
         next_track()
-        // show_alert(player.current_track.audio_clip.cover, player.current_track.name, player.current_track.playlist, 1)
     }
 
     shuffle_btn := IconButton{
@@ -188,6 +128,16 @@ draw_player_controls :: proc() {
         }
     }
 
+    if fx.key_pressed(.UP) {
+        player.volume = min(player.volume + 0.05, 1)
+        fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+    }
+
+    if fx.key_pressed(.DOWN) {
+        player.volume = max(player.volume - 0.05, 0)
+        fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+    }
+
     new_volume := draw_slider(volume_x, volume_y, 100, 4, player.volume, UI_SECONDARY_COLOR, UI_TEXT_COLOR)
     if new_volume != player.volume && !ui_state.is_dragging_time && !ui_state.is_dragging_progress && !ui_state.playlist_scrollbar.is_dragging && !ui_state.search_scrollbar.is_dragging && !ui_state.is_dragging_progress && !fx.is_resizing(){
         player.volume = new_volume
@@ -217,4 +167,61 @@ draw_player_controls :: proc() {
 
     progress := player.duration > 0 ? player.position / player.duration : 0
     fx.draw_rect(0, player_y, f32(window_w) * progress, 1, UI_TEXT_COLOR)
+}
+
+handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
+    mouse_x, _ := fx.get_mouse()
+
+    is_hovering := is_hovering(time_x, time_y, time_width, time_height)
+
+    if fx.mouse_pressed(.LEFT) && is_hovering {
+        ui_state.is_dragging_time = true
+        ui_state.drag_start_time_x = f32(mouse_x)
+        ui_state.drag_start_position = player.position
+    }
+
+    if !fx.mouse_held(.LEFT) {
+        ui_state.is_dragging_time = false
+    }
+
+    if ui_state.is_dragging_time {
+        mouse_delta := f32(mouse_x) - ui_state.drag_start_time_x
+
+        time_delta := mouse_delta * 0.1
+
+        new_position := ui_state.drag_start_position + time_delta
+        new_position = clamp(new_position, 0, player.duration)
+
+        seek_to_position(new_position)
+    }
+
+    if is_hovering {
+        fx.set_cursor(.HORIZONTAL_RESIZE)
+    }
+}
+
+handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
+    mouse_x, mouse_y := fx.get_mouse()
+
+    progress_bar_height: f32 = 10
+    is_over_progress := f32(mouse_y) >= player_y - progress_bar_height && f32(mouse_y) <= player_y + 5
+
+    if fx.mouse_pressed(.LEFT) && is_over_progress && !ui_state.is_dragging_time {
+        ui_state.is_dragging_progress = true
+    }
+
+    if !fx.mouse_held(.LEFT) {
+        ui_state.is_dragging_progress = false
+    }
+
+    if ui_state.is_dragging_progress {
+        drag_ratio := f32(mouse_x) / f32(window_w)
+        drag_ratio = clamp(drag_ratio, 0, 1)
+
+        new_position := drag_ratio * player.duration
+        seek_to_position(new_position)
+
+    } else if is_over_progress {
+        fx.set_cursor(.CLICK)
+    }
 }

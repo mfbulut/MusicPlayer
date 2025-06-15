@@ -19,7 +19,7 @@ UI_HOVER_COLOR        := fx.Color{105, 68, 147, 255}
 UI_TEXT_COLOR         := fx.Color{235, 237, 240, 255}
 UI_TEXT_SECONDARY     := fx.Color{175, 180, 195, 255}
 
-UI_TRACK_COLOR             := fx.Color{54, 35, 85, 255}
+UI_TRACK_COLOR        := fx.Color{54, 35, 85, 255}
 
 CONTROLS_GRADIENT_BRIGHT   := fx.Color{44, 27, 71, 255}
 CONTROLS_GRADIENT_DARK     := fx.Color{24, 15, 39, 255}
@@ -301,8 +301,8 @@ main :: proc() {
 
     load_icons()
 
-    blur_shader   = fx.load_shader(blur_shader_hlsl)
-    background    = fx.create_render_texture(1024, 1024)
+    blur_shader = fx.load_shader(blur_shader_hlsl)
+    background = fx.create_render_texture(1024, 1024)
 
     music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
 
