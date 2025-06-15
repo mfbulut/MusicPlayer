@@ -6,26 +6,11 @@ import "core:strings"
 
 import win "core:sys/windows"
 
-RESIZE_BORDER_WIDTH :: 8
-RESIZE_CORNER_SIZE :: 16
-
-ResizeState :: enum {
-    NONE,
-    LEFT,
-    RIGHT,
-    TOP,
-    BOTTOM,
-    TOP_LEFT,
-    TOP_RIGHT,
-    BOTTOM_LEFT,
-    BOTTOM_RIGHT,
-}
-
 Context :: struct {
 	hwnd: win.HWND,
 	is_running : bool,
 	is_minimized: bool,
-	frame_proc : proc(dt : f32),
+	frame_proc : proc(),
 	text_callback : proc(char : u8),
 	file_drop_callback : proc(files: []string),
 	is_hovering_files: bool,
@@ -168,152 +153,45 @@ init :: proc(title: string, width, height: int) {
 	ctx.is_running = true
 }
 
-get_resize_area :: proc(x, y: int) -> ResizeState {
-    w, h := ctx.window.w, ctx.window.h
+update_frame :: proc(frame_proc: proc()) {
+	ci := win.CURSORINFO{ cbSize = size_of(win.CURSORINFO) };
+	win.GetCursorInfo(&ci);
 
-    if x < RESIZE_CORNER_SIZE && y < RESIZE_CORNER_SIZE {
-        return .TOP_LEFT
-    }
-    if x > w - RESIZE_CORNER_SIZE && y < RESIZE_CORNER_SIZE {
-        return .TOP_RIGHT
-    }
-    if x < RESIZE_CORNER_SIZE && y > h - RESIZE_CORNER_SIZE {
-        return .BOTTOM_LEFT
-    }
-    if x > w - RESIZE_CORNER_SIZE && y > h - RESIZE_CORNER_SIZE {
-        return .BOTTOM_RIGHT
-    }
-
-    if x < RESIZE_BORDER_WIDTH {
-        return .LEFT
-    }
-    if x > w - RESIZE_BORDER_WIDTH {
-        return .RIGHT
-    }
-    if y < RESIZE_BORDER_WIDTH && x < w - 150 {
-        return .TOP
-    }
-    if y > h - RESIZE_BORDER_WIDTH {
-        return .BOTTOM
-    }
-
-    return .NONE
-}
-
-set_file_drop_callback :: proc(callback: proc(files: []string)) {
-	ctx.file_drop_callback = callback
-
-	if ctx.hwnd != nil {
-		win.DragAcceptFiles(ctx.hwnd, win.TRUE)
-	}
-}
-
-is_hovering_files :: proc() -> bool {
-	return ctx.is_hovering_files
-}
-
-set_resize_cursor :: proc(resize_area: ResizeState) {
-    switch resize_area {
-    case .LEFT, .RIGHT:
-        set_cursor(.HORIZONTAL_RESIZE)
-    case .TOP, .BOTTOM:
-        set_cursor(.VERTICAL_RESIZE)
-    case .TOP_LEFT, .BOTTOM_RIGHT:
-        set_cursor(.DIAGONAL_RESIZE_1)
-    case .TOP_RIGHT, .BOTTOM_LEFT:
-        set_cursor(.DIAGONAL_RESIZE_2)
-    case .NONE:
-        set_cursor(.DEFAULT)
-    }
-}
-
-perform_resize :: proc() {
-	rect: win.RECT
-	win.GetWindowRect(ctx.hwnd, &rect)
-
-	point: win.POINT
-	win.GetCursorPos(&point)
-
-	adjusted_point := win.POINT{
-	    x = point.x - ctx.resize_mouse_offset.x,
-	    y = point.y - ctx.resize_mouse_offset.y,
+	// Probably only works on my machine
+	CURSOR_ID :: 0x705F3
+	if (ci.hCursor == transmute(win.HCURSOR)uintptr(CURSOR_ID)) {
+		ctx.is_hovering_files = true
+	} else {
+		ctx.is_hovering_files = false
 	}
 
-    new_x := rect.left
-    new_y := rect.top
-    new_width := rect.right - rect.left
-    new_height := rect.bottom - rect.top
+	current_time := time.now()
+	ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
+	ctx.timer += ctx.delta_time
+	ctx.prev_time = current_time
 
-    switch ctx.resize_state {
-    case .LEFT:
-        new_x = adjusted_point.x
-        new_width = rect.right - adjusted_point.x
+	handle_resize()
 
-    case .RIGHT:
-        new_width = adjusted_point.x - rect.left
+	if !ctx.is_minimized {
+		clear_background(chroma_key)
+		begin_render()
+		update_constant_buffer()
+		frame_proc()
+		end_render()
+		swap_buffers()
+	} else {
+		frame_proc()
+		win.Sleep(16)
+	}
 
-    case .TOP:
-        new_y = adjusted_point.y
-        new_height = rect.bottom - adjusted_point.y
+	for &state in ctx.key_state {
+		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
+	}
+	for &state in ctx.mouse_state {
+		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
+	}
 
-    case .BOTTOM:
-        new_height = adjusted_point.y - rect.top
-
-    case .TOP_LEFT:
-        new_x = adjusted_point.x
-        new_y = adjusted_point.y
-        new_width = rect.right - adjusted_point.x
-        new_height = rect.bottom - adjusted_point.y
-
-    case .TOP_RIGHT:
-        new_y = adjusted_point.y
-        new_width = adjusted_point.x - rect.left
-        new_height = rect.bottom - adjusted_point.y
-
-    case .BOTTOM_LEFT:
-        new_x = adjusted_point.x
-        new_width = rect.right - adjusted_point.x
-        new_height = adjusted_point.y - rect.top
-
-    case .BOTTOM_RIGHT:
-        new_width = adjusted_point.x - rect.left
-        new_height = adjusted_point.y - rect.top
-
-    case .NONE:
-    }
-
-    min_width : i32= 700
-    min_height : i32 = 600
-
-    if new_width < min_width {
-        if ctx.resize_state == .LEFT || ctx.resize_state == .TOP_LEFT || ctx.resize_state == .BOTTOM_LEFT {
-            new_x = rect.right - min_width
-        }
-        new_width = min_width
-    }
-
-    if new_height < min_height {
-        if ctx.resize_state == .TOP || ctx.resize_state == .TOP_LEFT || ctx.resize_state == .TOP_RIGHT {
-            new_y = rect.bottom - min_height
-        }
-        new_height = min_height
-    }
-
-    win.SetWindowPos(ctx.hwnd, nil, new_x, new_y, new_width, new_height, win.SWP_NOZORDER | win.SWP_NOACTIVATE)
-}
-
-
-handle_resize :: proc() {
-    x, y := get_mouse()
-    resize_area := get_resize_area(x, y)
-
-    if ctx.is_resizing {
-        set_resize_cursor(resize_area)
-    }
-
-    if ctx.is_resizing && mouse_held(.LEFT) {
-        perform_resize()
-    }
+	ctx.mouse_scroll = 0
 }
 
 run_manual :: proc(frame : proc()) {
@@ -323,26 +201,10 @@ run_manual :: proc(frame : proc()) {
 		win.DispatchMessageW(&msg)
 	}
 
-	clear_background(chroma_key)
-	begin_render()
-
-	frame()
-
-	end_render()
-	swap_buffers()
-
-	for &state in ctx.key_state {
-		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
-	}
-
-	for &state in ctx.mouse_state {
-		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
-	}
-
-	ctx.mouse_scroll = 0
+	update_frame(frame)
 }
 
-run :: proc(frame : proc(dt : f32)) {
+run :: proc(frame : proc()) {
 	ctx.frame_proc = frame
 
 	current_time := time.now()
@@ -355,47 +217,9 @@ run :: proc(frame : proc(dt : f32)) {
 			win.DispatchMessageW(&msg)
 		}
 
-		ci := win.CURSORINFO{ cbSize = size_of(win.CURSORINFO) };
-		win.GetCursorInfo(&ci);
-
-		// Probably only works on my machine
-		CURSOR_ID :: 0x705F3
-		if (ci.hCursor == transmute(win.HCURSOR)uintptr(CURSOR_ID)) {
-			ctx.is_hovering_files = true
-		} else {
-			ctx.is_hovering_files = false
-		}
-
-		current_time = time.now()
-		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
-		ctx.timer += ctx.delta_time
-		ctx.prev_time = current_time
-
-		handle_resize()
-
-		if !ctx.is_minimized {
-			clear_background(chroma_key)
-			begin_render()
-			update_constant_buffer()
-			frame(ctx.delta_time)
-			end_render()
-			swap_buffers()
-		} else {
-			frame(ctx.delta_time)
-			win.Sleep(16)
-		}
-
-		for &state in ctx.key_state {
-			state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
-		}
-		for &state in ctx.mouse_state {
-			state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
-		}
-
-		ctx.mouse_scroll = 0
+		update_frame(frame)
 	}
 }
-
 
 @(private)
 switch_button :: #force_inline proc(x: u32) -> Mouse {
@@ -419,9 +243,20 @@ switch_keys :: #force_inline proc(virtual_code: u32, lparam: int) -> u32 {
 	return virtual_code
 }
 
-
 is_resizing :: proc() -> bool {
 	return ctx.is_resizing
+}
+
+set_file_drop_callback :: proc(callback: proc(files: []string)) {
+	ctx.file_drop_callback = callback
+
+	if ctx.hwnd != nil {
+		win.DragAcceptFiles(ctx.hwnd, win.TRUE)
+	}
+}
+
+is_hovering_files :: proc() -> bool {
+	return ctx.is_hovering_files
 }
 
 side_bar_w := 200
@@ -590,17 +425,7 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
         win.KillTimer(ctx.hwnd, 1)
         break
     case win.WM_TIMER:
-		current_time := time.now()
-		ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
-		ctx.prev_time = current_time
-
-		clear_background(chroma_key)
-		begin_render()
-
-        ctx.frame_proc(ctx.delta_time);
-
-		end_render()
-		swap_buffers()
+		update_frame(ctx.frame_proc)
 	case win.WM_MOUSEWHEEL:
 		delta := cast(i8)((wparam >> 16) & 0xFFFF)
 		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA
@@ -749,6 +574,159 @@ set_cursor :: proc(cursor: Cursor) {
     }
 
     win.SetCursor(sys_cursor)
+}
+
+// Resizing
+
+RESIZE_BORDER_WIDTH :: 8
+RESIZE_CORNER_SIZE :: 16
+
+ResizeState :: enum {
+    NONE,
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM,
+    TOP_LEFT,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_RIGHT,
+}
+
+get_resize_area :: proc(x, y: int) -> ResizeState {
+    w, h := ctx.window.w, ctx.window.h
+
+    if x < RESIZE_CORNER_SIZE && y < RESIZE_CORNER_SIZE {
+        return .TOP_LEFT
+    }
+    if x > w - RESIZE_CORNER_SIZE && y < RESIZE_CORNER_SIZE {
+        return .TOP_RIGHT
+    }
+    if x < RESIZE_CORNER_SIZE && y > h - RESIZE_CORNER_SIZE {
+        return .BOTTOM_LEFT
+    }
+    if x > w - RESIZE_CORNER_SIZE && y > h - RESIZE_CORNER_SIZE {
+        return .BOTTOM_RIGHT
+    }
+
+    if x < RESIZE_BORDER_WIDTH {
+        return .LEFT
+    }
+    if x > w - RESIZE_BORDER_WIDTH {
+        return .RIGHT
+    }
+    if y < RESIZE_BORDER_WIDTH && x < w - 150 {
+        return .TOP
+    }
+    if y > h - RESIZE_BORDER_WIDTH {
+        return .BOTTOM
+    }
+
+    return .NONE
+}
+
+set_resize_cursor :: proc(resize_area: ResizeState) {
+    switch resize_area {
+    case .LEFT, .RIGHT:
+        set_cursor(.HORIZONTAL_RESIZE)
+    case .TOP, .BOTTOM:
+        set_cursor(.VERTICAL_RESIZE)
+    case .TOP_LEFT, .BOTTOM_RIGHT:
+        set_cursor(.DIAGONAL_RESIZE_1)
+    case .TOP_RIGHT, .BOTTOM_LEFT:
+        set_cursor(.DIAGONAL_RESIZE_2)
+    case .NONE:
+        set_cursor(.DEFAULT)
+    }
+}
+
+perform_resize :: proc() {
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
+
+	point: win.POINT
+	win.GetCursorPos(&point)
+
+	adjusted_point := win.POINT{
+	    x = point.x - ctx.resize_mouse_offset.x,
+	    y = point.y - ctx.resize_mouse_offset.y,
+	}
+
+    new_x := rect.left
+    new_y := rect.top
+    new_width := rect.right - rect.left
+    new_height := rect.bottom - rect.top
+
+    switch ctx.resize_state {
+    case .LEFT:
+        new_x = adjusted_point.x
+        new_width = rect.right - adjusted_point.x
+
+    case .RIGHT:
+        new_width = adjusted_point.x - rect.left
+
+    case .TOP:
+        new_y = adjusted_point.y
+        new_height = rect.bottom - adjusted_point.y
+
+    case .BOTTOM:
+        new_height = adjusted_point.y - rect.top
+
+    case .TOP_LEFT:
+        new_x = adjusted_point.x
+        new_y = adjusted_point.y
+        new_width = rect.right - adjusted_point.x
+        new_height = rect.bottom - adjusted_point.y
+
+    case .TOP_RIGHT:
+        new_y = adjusted_point.y
+        new_width = adjusted_point.x - rect.left
+        new_height = rect.bottom - adjusted_point.y
+
+    case .BOTTOM_LEFT:
+        new_x = adjusted_point.x
+        new_width = rect.right - adjusted_point.x
+        new_height = adjusted_point.y - rect.top
+
+    case .BOTTOM_RIGHT:
+        new_width = adjusted_point.x - rect.left
+        new_height = adjusted_point.y - rect.top
+
+    case .NONE:
+    }
+
+    min_width : i32= 700
+    min_height : i32 = 600
+
+    if new_width < min_width {
+        if ctx.resize_state == .LEFT || ctx.resize_state == .TOP_LEFT || ctx.resize_state == .BOTTOM_LEFT {
+            new_x = rect.right - min_width
+        }
+        new_width = min_width
+    }
+
+    if new_height < min_height {
+        if ctx.resize_state == .TOP || ctx.resize_state == .TOP_LEFT || ctx.resize_state == .TOP_RIGHT {
+            new_y = rect.bottom - min_height
+        }
+        new_height = min_height
+    }
+
+    win.SetWindowPos(ctx.hwnd, nil, new_x, new_y, new_width, new_height, win.SWP_NOZORDER | win.SWP_NOACTIVATE)
+}
+
+
+handle_resize :: proc() {
+    x, y := get_mouse()
+    resize_area := get_resize_area(x, y)
+
+    if ctx.is_resizing {
+        set_resize_cursor(resize_area)
+    }
+
+    if ctx.is_resizing && mouse_held(.LEFT) {
+        perform_resize()
+    }
 }
 
 Cursor :: enum u8 {

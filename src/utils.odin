@@ -205,6 +205,51 @@ draw_icon_button :: proc(btn: IconButton) -> bool {
     return is_hovered && fx.mouse_pressed(.LEFT)
 }
 
+previous_icon_qoi :: #load("assets/previous.qoi")
+forward_icon_qoi  :: #load("assets/forward.qoi")
+pause_icon_qoi    :: #load("assets/pause.qoi")
+play_icon_qoi     :: #load("assets/play.qoi")
+volume_icon_qoi   :: #load("assets/volume.qoi")
+shuffle_icon_qoi  :: #load("assets/shuffle.qoi")
+search_icon_qoi   :: #load("assets/search.qoi")
+liked_icon_qoi    :: #load("assets/liked.qoi")
+empty_icon_qoi    :: #load("assets/liked_empty.qoi")
+queue_icon_qoi    :: #load("assets/queue.qoi")
+exit_icon_qoi     :: #load("assets/exit.qoi")
+maximize_icon_qoi :: #load("assets/maximize.qoi")
+minimize_icon_qoi :: #load("assets/minimize.qoi")
+
+
+previous_icon : fx.Texture
+forward_icon  : fx.Texture
+pause_icon    : fx.Texture
+play_icon     : fx.Texture
+volume_icon   : fx.Texture
+shuffle_icon  : fx.Texture
+liked_icon    : fx.Texture
+liked_empty   : fx.Texture
+search_icon   : fx.Texture
+queue_icon    : fx.Texture
+exit_icon     : fx.Texture
+maximize_icon : fx.Texture
+minimize_icon : fx.Texture
+
+load_icons :: proc() {
+    previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
+    forward_icon  = fx.load_texture_from_bytes(forward_icon_qoi)
+    pause_icon    = fx.load_texture_from_bytes(pause_icon_qoi)
+    play_icon     = fx.load_texture_from_bytes(play_icon_qoi)
+    volume_icon   = fx.load_texture_from_bytes(volume_icon_qoi)
+    shuffle_icon  = fx.load_texture_from_bytes(shuffle_icon_qoi)
+    liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
+    search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
+    liked_empty   = fx.load_texture_from_bytes(empty_icon_qoi)
+    exit_icon     = fx.load_texture_from_bytes(exit_icon_qoi)
+    maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
+    minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
+    queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
+}
+
 ProgressBar :: struct {
     x, y, w, h: f32,
     progress: f32,
@@ -516,7 +561,7 @@ draw_alert :: proc() {
         set_alpha(fx.Color{0, 0, 0, 255}, shadow_alpha)
     )
 
-    bg_color := set_alpha(brighten(UI_PRIMARY_COLOR, 20), g_alert.animation_progress)
+    bg_color := set_alpha(brighten(UI_PRIMARY_COLOR, 20), min(g_alert.animation_progress, 0.9))
 
     fx.draw_gradient_rect_rounded_vertical(
         alert_x, alert_y, alert_w, alert_h, 12,

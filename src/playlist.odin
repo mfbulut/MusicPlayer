@@ -6,7 +6,7 @@ import "core:fmt"
 
 draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue := false) {
     hover := is_hovering(x, y, w, h)
-    bg_color := TRACK_GRADIENT_BRIGHT
+    bg_color := UI_TRACK_COLOR
 
     if player.current_track.name == track.name {
         bg_color = UI_SECONDARY_COLOR
@@ -49,7 +49,6 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 
     if hover && fx.mouse_pressed(.RIGHT) {
         playlist := find_playlist_by_name(track.playlist)
-
         if fx.key_held(.LEFT_CONTROL) {
             insert_as_next_track(track)
             show_alert(playlist.cover, track.name, "Added to the start of the queue", 1)

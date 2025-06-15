@@ -39,11 +39,6 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         fx.set_scissor(i32(x), i32(y), i32(w), i32(h))
 
-        texture_w := cover.width
-        texture_h := cover.height
-        texture_aspect := f32(texture_w) / f32(texture_h)
-        dest_aspect := f32(w) / f32(h)
-
         fx.draw_texture_cropped(background.tx, x, y, w, h, fx.WHITE)
 
         fx.draw_gradient_rect_vertical(x, y, w, h, NOW_PLAYING_BACKDROP_BRIGHT, NOW_PLAYING_BACKDROP_DARK)
