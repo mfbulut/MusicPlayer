@@ -47,9 +47,10 @@ unload_track_audio :: proc(track: ^Track) {
     fx.unload_audio(&track.audio_clip)
 }
 
-play_track :: proc(track: Track, playlist: Playlist, queue: bool = false, preserve_index: bool = false) {
+play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
     if player.current_track.audio_clip.loaded {
         fx.stop_audio(&player.current_track.audio_clip)
+        unload_track_audio(&player.current_track)
     }
 
     new_track := track
@@ -69,7 +70,7 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false, preser
     if queue do return
     player.current_playlist = playlist
 
-    if !preserve_index {
+    if !player.shuffle {
         for t, i in playlist.tracks {
             if track.name == t.name && track.path == t.path {
                 player.current_index = i
@@ -104,12 +105,14 @@ next_track :: proc() {
     }
 
     if player.shuffle {
+        player.shuffle_position += 1
+
         if player.shuffle_position >= len(player.shuffled_indices) {
             rand.shuffle(player.shuffled_indices[:])
             player.shuffle_position = 0
         }
+
         player.current_index = player.shuffled_indices[player.shuffle_position]
-        player.shuffle_position += 1
     } else {
         player.current_index = (player.current_index + 1) % len(player.current_playlist.tracks)
     }
@@ -139,7 +142,7 @@ previous_track :: proc() {
     }
 
     prev_track := player.current_playlist.tracks[player.current_index]
-    play_track(prev_track, player.current_playlist, false, true) // preserve_index = true
+    play_track(prev_track, player.current_playlist)
 }
 
 seek_to_position :: proc(position: f32) {
