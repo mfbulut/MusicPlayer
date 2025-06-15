@@ -552,15 +552,6 @@ draw_alert :: proc() {
     alert_x := screen_w - alert_w - padding + (1.0 - g_alert.animation_progress) * (alert_w + padding)
     alert_y := screen_h - alert_h - padding - 75
 
-    shadow_offset := f32(4)
-    shadow_alpha := g_alert.animation_progress * 0.2
-
-    fx.draw_rect_rounded(
-        alert_x + shadow_offset, alert_y + shadow_offset,
-        alert_w, alert_h, 12,
-        set_alpha(fx.Color{0, 0, 0, 255}, shadow_alpha)
-    )
-
     bg_color := set_alpha(brighten(UI_PRIMARY_COLOR, 20), min(g_alert.animation_progress, 0.9))
 
     fx.draw_gradient_rect_rounded_vertical(

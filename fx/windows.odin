@@ -84,7 +84,8 @@ load_icon_by_size :: proc(desired_size: int) -> win.HICON {
     )
 }
 
-window_styles :: win.WS_POPUP | win.WS_VISIBLE
+window_styles :: win.WS_POPUP | win.WS_VISIBLE | win.WS_CAPTION | win.WS_OVERLAPPEDWINDOW
+
 chroma_key :: Color{16, 0, 16, 0}
 
 HOTKEY_NEXT :: 1001
@@ -417,6 +418,11 @@ win_proc :: proc "stdcall" (hwnd: win.HWND, message: win.UINT, wparam: win.WPARA
 			}
 		}
 		return 0
+	case win.WM_NCCALCSIZE:
+	    if (wparam == 1) {
+	        return 0; // removes the title bar height
+	    }
+	    break;
 
 	case win.WM_ENTERSIZEMOVE:
         win.SetTimer(ctx.hwnd, 1, win.USER_TIMER_MINIMUM, nil)
