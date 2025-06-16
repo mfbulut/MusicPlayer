@@ -30,7 +30,7 @@ Playlist :: struct {
     name:      string,
     tracks:    [dynamic]Track,
     cover:     fx.Texture,
-    cover_path:string,
+    cover_path : string,
     loaded: bool,
 }
 
@@ -232,30 +232,13 @@ load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
         append(&lyrics, lyric)
     }
 
+    // Just to make sure
     slice.sort_by(lyrics[:], proc(a, b: Lyrics) -> bool {
         return a.time < b.time
     })
 
     return lyrics
 }
-
-print_playlist :: proc() {
-    for playlist in playlists {
-        fmt.printf("Playlist: %s (%d tracks)\n", playlist.name, len(playlist.tracks))
-        for track, i in playlist.tracks {
-            if i < 3 {
-                lyrics_info := len(track.lyrics) > 0 ? fmt.tprintf(" [%d lyrics]", len(track.lyrics)) : ""
-                fmt.printf("  %d. %s%s\n", i+1, track.name, lyrics_info)
-            } else if i == 3 {
-                fmt.printf("  ... and %d more tracks\n", len(playlist.tracks) - 3)
-                break
-            }
-        }
-        fmt.println()
-    }
-}
-
-
 
 import "core:thread"
 import "core:sync"
@@ -274,10 +257,10 @@ cover_loading_thread: ^thread.Thread
 should_stop_loading: bool
 
 init_cover_loading :: proc() {
-    // Clear any existing queue
+    loading_covers = true
+
     clear(&cover_load_queue)
 
-    // Add all unloaded playlists with cover paths to the queue
     for &playlist, i in playlists {
         if !playlist.loaded && len(playlist.cover_path) > 0 {
             append(&cover_load_queue, Cover_Load_Result{

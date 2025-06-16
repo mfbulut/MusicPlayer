@@ -481,10 +481,6 @@ ease_in_out_cubic :: proc(t: f32) -> f32 {
     }
 }
 
-
-
-
-
 Alert :: struct {
     image: fx.Texture,
     title: string,
@@ -497,12 +493,10 @@ Alert :: struct {
 }
 
 g_alert: Alert
-hide_alerts: bool
 ALERT_ANIMATION_SPEED :: 12.0
 ALERT_DEFAULT_DURATION :: 3.0
 
 show_alert :: proc(image: fx.Texture, title: string, description: string, duration: f32 = ALERT_DEFAULT_DURATION) {
-    if hide_alerts do return
     g_alert.image = image
     g_alert.title = title
     g_alert.description = description

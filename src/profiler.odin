@@ -3,7 +3,6 @@ package main
 import "core:time"
 import "core:fmt"
 
-// Profiling helper structure
 Profiler :: struct {
     start_time: time.Time,
     last_section_time: time.Time,
@@ -11,10 +10,8 @@ Profiler :: struct {
     total_time: time.Duration,
 }
 
-// Global profiler instance
 profiler: Profiler
 
-// Simple profiling API
 start_profiling :: proc() {
     profiler.start_time = time.now()
     profiler.last_section_time = profiler.start_time

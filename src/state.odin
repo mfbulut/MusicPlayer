@@ -24,13 +24,27 @@ liked_playlist : Playlist = Playlist {
     tracks = make([dynamic]Track),
 }
 
-SAVE_FILE :: "songs.ini"
+save_path := "setting.ini"
+
+get_save_path :: proc() {
+    appdata := os.get_env("LOCALAPPDATA", context.allocator)
+    if appdata == "" {
+        fmt.eprintf("Could not find LOCALAPPDATA env var\n")
+    }
+
+    app_dir := fmt.tprintf("%s\\fxMusic", appdata)
+    _ = os.make_directory(app_dir)
+
+    save_path = fmt.tprintf("%s\\settings.ini", app_dir)
+}
 
 load_state :: proc(){
+    get_save_path()
+
     liked_songs = make([dynamic]LikedSong)
 
-    if os.exists(SAVE_FILE) {
-        ini_map, err, ok := ini.load_map_from_path(SAVE_FILE, context.allocator)
+    if os.exists(save_path) {
+        ini_map, err, ok := ini.load_map_from_path(save_path, context.allocator)
         if !ok {
             fmt.printf("Could not read liked songs file: %s\n", err)
             return
@@ -62,13 +76,6 @@ load_state :: proc(){
                     player.shuffle = shuffle
                 }
             }
-
-            if hide_str, hide_ok := settings_data["hide_alerts"]; hide_ok {
-                if hide, parse_ok := strconv.parse_bool(hide_str); parse_ok {
-                    hide_alerts = hide
-                }
-            }
-
         }
 
         for section_name, section_data in ini_map {
@@ -91,6 +98,9 @@ load_state :: proc(){
             append(&liked_songs, song)
         }
     }
+
+    switch_theme()
+    get_all_liked_songs()
 }
 
 save_state :: proc() {
@@ -104,7 +114,6 @@ save_state :: proc() {
     ini.write_pair(stream, "volume", fmt.aprintf("%.6f", player.volume))
     ini.write_pair(stream, "shuffle", "true" if player.shuffle else "false")
     ini.write_pair(stream, "theme", fmt.aprintf("%d", ui_state.theme))
-    ini.write_pair(stream, "hide_alerts", "true" if hide_alerts else "false")
 
     io.write_string(stream, "\n")
 
@@ -117,9 +126,9 @@ save_state :: proc() {
 
     ini_data := strings.to_string(builder)
 
-    write_success := os.write_entire_file(SAVE_FILE, transmute([]u8)ini_data)
+    write_success := os.write_entire_file(save_path, transmute([]u8)ini_data)
     if !write_success {
-        fmt.printf("Error writing liked songs to file: %s\n", SAVE_FILE)
+        fmt.printf("Error writing liked songs to file: %s\n", save_path)
     }
 }
 
@@ -171,6 +180,10 @@ get_all_liked_songs :: proc() {
         liked_playlist.tracks = make([dynamic]Track)
     }
 
+    slice.sort_by(liked_songs[:], proc(a, b: LikedSong) -> bool {
+        return a.timestamp > b.timestamp
+    })
+
     for liked_song in liked_songs {
         source_playlist := find_playlist_by_name(liked_song.playlist)
         for track in source_playlist.tracks {
@@ -189,15 +202,6 @@ get_all_liked_songs :: proc() {
             }
         }
     }
-
-    slice.sort_by(liked_playlist.tracks[:], proc(a, b: Track) -> bool {
-        a_index := find_liked_song_index(a.name, a.playlist)
-        b_index := find_liked_song_index(b.name, b.playlist)
-        if a_index < 0 || b_index < 0 {
-            fmt.println("ERROR: Can't find liked song")
-        }
-        return liked_songs[a_index].timestamp > liked_songs[b_index].timestamp
-    })
 }
 
 toggle_song_like :: proc(name: string, playlist: string) {

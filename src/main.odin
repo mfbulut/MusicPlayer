@@ -70,6 +70,7 @@ UIState :: struct {
 
     hide_sidebar : bool,
     sidebar_width: f32,
+    sidebar_anim : f32,
 
     sidebar_scrollbar: Scrollbar,
     playlist_scrollbar: Scrollbar,
@@ -83,6 +84,7 @@ ui_state := UIState {
     follow_lyrics = true,
     search_query = "",
     sidebar_width = SIDEBAR_WIDTH,
+    sidebar_anim = 1.0,
     search_results = make([dynamic]Track),
 }
 
@@ -218,12 +220,12 @@ frame :: proc() {
     sidebar_anim_speed: f32 = 4.0
 
     if ui_state.hide_sidebar {
-        sidebar_anim_progress = clamp(sidebar_anim_progress - dt * sidebar_anim_speed, 0, 1)
+        ui_state.sidebar_anim = clamp(ui_state.sidebar_anim - dt * sidebar_anim_speed, 0, 1)
     } else {
-        sidebar_anim_progress = clamp(sidebar_anim_progress + dt * sidebar_anim_speed, 0, 1)
+        ui_state.sidebar_anim = clamp(ui_state.sidebar_anim + dt * sidebar_anim_speed, 0, 1)
     }
 
-    eased_progress := ease_in_out_cubic(sidebar_anim_progress)
+    eased_progress := ease_in_out_cubic(ui_state.sidebar_anim)
     ui_state.sidebar_width = eased_progress * SIDEBAR_WIDTH
 
     fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
@@ -287,8 +289,8 @@ drop_callback :: proc(files: []string) {
 }
 
 blur_shader_hlsl :: #load("shaders/gaussian_blur.hlsl")
-blur_shader   : fx.Shader
-background    : fx.RenderTexture
+blur_shader : fx.Shader
+background : fx.RenderTexture
 
 playlists : [dynamic]Playlist
 
@@ -303,48 +305,25 @@ main :: proc() {
 
     blur_shader = fx.load_shader(blur_shader_hlsl)
     background = fx.create_render_texture(1024, 1024)
-
     music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
 
     load_state()
-    switch_theme()
 
     fx.run_manual(proc() {
         frame()
-        fx.draw_rect(0, 0, 1280, 720, fx.Color{0, 0, 0, 196})
+        window_w, window_h := fx.window_size()
+        fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
         fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
     })
 
     load_files(music_dir, context.allocator)
 
-	when true {
-		track: mem.Tracking_Allocator
-		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
-
-		defer {
-			if len(track.allocation_map) > 0 {
-				fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
-				for _, entry in track.allocation_map {
-					fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
-				}
-			}
-			if len(track.bad_free_array) > 0 {
-				fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
-				for entry in track.bad_free_array {
-					fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
-				}
-			}
-			mem.tracking_allocator_destroy(&track)
-		}
-	}
-
     sort_playlists()
-    get_all_liked_songs()
     init_cover_loading()
-    loading_covers = true
     search_tracks("")
+
     fx.set_file_drop_callback(drop_callback)
     fx.run(frame)
+
     save_state()
 }
