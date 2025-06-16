@@ -140,7 +140,7 @@ default_font : [512]Character = {
 
 init_font :: proc() {
     // Takes 200 ms at startup maybe use qoi instead
-    
+
     font_texture = load_texture_from_bytes(font_png)
 
 	ps_blob: ^D3D11.IBlob
@@ -291,7 +291,7 @@ draw_text_wrapped :: proc(text: string, x, y, max_width, size: f32, color: Color
 
         if cursor_x + word_width > x + max_width && cursor_x > x {
             cursor_x = x
-            cursor_y += line_height
+            cursor_y += line_height + 4
         }
 
         for char in word {

@@ -123,7 +123,7 @@ draw_sidebar :: proc(x_offset: f32) {
     fx.disable_scissor()
 
     if sidebar_max_scroll > 0 {
-        indicator_x := SIDEBAR_WIDTH - 8 + x_offset
+        indicator_x := SIDEBAR_WIDTH - 10 + x_offset
         indicator_y := y_offset
         indicator_h := sidebar_visible_height - 2
 

@@ -536,6 +536,10 @@ delta_time :: proc() -> f32 {
 	return ctx.delta_time
 }
 
+time :: proc() -> f32 {
+	return ctx.timer
+}
+
 maximize_or_restore_window :: proc() {
     if ctx.is_minimized {
         win.ShowWindow(ctx.hwnd, win.SW_RESTORE)

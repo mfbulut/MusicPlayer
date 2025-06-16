@@ -85,7 +85,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         x = progress_x, y = progress_y, w = progress_w, h = 5,
         progress = progress,
         color = UI_TEXT_COLOR,
-        bg_color = darken(UI_SECONDARY_COLOR), // UI_SECONDARY_COLOR
+        bg_color = darken(UI_SECONDARY_COLOR),
     }
 
     draw_progress_bar(progress_bar)
@@ -117,132 +117,163 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         }
     }
 
-    total_line_height : f32 = 0
-    avg_line_height : f32 = 35
-
     if has_lyrics && ui_state.show_lyrics {
-        lyrics_x := x + content_split + 20
-        lyrics_y := y + 40
-        lyrics_w := w - content_split - 40
-        lyrics_h := h - 60
+        lyrics_panel_x := x + content_split + 20
+        lyrics_panel_y := y + 40
+        lyrics_panel_w := w - content_split - 40
+        lyrics_panel_h := h - 80
 
-        fx.draw_gradient_rect_rounded_vertical(lyrics_x, lyrics_y, lyrics_w, lyrics_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_BRIGHT)
-
-        lyrics_content_y := lyrics_y // ?
-        lyrics_content_h := lyrics_h // ?
-
-        line_height: f32 = 35
-
-        fx.set_scissor(i32(lyrics_x), i32(lyrics_content_y), i32(lyrics_w - 15), i32(lyrics_content_h))
-
-        interaction_rect(lyrics_x, lyrics_content_y, lyrics_w - 15, lyrics_content_h)
-
-        current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)
-
-        if fx.key_pressed(.LEFT) {
-            seek_to_lyric(max(current_lyric_index - 1, 0), track.lyrics[:])
-        }
-
-        if fx.key_pressed(.RIGHT) {
-            seek_to_lyric(min(current_lyric_index + 1, len(track.lyrics) - 1), track.lyrics[:])
-        }
-
-        ui_state.lyrics_scrollbar.scroll = max(ui_state.lyrics_scrollbar.scroll, 0)
-        line_y := lyrics_content_y + 10 - ui_state.lyrics_scrollbar.scroll
-
-        for lyric, i in track.lyrics {
-            len := fx.measure_text(lyric.text, 16)
-            if len + 20 < lyrics_w - 35 {
-                line_height = 35
-            } else {
-                line_height = 50
-            }
-
-            if i < current_lyric_index {
-                avg_line_height += line_height
-            } else if i == current_lyric_index {
-                avg_line_height /= f32(i + 1)
-            }
-
-            total_line_height += line_height
-
-            if line_y > lyrics_y + lyrics_h {
-                continue
-            }
-
-            if line_y + line_height > lyrics_content_y {
-                is_hovering := is_hovering(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height - 1)
-
-                text_color := UI_TEXT_SECONDARY
-                bg_color := fx.BLANK
-
-                if i == current_lyric_index {
-                    text_color = UI_TEXT_COLOR
-                    bg_color = UI_SECONDARY_COLOR
-                } else if is_hovering {
-                    text_color = UI_TEXT_COLOR
-                    fx.set_cursor(.CLICK)
-                }
-
-                track_btn := Button{
-                    x = lyrics_x + 10, y = line_y - 5, w = lyrics_w - 35, h = line_height,
-                    text = "",
-                    color = bg_color,
-                    hover_color = brighten(bg_color),
-                    text_color = UI_TEXT_COLOR,
-                    gradient = -5,
-                }
-
-                draw_button(track_btn)
-
-                // fx.draw_gradient_rect_rounded_vertical(lyrics_x + 10, line_y - 5, lyrics_w - 35, line_height, 8, bg_color, darken(bg_color, 10))
-
-                fx.draw_text_wrapped(lyric.text, lyrics_x + 20, line_y + 3, lyrics_w - 55, 16, text_color)
-
-                if fx.mouse_pressed(.LEFT) && is_hovering {
-                    seek_to_lyric(i, track.lyrics[:])
-                }
-            }
-
-            line_y += line_height
-        }
-
-        fx.disable_scissor()
-
-        lyrics_max_scroll := total_line_height - lyrics_h + 20
-
-        ui_state.lyrics_scrollbar.target = clamp(ui_state.lyrics_scrollbar.target, 0, lyrics_max_scroll)
-        ui_state.lyrics_scrollbar.scroll = clamp(ui_state.lyrics_scrollbar.scroll, 0, lyrics_max_scroll)
-
-        if lyrics_max_scroll > 0 {
-            indicator_x := lyrics_x + lyrics_w - 12
-            indicator_y := lyrics_content_y + 5
-            indicator_h := lyrics_content_h - 10
-
-            draw_scrollbar(&ui_state.lyrics_scrollbar, indicator_x, indicator_y, 4, indicator_h, lyrics_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
-
-            if ui_state.lyrics_scrollbar.is_dragging {
-                ui_state.follow_lyrics = false
-            }
-        }
-
-        if ui_state.follow_lyrics && current_lyric_index >= 0 && current_lyric_index < len(track.lyrics) {
-            target_scroll := f32(current_lyric_index) * avg_line_height - lyrics_content_h/2
-            target_scroll = clamp(target_scroll, 0, lyrics_max_scroll)
-            ui_state.lyrics_scrollbar.target = target_scroll
-        }
-
-        scroll_delta := fx.get_mouse_scroll()
-        if scroll_delta != 0 {
-            if is_hovering(lyrics_x, lyrics_content_y, lyrics_w - 15, lyrics_content_h) {
-                ui_state.follow_lyrics = false
-
-                ui_state.lyrics_scrollbar.target -= f32(scroll_delta) * 80
-                ui_state.lyrics_scrollbar.target = clamp(ui_state.lyrics_scrollbar.target, 0, lyrics_max_scroll)
-            }
-        }
+        draw_lyrics(lyrics_panel_x, lyrics_panel_y, lyrics_panel_w, lyrics_panel_h, &track)
     }
 
     window_w, window_h := fx.window_size()
     interaction_rect(0, 0, f32(window_w), f32(window_h))
+}
+
+
+LYRIC_HEIGHT :: 48
+LYRIC_FONT_SIZE :: 18
+
+draw_lyrics :: proc(x, y, w, h: f32, track: ^Track) {
+    fx.draw_gradient_rect_rounded_vertical(x, y, w, h, 12,
+        set_alpha(BACKGROUND_GRADIENT_BRIGHT, 0.85),
+        set_alpha(BACKGROUND_GRADIENT_DARK, 0.75))
+
+    content_y := y + 10
+    content_h := h - 20
+
+    total_line_height: f32 = 0
+    avg_line_height: f32 = LYRIC_HEIGHT
+    line_height: f32 = LYRIC_HEIGHT
+
+    fx.set_scissor(i32(x + 10), i32(y), i32(w - 25), i32(h))
+    interaction_rect(x + 10, content_y, w - 25, content_h)
+
+    current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)
+
+    if fx.key_pressed(.LEFT) {
+        seek_to_lyric(max(current_lyric_index - 1, 0), track.lyrics[:])
+        ui_state.follow_lyrics = true
+    }
+
+    if fx.key_pressed(.RIGHT) {
+        seek_to_lyric(min(current_lyric_index + 1, len(track.lyrics) - 1), track.lyrics[:])
+        ui_state.follow_lyrics = true
+    }
+
+    ui_state.lyrics_scrollbar.scroll = max(ui_state.lyrics_scrollbar.scroll, 0)
+    line_y := content_y + 15 - ui_state.lyrics_scrollbar.scroll
+
+    line_heights := make([]f32, len(track.lyrics), context.temp_allocator)
+    for lyric, i in track.lyrics {
+        text_width := fx.measure_text(lyric.text, LYRIC_FONT_SIZE)
+
+        if text_width < w - 60 {
+            line_heights[i] = LYRIC_HEIGHT
+        } else {
+            line_heights[i] = LYRIC_HEIGHT * 1.6
+        }
+
+        total_line_height += line_heights[i]
+    }
+
+    if current_lyric_index > 0 {
+        sum: f32 = 0
+        for i in 0..<current_lyric_index {
+            sum += line_heights[i]
+        }
+        avg_line_height = sum / f32(current_lyric_index)
+    }
+
+    for lyric, i in track.lyrics {
+        current_line_height := line_heights[i]
+
+        if line_y > content_y + content_h + 20 {
+            line_y += current_line_height
+            continue
+        }
+
+        if line_y + current_line_height < content_y - 20 {
+            line_y += current_line_height
+            continue
+        }
+
+        is_current := i == current_lyric_index
+        is_past := i < current_lyric_index
+        is_future := i > current_lyric_index
+        is_hovering := is_hovering(x + 15, line_y, w - 35, current_line_height)
+
+        text_color := UI_TEXT_SECONDARY
+
+        if is_current {
+            text_color = UI_TEXT_COLOR
+        } else if is_past {
+            text_color = set_alpha(UI_TEXT_SECONDARY, 0.55)
+        } else if is_future {
+            text_color = set_alpha(UI_TEXT_SECONDARY, 0.75)
+        }
+
+        if is_hovering && !is_current {
+            text_color = set_alpha(UI_TEXT_COLOR, 0.8)
+            fx.set_cursor(.CLICK)
+        }
+
+        if is_current {
+            fx.draw_circle(x + 15, line_y + current_line_height / 2 + 1, 2.5, UI_SECONDARY_COLOR)
+        }
+
+        text_x := x + (is_current ? 28 : 25)
+        text_y := line_y + (current_line_height - LYRIC_FONT_SIZE) / 2
+
+        if current_line_height > LYRIC_HEIGHT {
+            text_y = line_y + (current_line_height - LYRIC_FONT_SIZE * 2 - 4) / 2
+        }
+
+        fx.draw_text_wrapped(lyric.text, text_x, text_y, w - 60, LYRIC_FONT_SIZE, text_color)
+
+        if fx.mouse_pressed(.LEFT) && is_hovering {
+            seek_to_lyric(i, track.lyrics[:])
+            ui_state.follow_lyrics = true
+        }
+
+        line_y += current_line_height
+    }
+
+    fx.disable_scissor()
+
+    lyrics_max_scroll := max(0, total_line_height - content_h + 30)
+    ui_state.lyrics_scrollbar.target = clamp(ui_state.lyrics_scrollbar.target, 0, lyrics_max_scroll)
+    ui_state.lyrics_scrollbar.scroll = clamp(ui_state.lyrics_scrollbar.scroll, 0, lyrics_max_scroll)
+
+    if lyrics_max_scroll > 0 {
+        scrollbar_x := x + w - 15
+        scrollbar_y := content_y
+        scrollbar_h := content_h
+
+        draw_scrollbar(&ui_state.lyrics_scrollbar, scrollbar_x, scrollbar_y, 4, scrollbar_h, lyrics_max_scroll, set_alpha(UI_PRIMARY_COLOR, 0.8), set_alpha(UI_SECONDARY_COLOR, 0.6))
+
+        if ui_state.lyrics_scrollbar.is_dragging {
+            ui_state.follow_lyrics = false
+        }
+    }
+
+    if ui_state.follow_lyrics && current_lyric_index >= 0 && current_lyric_index < len(track.lyrics) {
+        current_lyric_pos: f32 = 0
+        for i in 0..<current_lyric_index {
+            current_lyric_pos += line_heights[i]
+        }
+
+        target_scroll := current_lyric_pos - content_h/2 + line_heights[current_lyric_index]/2
+        target_scroll = clamp(target_scroll, 0, lyrics_max_scroll)
+        ui_state.lyrics_scrollbar.target = target_scroll
+    }
+
+    scroll_delta := fx.get_mouse_scroll()
+    if scroll_delta != 0 {
+        if is_hovering(x + 10, content_y, w - 25, content_h) {
+            ui_state.follow_lyrics = false
+            ui_state.lyrics_scrollbar.target -= f32(scroll_delta) * 100
+            ui_state.lyrics_scrollbar.target = clamp(ui_state.lyrics_scrollbar.target, 0, lyrics_max_scroll)
+        }
+    }
 }
