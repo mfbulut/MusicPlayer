@@ -72,6 +72,9 @@ UIState :: struct {
     playlist_scrollbar: Scrollbar,
     lyrics_scrollbar: Scrollbar,
     search_scrollbar: Scrollbar,
+
+    lyrics_animation_progress: f32,
+    lyrics_target_progress: f32,
 }
 
 ui_state := UIState {

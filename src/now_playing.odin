@@ -7,8 +7,21 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
     has_lyrics := len(track.lyrics) > 0
 
-    art_size: f32 = has_lyrics && ui_state.show_lyrics ? 250 : 300
-    content_split := has_lyrics && ui_state.show_lyrics ? w * 0.5 : w
+    if has_lyrics {
+        ui_state.lyrics_target_progress = ui_state.show_lyrics ? 1.0 : 0.0
+    } else {
+        ui_state.lyrics_target_progress = 0.0
+    }
+
+    animation_speed: f32 = 8.0
+    ui_state.lyrics_animation_progress += (ui_state.lyrics_target_progress - ui_state.lyrics_animation_progress) * animation_speed * fx.delta_time()
+
+    ui_state.lyrics_animation_progress = clamp(ui_state.lyrics_animation_progress, 0.0, 1.0)
+
+    lyrics_width_factor := ui_state.lyrics_animation_progress * 0.5
+    content_split := w * (1.0 - lyrics_width_factor)
+
+    art_size: f32 = has_lyrics ? mix(300, 250, ui_state.lyrics_animation_progress) : 300
 
     art_x := x + content_split/2 - art_size/2
     total_h := art_size + 135
@@ -49,7 +62,6 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     } else {
         fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
     }
-
 
     selected_title := track.audio_clip.tags.title if track.audio_clip.has_tags else track.name
     selected_album := track.audio_clip.tags.album if track.audio_clip.has_tags else track.playlist
@@ -117,27 +129,34 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
         }
     }
 
-    if has_lyrics && ui_state.show_lyrics {
-        lyrics_panel_x := x + content_split + 20
+    if has_lyrics && ui_state.lyrics_animation_progress > 0.001 {
+        lyrics_panel_w := (w * 0.5 - 40)
+        lyrics_panel_x := x + content_split + 20 + (w - content_split - 40 - lyrics_panel_w) + (1 - ui_state.lyrics_animation_progress) * w * 0.5
         lyrics_panel_y := y + 40
-        lyrics_panel_w := w - content_split - 40
         lyrics_panel_h := h - 80
 
-        draw_lyrics(lyrics_panel_x, lyrics_panel_y, lyrics_panel_w, lyrics_panel_h, &track)
+        lyrics_alpha := ui_state.lyrics_animation_progress
+
+        if lyrics_panel_w > 10 {
+            draw_lyrics(lyrics_panel_x, lyrics_panel_y, lyrics_panel_w, lyrics_panel_h, &track, lyrics_alpha)
+        }
     }
 
     window_w, window_h := fx.window_size()
     interaction_rect(0, 0, f32(window_w), f32(window_h))
 }
 
+mix :: proc(a, b, t: f32) -> f32 {
+    return a + (b - a) * t
+}
 
 LYRIC_HEIGHT :: 48
 LYRIC_FONT_SIZE :: 18
 
-draw_lyrics :: proc(x, y, w, h: f32, track: ^Track) {
+draw_lyrics :: proc(x, y, w, h: f32, track: ^Track, alpha: f32) {
     fx.draw_gradient_rect_rounded_vertical(x, y, w, h, 12,
-        set_alpha(BACKGROUND_GRADIENT_BRIGHT, 0.85),
-        set_alpha(BACKGROUND_GRADIENT_DARK, 0.75))
+        set_alpha(BACKGROUND_GRADIENT_BRIGHT, 0.85 * alpha),
+        set_alpha(BACKGROUND_GRADIENT_DARK, 0.75 * alpha))
 
     content_y := y + 10
     content_h := h - 20
@@ -206,20 +225,20 @@ draw_lyrics :: proc(x, y, w, h: f32, track: ^Track) {
         text_color := UI_TEXT_SECONDARY
 
         if is_current {
-            text_color = UI_TEXT_COLOR
+            text_color = set_alpha(UI_TEXT_COLOR, alpha)
         } else if is_past {
-            text_color = set_alpha(UI_TEXT_SECONDARY, 0.55)
+            text_color = set_alpha(UI_TEXT_SECONDARY, 0.55 * alpha)
         } else if is_future {
-            text_color = set_alpha(UI_TEXT_SECONDARY, 0.75)
+            text_color = set_alpha(UI_TEXT_SECONDARY, 0.75 * alpha)
         }
 
         if is_hovering && !is_current {
-            text_color = set_alpha(UI_TEXT_COLOR, 0.8)
+            text_color = set_alpha(UI_TEXT_COLOR, 0.8 * alpha)
             fx.set_cursor(.CLICK)
         }
 
         if is_current {
-            fx.draw_circle(x + 15, line_y + current_line_height / 2 + 1, 2.5, UI_SECONDARY_COLOR)
+            fx.draw_circle(x + 15, line_y + current_line_height / 2 + 1, 2.5,  set_alpha(UI_SECONDARY_COLOR, alpha))
         }
 
         text_x := x + (is_current ? 28 : 25)
