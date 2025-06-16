@@ -203,8 +203,8 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
     mouse_x, mouse_y := fx.get_mouse()
 
-    progress_bar_height: f32 = 10
-    is_over_progress := f32(mouse_y) >= player_y - progress_bar_height && f32(mouse_y) <= player_y + 5
+    progress_bar_height: f32 = 20
+    is_over_progress := f32(mouse_y) >= player_y - progress_bar_height && f32(mouse_y) <= player_y + 10
 
     if fx.mouse_pressed(.LEFT) && is_over_progress && !ui_state.is_dragging_time {
         ui_state.is_dragging_progress = true

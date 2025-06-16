@@ -142,8 +142,8 @@ init :: proc(title: string, width, height: int) {
 	win.SetLayeredWindowAttributes(ctx.hwnd, win.RGB(chroma_key.r, chroma_key.g, chroma_key.b), 255, 0x00000001);
 
 	init_dx()
+	init_font()
 	init_audio()
-	set_scissor(0, 0, i32(width), i32(height))
 
     win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
     win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
@@ -151,7 +151,9 @@ init :: proc(title: string, width, height: int) {
 
 	ctx.window.w = int(adjusted_width)
 	ctx.window.h = int(adjusted_height)
-	
+
+	set_scissor(0, 0, i32(ctx.window.w), i32(ctx.window.h))
+
 	ctx.is_running = true
 }
 

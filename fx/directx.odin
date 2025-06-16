@@ -202,10 +202,6 @@ init_dx :: proc() {
 	}
 
 	device->CreateBuffer(&constant_buffer_desc, nil, &constant_buffer)
-
-	update_constant_buffer()
-
-	init_font()
 }
 
 @(private)

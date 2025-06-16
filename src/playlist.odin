@@ -23,7 +23,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
         gradient = -5,
     }
 
-    draw_button(track_btn)
+    draw_button(track_btn, 0, false)
 
     text_color := UI_TEXT_COLOR
     secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
@@ -96,7 +96,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
     fx.set_scissor(i32(x), i32(list_y), i32(w - 15), i32(list_h))
 
     if !ui_state.playlist_scrollbar.is_dragging {
-        interaction_rect(f32(x), f32(list_y), f32(w - 15), f32(list_h))
+        interaction_rect(f32(x), f32(list_y), f32(w - 15), f32(list_h - 15))
     }
 
     track_y := list_y - ui_state.playlist_scrollbar.scroll

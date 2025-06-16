@@ -39,16 +39,14 @@ Audio :: struct {
 @(private)
 audio_engine: miniaudio.engine
 
-when OPUS_SUPPORT {
-    pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
+pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
 
-    opus_decoder := miniaudio.decoding_backend_vtable {
-    	onInit = ma_decoding_backend_init__libopus,
-    	onInitFile = ma_decoding_backend_init_file__libopus,
-    	onInitFileW = nil,
-    	onInitMemory = nil,
-    	onUninit = ma_decoding_backend_uninit__libopus
-    }
+opus_decoder := miniaudio.decoding_backend_vtable {
+	onInit = ma_decoding_backend_init__libopus,
+	onInitFile = ma_decoding_backend_init_file__libopus,
+	onInitFileW = nil,
+	onInitMemory = nil,
+	onUninit = ma_decoding_backend_uninit__libopus
 }
 
 init_audio :: proc() -> bool {
@@ -59,9 +57,7 @@ init_audio :: proc() -> bool {
         return false
     }
 
-    when OPUS_SUPPORT {
-        pCustomBackendVTables[0] = &opus_decoder
-    }
+    pCustomBackendVTables[0] = &opus_decoder
 
     return true
 }
@@ -86,11 +82,9 @@ load_audio :: proc(filepath: string) -> Audio {
         outputSampleRate = 0,
     )
 
-    when OPUS_SUPPORT {
-        decoder_config.ppCustomBackendVTables = &pCustomBackendVTables[0]
-        decoder_config.customBackendCount     = 1
-        decoder_config.pCustomBackendUserData = nil
-    }
+    decoder_config.ppCustomBackendVTables = &pCustomBackendVTables[0]
+    decoder_config.customBackendCount     = 1
+    decoder_config.pCustomBackendUserData = nil
 
     switch extension {
     case ".mp3":

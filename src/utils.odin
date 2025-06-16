@@ -42,23 +42,23 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
     return string(truncated_text_buffer[:target_len])
 }
 
-ANIM_ARRAY_SIZE :: 1024 * 16
+ANIM_ARRAY_SIZE :: 1024 * 32
 g_anim_values: [ANIM_ARRAY_SIZE]f32
 
 hash_button :: proc(x, y, w, h: u32) -> u32 {
-    hash := u32(2166136261)
+    hash: u32 = 2166136261
 
-    hash = (hash ~ x) * 16777619
-    hash = hash ~ (hash >> 13)
+    hash = hash ~ x
+    hash = hash * 16777619
 
-    hash = (hash ~ y) * 16777619
-    hash = hash ~ (hash >> 13)
+    hash = hash ~ y
+    hash = hash * 16777619
 
-    hash = (hash ~ w) * 16777619
-    hash = hash ~ (hash >> 13)
+    hash = hash ~ w
+    hash = hash * 16777619
 
-    hash = (hash ~ h) * 16777619
-    hash = hash ~ (hash >> 13)
+    hash = hash ~ h
+    hash = hash * 16777619
 
     hash = hash ~ (hash >> 16)
     hash = hash * 0x85ebca6b
@@ -69,7 +69,7 @@ hash_button :: proc(x, y, w, h: u32) -> u32 {
     return hash % ANIM_ARRAY_SIZE
 }
 
-draw_button :: proc(btn: Button, text_offset := 0) -> bool {
+draw_button :: proc(btn: Button, text_offset := 0, cursor := true) -> bool {
     mouse_x, mouse_y := fx.get_mouse()
     is_hovered := is_hovering(btn.x, btn.y, btn.w, btn.h)
     is_valid := is_valid(f32(mouse_x), f32(mouse_y))
@@ -104,7 +104,7 @@ draw_button :: proc(btn: Button, text_offset := 0) -> bool {
         )
     }
 
-    if is_hovered && is_valid {
+    if is_hovered && is_valid && false {
         fx.set_cursor(.CLICK)
     }
 
@@ -560,7 +560,6 @@ draw_alert :: proc() {
 
     image_size := f32(50)
     if g_alert.image.width != 0 {
-        image_alpha := u8(g_alert.animation_progress * 255)
         fx.draw_texture_rounded(
             g_alert.image,
             content_x, content_y + (alert_h - 30 - image_size) / 2,
@@ -577,7 +576,6 @@ draw_alert :: proc() {
         fx.draw_text(title_text, content_x, content_y, 18, title_color)
         content_y += 25
     }
-
 
     desc_color := set_alpha(fx.Color{200, 200, 215, 255}, g_alert.animation_progress)
     if len(g_alert.description) > 0 {

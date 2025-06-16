@@ -1,7 +1,7 @@
 package main
 
 import fx "../fx"
-import "core:fmt"
+
 import "core:math"
 import "core:math/rand"
 

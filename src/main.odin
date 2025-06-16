@@ -2,13 +2,9 @@ package main
 
 import fx "../fx"
 
-import "core:fmt"
-import "core:mem"
-
 import "core:os"
 import "core:os/os2"
 import "core:strings"
-import "core:math"
 
 UI_PRIMARY_COLOR      := fx.Color{24, 14, 44, 255}
 UI_SECONDARY_COLOR    := fx.Color{95, 58, 137, 255}
@@ -202,6 +198,7 @@ sidebar_anim_progress: f32 = 1.0
 
 frame :: proc() {
     dt := min(fx.delta_time(), 1.0 / 60)
+
     window_w, window_h := fx.window_size()
 
     if fx.key_pressed(.F4) {
@@ -311,12 +308,14 @@ main :: proc() {
 
     fx.run_manual(proc() {
         frame()
+
         window_w, window_h := fx.window_size()
         fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
         fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
     })
 
     load_files(music_dir, context.allocator)
+
     get_all_liked_songs()
 
     sort_playlists()
@@ -324,6 +323,7 @@ main :: proc() {
     search_tracks("")
 
     fx.set_file_drop_callback(drop_callback)
+
     fx.run(frame)
 
     save_state()
