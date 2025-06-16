@@ -100,7 +100,6 @@ load_state :: proc(){
     }
 
     switch_theme()
-    get_all_liked_songs()
 }
 
 save_state :: proc() {

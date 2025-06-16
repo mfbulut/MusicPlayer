@@ -317,6 +317,7 @@ main :: proc() {
     })
 
     load_files(music_dir, context.allocator)
+    get_all_liked_songs()
 
     sort_playlists()
     init_cover_loading()
