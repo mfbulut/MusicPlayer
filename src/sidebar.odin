@@ -123,10 +123,13 @@ draw_sidebar :: proc(x_offset: f32) {
     fx.disable_scissor()
 
     if sidebar_max_scroll > 0 {
-        indicator_x := SIDEBAR_WIDTH - 10 + x_offset
+        indicator_x := SIDEBAR_WIDTH - 7 + x_offset
         indicator_y := y_offset
         indicator_h := sidebar_visible_height - 2
 
+        if ui_state.current_view == .NOW_PLAYING {
+            indicator_x -= 3
+        }
         draw_scrollbar(&ui_state.sidebar_scrollbar, indicator_x, indicator_y, 4, indicator_h, sidebar_max_scroll, UI_PRIMARY_COLOR, UI_SECONDARY_COLOR)
     }
 

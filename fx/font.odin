@@ -140,7 +140,6 @@ default_font : [512]Character = {
 
 init_font :: proc() {
     // Takes 200 ms at startup maybe use qoi instead
-
     font_texture = load_texture_from_bytes(font_png)
 
 	ps_blob: ^D3D11.IBlob

@@ -84,7 +84,7 @@ load_icon_by_size :: proc(desired_size: int) -> win.HICON {
     )
 }
 
-window_styles :: win.WS_POPUP | win.WS_VISIBLE | win.WS_CAPTION | win.WS_OVERLAPPEDWINDOW
+window_styles :: win.WS_OVERLAPPEDWINDOW | win.WS_VISIBLE
 
 chroma_key :: Color{16, 0, 16, 0}
 

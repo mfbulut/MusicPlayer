@@ -7,7 +7,7 @@ A **minimalist**, **modern**, and **native** music player
 ### Features
 - **Auto-scans Music Folder**: By default, scans `C:\Users\{username}\Music\` for Music files.
   - Each folder treated as a playlist
-- **Supported formats**: mp3, flac, wav and ogg(opus)
+- **Supported formats**: mp3, flac, wav and ogg
 - **Cover Art Support**:
   - Extracts embedded cover art from file metadata.
   - If unavailable, tries to load cover.png, cover.jpg, or cover.qoi from the music folder.

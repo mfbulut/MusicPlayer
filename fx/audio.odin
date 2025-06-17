@@ -39,7 +39,7 @@ Audio :: struct {
 @(private)
 audio_engine: miniaudio.engine
 
-pCustomBackendVTables : [1][^]miniaudio.decoding_backend_vtable
+pCustomBackendVTables : [2][^]miniaudio.decoding_backend_vtable
 
 opus_decoder := miniaudio.decoding_backend_vtable {
 	onInit = ma_decoding_backend_init__libopus,
@@ -47,6 +47,14 @@ opus_decoder := miniaudio.decoding_backend_vtable {
 	onInitFileW = nil,
 	onInitMemory = nil,
 	onUninit = ma_decoding_backend_uninit__libopus
+}
+
+vorbis_decoder := miniaudio.decoding_backend_vtable {
+	onInit = ma_decoding_backend_init__libvorbis,
+	onInitFile = ma_decoding_backend_init_file__libvorbis,
+	onInitFileW = nil,
+	onInitMemory = nil,
+	onUninit = ma_decoding_backend_uninit__libvorbis
 }
 
 init_audio :: proc() -> bool {
@@ -58,6 +66,7 @@ init_audio :: proc() -> bool {
     }
 
     pCustomBackendVTables[0] = &opus_decoder
+    pCustomBackendVTables[1] = &vorbis_decoder
 
     return true
 }
@@ -83,7 +92,7 @@ load_audio :: proc(filepath: string) -> Audio {
     )
 
     decoder_config.ppCustomBackendVTables = &pCustomBackendVTables[0]
-    decoder_config.customBackendCount     = 1
+    decoder_config.customBackendCount     = 2
     decoder_config.pCustomBackendUserData = nil
 
     switch extension {

@@ -365,7 +365,6 @@ end_render :: proc() {
 			verticies_buf[i] = verticies[i]
 		}
 	}
-
 	device_context->Unmap(vertex_buffer, 0)
 	device_context->Draw(u32(verticies_count), 0)
 
