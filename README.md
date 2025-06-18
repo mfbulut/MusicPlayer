@@ -11,6 +11,7 @@ A **minimalist**, **modern**, and **native** music player
 - **Cover Art Support**:
   - Extracts embedded cover art from file metadata.
   - If unavailable, tries to load cover.png, cover.jpg, or cover.qoi from the music folder.
+- **Lyrics**: Supports synced lyrics via lrcget or local .lrc files
 
 ### Controls
 
