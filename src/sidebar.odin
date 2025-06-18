@@ -1,6 +1,6 @@
 package main
 
-import fx "../fx"
+import "fx"
 
 draw_sidebar :: proc(x_offset: f32) {
     window_w, window_h := fx.window_size()

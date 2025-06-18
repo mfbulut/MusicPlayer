@@ -1,6 +1,6 @@
 package main
 
-import fx "../fx"
+import "fx"
 
 draw_now_playing_view :: proc(x, y, w, h: f32) {
     track := player.current_track
@@ -14,7 +14,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     }
 
     animation_speed: f32 = 8.0
-    ui_state.lyrics_animation_progress += (ui_state.lyrics_target_progress - ui_state.lyrics_animation_progress) * animation_speed * fx.delta_time()
+    ui_state.lyrics_animation_progress += (ui_state.lyrics_target_progress - ui_state.lyrics_animation_progress) * animation_speed * min(fx.delta_time(), 1.0 / 60.0)
 
     ui_state.lyrics_animation_progress = clamp(ui_state.lyrics_animation_progress, 0.0, 1.0)
 
@@ -126,6 +126,24 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
         if draw_button(toggle_btn) {
             ui_state.show_lyrics = !ui_state.show_lyrics
+        }
+    } else {
+        get_text := "Get Lyrics"
+        get_width := fx.measure_text(get_text, 14) + 6
+
+        get_btn := Button{
+            x = x + content_split/2 - get_width/2 - 10,
+            y = progress_y + 30,
+            w = get_width + 30,
+            h = 35,
+            text = get_text,
+            color = set_alpha(UI_SECONDARY_COLOR, 0.4),
+            hover_color = set_alpha(UI_HOVER_COLOR, 0.4),
+            text_color = set_alpha(UI_TEXT_SECONDARY, 0.8),
+        }
+
+        if draw_button(get_btn) {
+            download_lyrics()
         }
     }
 

@@ -1,0 +1,34 @@
+name: CI
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 20 * * *
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest, macos-13] # macos-latest is ARM, 13 is Intel
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: laytan/setup-odin@v2
+        with:
+          release: nightly
+      - name: Report
+        run: odin report
+      - name: Non-blocking IO test
+        run: odin test nbio
+        timeout-minutes: 1
+      - name: Run client example
+        run: odin run examples/client
+        timeout-minutes: 1
+      - name: Odin check
+        if: success() || failure()
+        run: odin check examples/complete -vet --strict-style && odin check examples/client -vet --strict-style
+        timeout-minutes: 1

@@ -1,6 +1,6 @@
 package main
 
-import fx "../fx"
+import "fx"
 
 import "base:runtime"
 
@@ -68,6 +68,20 @@ playlist_id :: proc(name: string) -> int {
         }
     }
     return -1
+}
+
+find_track_by_name :: proc(track_name: string, playlist_name: string) -> ^Track {
+    for &playlist in playlists {
+        if playlist.name == playlist_name {
+            for &track in playlist.tracks {
+                if track.name == track_name {
+                    return &track
+                }
+            }
+            return nil
+        }
+    }
+    return nil
 }
 
 find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist {
@@ -199,17 +213,9 @@ get_lrc_path :: proc(music_path: string) -> string {
     return ""
 }
 
-load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
+load_lyrics_from_string :: proc(lrc_content: string) -> [dynamic]Lyrics {
     lyrics := make([dynamic]Lyrics)
 
-    lrc_path := get_lrc_path(music_path)
-
-    lrc_data, read_ok := os.read_entire_file_from_filename(lrc_path, context.temp_allocator)
-    if !read_ok {
-		return lyrics
-    }
-
-    lrc_content := string(lrc_data)
     lines := strings.split_lines(lrc_content, context.temp_allocator)
 
     for &line in lines {
@@ -238,6 +244,19 @@ load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
     })
 
     return lyrics
+}
+
+load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
+    lrc_path := get_lrc_path(music_path)
+
+    lrc_data, read_ok := os.read_entire_file_from_filename(lrc_path, context.temp_allocator)
+    if !read_ok {
+		return {}
+    }
+
+    lrc_content := string(lrc_data)
+
+    return load_lyrics_from_string(lrc_content)
 }
 
 import "core:thread"

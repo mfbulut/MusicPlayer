@@ -1,6 +1,6 @@
 package main
 
-import fx "../fx"
+import "fx"
 
 import "core:fmt"
 import "core:strings"
