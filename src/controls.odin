@@ -67,6 +67,9 @@ draw_player_controls :: proc() {
 
     if draw_icon_button(prev_btn) || fx.key_pressed(.MEDIA_PREV_TRACK) {
         previous_track()
+
+        ui_state.lyrics_scrollbar.scroll = 0
+        ui_state.lyrics_scrollbar.target = 0
     }
 
     play_btn := IconButton{
@@ -89,6 +92,9 @@ draw_player_controls :: proc() {
 
     if draw_icon_button(next_btn) || fx.key_pressed(.MEDIA_NEXT_TRACK) {
         next_track()
+        
+        ui_state.lyrics_scrollbar.scroll = 0
+        ui_state.lyrics_scrollbar.target = 0
     }
 
     shuffle_btn := IconButton{
