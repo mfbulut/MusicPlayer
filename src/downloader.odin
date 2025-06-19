@@ -91,6 +91,11 @@ download_lyrics :: proc() {
 				}
 			}
 
+			if best_duration_diff > 10 {
+				show_alert({}, "No Lyrics Found", "No lyrics are found for this song", 2)
+				return
+			}
+
 			if best_match != nil {
 				if synced_lyrics, has_lyrics := best_match.syncedLyrics.?; has_lyrics {
 					if track != nil {
