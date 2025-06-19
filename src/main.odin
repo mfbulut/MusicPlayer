@@ -234,6 +234,10 @@ frame :: proc() {
 		fx.set_sidebar_size(ui_state.hide_sidebar ? 0 : 200)
 	}
 
+	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.L) {
+		download_lyrics()
+	}
+
 	update_player(dt)
 	update_smooth_scrolling(dt)
 
@@ -378,7 +382,7 @@ main :: proc() {
 
 		window_w, window_h := fx.window_size()
 		fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
-		fx.draw_text_aligned("Loading...", 640, 360 - 16, 32, fx.WHITE, .CENTER)
+		fx.draw_text_aligned("Loading...", f32(window_w) / 2, f32(window_h) / 2 - 16, 32, fx.WHITE, .CENTER)
 	})
 
 	load_files(music_dir, context.allocator)

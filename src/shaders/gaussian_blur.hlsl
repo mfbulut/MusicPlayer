@@ -13,7 +13,7 @@ Texture2D    mytexture : register(t0);
 SamplerState mysampler : register(s0);
 
 // Constants
-static const int samples = 45;
+static const int samples = 50;
 static const int LOD = 2;         // gaussian done on MIPmap at scale LOD
 static const int sLOD = 1 << LOD; // tile size = 2^LOD
 static const float sigma = float(samples) * 0.25;

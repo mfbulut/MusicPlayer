@@ -228,14 +228,6 @@ unload_audio :: proc(clip: ^Audio) {
 	clip.loaded = false
 }
 
-
-get_tags :: proc(clip: ^Audio) -> (ID3_Tags, bool) {
-	if !clip.loaded || !clip.has_tags {
-		return {}, false
-	}
-	return clip.tags, true
-}
-
 play_audio :: proc(clip: ^Audio) -> bool {
 	if !clip.loaded {
 		fmt.println("Audio clip not loaded!")
