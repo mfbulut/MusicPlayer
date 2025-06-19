@@ -43,7 +43,7 @@ download_lyrics :: proc() {
 		res := fx.get(url)
 
 		if res.status == 0 {
-			show_alert({}, "Connection Error", "Check your internet connection and try again", 2)
+			show_alert({}, "Network Error", "Check your internet connection and try again", 2)
 			return
 		}
 
@@ -69,7 +69,7 @@ download_lyrics :: proc() {
 	res := fx.get(url)
 
 	if res.status == 0 {
-		show_alert({}, "Connection Error", "Check your internet connection and try again", 2)
+		show_alert({}, "Network Error", "Check your internet connection and try again", 2)
 		return
 	}
 
@@ -108,13 +108,13 @@ download_lyrics :: proc() {
 					return
 				}
 			} else {
-				show_alert({}, "No Synced Lyrics Found", "No synced lyrics are available for this song", 2)
+				show_alert({}, "No Synced Lyrics Available", "No synced lyrics are available for this song", 2)
 				return
 			}
 		}
 	}
 
-	show_alert({}, "No Lyrics Found", "No lyrics are found for this song", 2)
+	show_alert({}, "Lyrics Unavailable", "No lyrics are found for this song", 2)
 }
 
 parse_single_lyrics_response :: proc(json_data: string) -> (LyricsResponse, bool) {
