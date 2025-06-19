@@ -34,14 +34,14 @@ download_lyrics :: proc() {
 
         res, err := client.get(api_url)
         if err != nil {
-            show_alert({}, "Request failed", "Failed to connect lrclib.net", 1)
+            show_alert({}, "Request failed", "Failed to connect lrclib.net", 2)
             return
         }
         defer client.response_destroy(&res)
 
         body, allocation, berr := client.response_body(&res)
         if berr != nil {
-            show_alert({}, "Request failed", "Failed to connect lrclib.net", 1)
+            show_alert({}, "Request failed", "Failed to connect lrclib.net", 2)
             return
         }
 
@@ -59,16 +59,16 @@ download_lyrics :: proc() {
 
                     save_lyrics_as_lrc(track, synced_lyrics)
 
-                    show_alert({}, "Lyrics Found", "Lyrics were successfully retrieved", 1)
+                    show_alert({}, "Lyrics Found", "Lyrics were successfully retrieved", 2)
                 } else {
-                    show_alert({}, "No Synced Lyrics Found", "No synced lyrics are available for this song", 1)
+                    show_alert({}, "No Synced Lyrics Found", "No synced lyrics are available for this song", 2)
                 }
         	}
         } else {
-            show_alert({}, "Lyrics Unavailable", "Could not retrieve lyrics for this song", 1)
+            show_alert({}, "Lyrics Unavailable", "Could not retrieve lyrics for this song", 2)
         }
     } else {
-        show_alert({}, "Missing Metadata", "This song doesn't contain metadata required to find lyrics", 1)
+        show_alert({}, "Missing Metadata", "Metadata is required to find lyrics", 2)
     }
 }
 

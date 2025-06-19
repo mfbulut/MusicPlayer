@@ -38,14 +38,17 @@ Currently only Windows is supported
 
 ```odin build src -out:music.exe -o:speed -resource:src/assets/resource.rc -subsystem:windows```
 
-## Recommended Software
+## Recommended Stuff
 
-Lyrics downloaders
+Metadata:
+* https://picard.musicbrainz.org/
+
+Lyrics:
 * https://github.com/tranxuanthang/lrcget
-
-Music downloaders
-* https://cobalt.tools/
-* https://github.com/yt-dlp/yt-dlp
 
 Album covers
 * https://covers.musichoarders.xyz/
+
+Audio:
+* https://cobalt.tools/
+* https://github.com/yt-dlp/yt-dlp

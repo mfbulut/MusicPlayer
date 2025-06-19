@@ -40,9 +40,9 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
     if cover.width > 0 {
         if update_background {
             fx.begin_render_to_texture(&background, {0, 128, 0, 0})
-            fx.set_scissor(0, 0, 1024, 1024)
+            fx.set_scissor(0, 0, 2048, 2048)
             fx.use_shader(blur_shader)
-            fx.draw_texture_cropped(cover, 0, 0, 1024, 1024, fx.WHITE)
+            fx.draw_texture_cropped(cover, 0, 0, 2048, 2048, fx.WHITE)
 
             fx.end_render_to_texture()
             update_background = false

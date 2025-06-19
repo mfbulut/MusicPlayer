@@ -72,8 +72,8 @@ begin_render_to_texture :: proc(rt: ^RenderTexture, clear_color: Color = {0, 0, 
     rt_viewport := D3D11.VIEWPORT{
         TopLeftX = 0,
         TopLeftY = 0,
-        Width    = 1024,
-        Height   = 1024,
+        Width    = 2048,
+        Height   = 2048,
         MinDepth = 0.0,
         MaxDepth = 1.0,
     }

@@ -5,6 +5,7 @@ import ma "vendor:miniaudio"
 // How to compile from source
 // https://github.com/dotBlueShoes/Metronome/blob/master/notes/Compiling%20OPUSFILE%20on%20Windows.md
 
+@(extra_linker_flags="/nodefaultlib:libcmt")
 foreign import decoder {
 	"deps/decoder.lib",
     "deps/opusfile/lib/opusfile.lib",
