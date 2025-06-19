@@ -32,6 +32,8 @@ download_lyrics :: proc() {
 
         api_url := strings.to_string(url_builder)
         res := fx.get(api_url)
+        
+        defer delete(res.data)
 
         if res.status == 200 {
             synced_lyrics := extract_synced_lyrics(string(res.data))
