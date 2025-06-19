@@ -1,6 +1,6 @@
 package main
 
-import "odin-http/client"
+import "fx"
 
 import "core:os"
 import "core:strings"
@@ -31,39 +31,22 @@ download_lyrics :: proc() {
         strings.write_string(&url_builder, duration_str)
 
         api_url := strings.to_string(url_builder)
+        res := fx.get(api_url)
 
-        res, err := client.get(api_url)
-        if err != nil {
-            show_alert({}, "Request failed", "Failed to connect lrclib.net", 2)
-            return
-        }
-        defer client.response_destroy(&res)
+        if res.status == 200 {
+            synced_lyrics := extract_synced_lyrics(string(res.data))
 
-        body, allocation, berr := client.response_body(&res)
-        if berr != nil {
-            show_alert({}, "Request failed", "Failed to connect lrclib.net", 2)
-            return
-        }
+            if len(synced_lyrics) > 0 {
+                track.lyrics = load_lyrics_from_string(synced_lyrics)
+                player.current_track.lyrics = track.lyrics
 
-        defer client.body_destroy(body, allocation)
+                save_lyrics_as_lrc(track, synced_lyrics)
 
-        if res.status == .OK {
-        	#partial switch b in body {
-        	case client.Body_Plain:
-                synced_lyrics := extract_synced_lyrics(b)
+                show_alert({}, "Lyrics Found", "Lyrics were successfully retrieved", 2)
+            } else {
+                show_alert({}, "No Synced Lyrics Found", "No synced lyrics are available for this song", 2)
+            }
 
-                if len(synced_lyrics) > 0 {
-
-                    track.lyrics = load_lyrics_from_string(synced_lyrics)
-                    player.current_track.lyrics = track.lyrics
-
-                    save_lyrics_as_lrc(track, synced_lyrics)
-
-                    show_alert({}, "Lyrics Found", "Lyrics were successfully retrieved", 2)
-                } else {
-                    show_alert({}, "No Synced Lyrics Found", "No synced lyrics are available for this song", 2)
-                }
-        	}
         } else {
             show_alert({}, "Lyrics Unavailable", "Could not retrieve lyrics for this song", 2)
         }

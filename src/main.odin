@@ -2,6 +2,8 @@ package main
 
 import "fx"
 
+import "core:fmt"
+
 import "core:os"
 import "core:os/os2"
 import "core:strings"
@@ -317,8 +319,12 @@ loading_covers: bool
 update_background: bool
 music_dir : string
 
+
+
 main :: proc() {
     fx.init("Music Player", 1280, 720)
+
+
 
     load_icons()
 
