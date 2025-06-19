@@ -81,7 +81,7 @@ get :: proc(url: string) -> Response {
 		return result
 	}
 
-	userAgent := win.utf8_to_wstring("WinHTTP Client/1.0")
+	userAgent := win.utf8_to_wstring("github.com/mfbulut/MusicPlayer WinHTTP Client/1.0")
 
 	hSession := WinHttpOpen(userAgent, WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, nil, nil, 0)
 	if hSession == nil do return result

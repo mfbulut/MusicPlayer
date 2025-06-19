@@ -356,7 +356,7 @@ drop_callback :: proc(files: []string) {
 	}
 }
 
-blur_shader_hlsl :: #load("shaders/gaussian_blur.hlsl")
+blur_shader_hlsl :: #load("assets/shaders/gaussian_blur.hlsl")
 blur_shader: fx.Shader
 background: fx.RenderTexture
 

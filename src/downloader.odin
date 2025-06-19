@@ -1,7 +1,9 @@
 package main
 
 import "fx"
+
 import "core:encoding/json"
+import "core:unicode/utf8"
 import "core:fmt"
 import "core:math"
 import "core:os"
@@ -66,7 +68,9 @@ download_lyrics :: proc() {
 
 	url := fmt.tprintf("https://lrclib.net/api/search?q=%s", url_encode(player.current_track.name))
 
+	fmt.println(url)
 	res := fx.get(url)
+
 
 	if res.status == 0 {
 		show_alert({}, "Network Error", "Check your internet connection and try again", 2)
@@ -231,7 +235,15 @@ url_encode :: proc(s: string) -> string {
 		case 'Ü':
 			strings.write_string(&builder, "%C3%9C")
 		case:
-			strings.write_rune(&builder, r)
+			if r >= 0x80 || r < 0x20 {
+				temp_str := utf8.runes_to_string({r}, context.temp_allocator)
+				temp_bytes := transmute([]u8)temp_str
+				for byte in temp_bytes {
+					strings.write_string(&builder, fmt.tprintf("%%%02X", byte))
+				}
+			} else {
+				strings.write_rune(&builder, r)
+			}
 		}
 	}
 
