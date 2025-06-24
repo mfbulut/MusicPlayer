@@ -2,8 +2,11 @@ package main
 
 import "fx"
 
+import "core:os"
 import "core:fmt"
 import "core:math"
+import "core:strings"
+import fp "core:path/filepath"
 
 Button :: struct {
 	x, y, w, h:  f32,
@@ -693,4 +696,35 @@ hide_alert :: proc() {
 
 is_alert_visible :: proc() -> bool {
 	return g_alert.animation_progress > 0.0
+}
+
+
+is_audio_file :: proc(filepath: string) -> bool {
+	ext := strings.to_lower(fp.ext(filepath), context.temp_allocator)
+	switch ext {
+	case ".mp3", ".wav", ".flac", ".ogg", ".m4a", ".aac", ".wma", ".opus":
+		return true
+	case:
+		return false
+	}
+}
+
+is_image_file :: proc(filepath: string) -> bool {
+	ext := strings.to_lower(fp.ext(filepath), context.temp_allocator)
+	switch ext {
+	case ".qoi", ".png", ".jpg":
+		return true
+	case:
+		return false
+	}
+}
+
+copy_file :: proc(src, dest: string) -> bool {
+    data, ok := os.read_entire_file(src)
+    if !ok {
+        return false
+    }
+    defer delete(data)
+
+    return os.write_entire_file(dest, data)
 }

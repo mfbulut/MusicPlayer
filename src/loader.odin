@@ -34,21 +34,32 @@ Playlist :: struct {
 	loaded:     bool,
 }
 
-load_files :: proc(path: string, allocator: runtime.Allocator) {
-	root_dir, read_err := os2.read_all_directory_by_path(path, allocator)
-	if read_err != nil {
-		fmt.eprintln("Error reading directory:", path, "->", read_err)
-		return
-	}
 
-	context.allocator = allocator
+loader_query : [dynamic]string
 
-	for file in root_dir {
-		if file.type == .Directory {
-			load_files(file.fullpath, allocator)
-		} else {
-			process_music_file(file)
-		}
+load_files :: proc(dir_path: string) {
+    append(&loader_query, dir_path)
+
+	for {
+		path, ok := pop_safe(&loader_query)
+
+	    if ok {
+	    	files, err := os2.read_all_directory_by_path(path, context.allocator)
+	    	if err != nil {
+	    		fmt.eprintln("Error reading directory:", path, "->", err)
+	    		return
+	    	}
+
+	    	for file in files {
+	    		if file.type == .Directory {
+	    		    append(&loader_query, file.fullpath)
+	    		} else {
+	    			process_music_file(file)
+	    		}
+	    	}
+	    } else {
+	    	break
+	    }
 	}
 }
 

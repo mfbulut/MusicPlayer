@@ -332,11 +332,13 @@ frame :: proc() {
 	}
 }
 
+import fp "core:path/filepath"
+
 drop_callback :: proc(files: []string) {
 	for filepath in files {
 		file := os2.stat(filepath, context.allocator) or_continue
 		if file.type == .Directory {
-			load_files(filepath, context.allocator)
+			load_files(filepath)
 			ui_state.selected_playlist = file.name
 			ui_state.current_view = .PLAYLIST_DETAIL
 
@@ -351,7 +353,24 @@ drop_callback :: proc(files: []string) {
 			}
 
 		} else {
-			process_music_file(file, true)
+			if is_audio_file(file.name) {
+				process_music_file(file, true)
+			} else if is_image_file(file.name) {
+				track := find_track_by_name(player.current_track.name, player.current_track.playlist)
+
+				track.audio_clip.cover, _ = fx.load_texture(file.fullpath)
+				player.current_track.audio_clip.cover = track.audio_clip.cover
+				update_background = true
+
+				dest_dir := fp.dir(track.path)
+				dest_stem := fp.stem(track.path)
+				dest_ext := fp.ext(file.fullpath)
+
+				dest_path := strings.join({dest_dir, "\\", dest_stem, dest_ext}, "")
+
+				fmt.println(dest_path)
+				copy_file(file.fullpath, dest_path)
+			}
 		}
 	}
 }
@@ -382,10 +401,17 @@ main :: proc() {
 
 		window_w, window_h := fx.window_size()
 		fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
-		fx.draw_text_aligned("Loading...", f32(window_w) / 2, f32(window_h) / 2 - 16, 32, fx.WHITE, .CENTER)
+		fx.draw_text_aligned(
+			"Loading...",
+			f32(window_w) / 2,
+			f32(window_h) / 2 - 16,
+			32,
+			fx.WHITE,
+			.CENTER,
+		)
 	})
 
-	load_files(music_dir, context.allocator)
+	load_files(music_dir)
 
 	get_all_liked_songs()
 

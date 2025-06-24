@@ -13,6 +13,7 @@ A **minimalist**, **modern**, and **native** music player
   - If unavailable, tries to load cover.png, cover.jpg, or cover.qoi from the music folder.
 - **Lyrics**: Supports synced lyrics via lrcget or local .lrc files
 
+
 ### Controls
 
 | Action                | Shortcut             |

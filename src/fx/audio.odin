@@ -171,15 +171,37 @@ load_audio :: proc(filepath: string) -> Audio {
 	if !clip.has_cover {
 		stem := fp.stem(filepath)
 		dir := fp.dir(filepath)
-		path := strings.join({dir, "/", stem, ".png"}, "")
+		path := strings.join({dir, "/", stem, ".qoi"}, "")
 
-		// TODO: add other formats
-
-		cover, ok := load_texture(path)
-		if ok {
-			clip.cover = cover
-			clip.has_cover = true
+		if os.exists(path) {
+			cover, ok := load_texture(path)
+			if ok {
+				clip.cover = cover
+				clip.has_cover = true
+			}
+		} else {
+			delete(path)
+			path = strings.join({dir, "/", stem, ".png"}, "")
+			if os.exists(path) {
+				cover, ok := load_texture(path)
+				if ok {
+					clip.cover = cover
+					clip.has_cover = true
+				}
+			} else {
+				delete(path)
+				path = strings.join({dir, "/", stem, ".jpg"}, "")
+				if os.exists(path) {
+					cover, ok := load_texture(path)
+					if ok {
+						clip.cover = cover
+						clip.has_cover = true
+					}
+				}
+			}
 		}
+
+
 	}
 
 	return clip
