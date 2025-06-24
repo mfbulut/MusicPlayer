@@ -352,6 +352,7 @@ drop_callback :: proc(files: []string) {
 				playlists[playlist_id].loaded = ok
 			}
 
+			sort_playlists()
 		} else {
 			if is_audio_file(file.name) {
 				process_music_file(file, true)

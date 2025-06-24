@@ -51,6 +51,9 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 		unload_track_audio(&player.current_track)
 	}
 
+	ui_state.playlist_scrollbar.scroll = 0
+	ui_state.playlist_scrollbar.target = 0
+
 	new_track := track
 
 	if !new_track.audio_clip.loaded {

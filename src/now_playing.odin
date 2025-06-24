@@ -108,8 +108,6 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 		if fx.mouse_pressed(.LEFT) {
 			ui_state.selected_playlist = track.playlist
 			ui_state.current_view = .PLAYLIST_DETAIL
-			ui_state.playlist_scrollbar.scroll = 0
-			ui_state.playlist_scrollbar.target = 0
 		}
 	}
 
