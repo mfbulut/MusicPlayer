@@ -94,6 +94,8 @@ HOTKEY_PLAY_PAUSE :: 1003
 init :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
 
+	// win.SetProcessDPIAware() // TODO(furkan) add dpi aware scaling
+
 	instance := win.HINSTANCE(win.GetModuleHandleW(nil))
 	class_name := win.L("Window Class")
 

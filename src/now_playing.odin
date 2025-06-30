@@ -323,7 +323,11 @@ draw_lyrics :: proc(x, y, w, h: f32, track: ^Track, alpha: f32) {
 			text_y = line_y + (current_line_height - LYRIC_FONT_SIZE * 2 - 4) / 2
 		}
 
-		fx.draw_text_wrapped(lyric.text, text_x, text_y, w - 60, LYRIC_FONT_SIZE, text_color)
+		if lyric.text == "" {
+			fx.draw_texture(music_icon, text_x, text_y, 18, 18, text_color)
+		} else {
+			fx.draw_text_wrapped(lyric.text, text_x, text_y, w - 60, LYRIC_FONT_SIZE, text_color)
+		}
 
 		if fx.mouse_pressed(.LEFT) && is_hovering {
 			seek_to_lyric(i, track.lyrics[:])
