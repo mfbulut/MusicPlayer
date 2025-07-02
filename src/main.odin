@@ -91,8 +91,8 @@ init_ui_state :: proc() {
 	}
 	ui_state.search_box.get_clipboard = proc(user_data: rawptr) -> (text: string, ok: bool) {
 		contents := fx.get_clipboard(context.temp_allocator) or_return
-		contents = strings.remove_all(contents, "\n", context.temp_allocator) or_return
-		contents = strings.remove_all(contents, "\r", context.temp_allocator) or_return
+		contents, _ = strings.remove_all(contents, "\n", context.temp_allocator)
+		contents, _ = strings.remove_all(contents, "\r", context.temp_allocator)
 		return contents, true
 	}
 }

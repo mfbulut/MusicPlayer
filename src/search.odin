@@ -201,23 +201,32 @@ handle_char_input :: proc(char: rune) {
 		case 32 ..= 126:
 			textedit.input_rune(&ui_state.search_box, char)
 		case 8:
+			// Backspace.
 			textedit.perform_command(&ui_state.search_box, .Backspace)
 		case 127:
+			// Ctrl+backspace.
 			textedit.perform_command(&ui_state.search_box, .Delete_Word_Left)
 		case 27:
+			// Escape.
 			ui_state.search_focus = false
 			fx.set_char_callback(nil)
 		case 1:
+			// Ctrl+A.
 			textedit.perform_command(&ui_state.search_box, .Select_All)
 		case 26:
+			// Ctrl+Z.
 			textedit.perform_command(&ui_state.search_box, .Undo)
 		case 25:
+			// Ctrl+Y.
 			textedit.perform_command(&ui_state.search_box, .Redo)
 		case 3:
+			// Ctrl+C.
 			textedit.perform_command(&ui_state.search_box, .Copy)
 		case 22:
+			// Ctrl+V.
 			textedit.perform_command(&ui_state.search_box, .Paste)
 		case 24:
+			// Ctrl+X.
 			textedit.perform_command(&ui_state.search_box, .Cut)
 		}
 	}
@@ -240,13 +249,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
 
 	search_query := strings.to_string(ui_state.search_builder)
-	{
-		// Inline of "textedit.begin" because we're not immediate mode.
-		s := &ui_state.search_box
-		textedit.update_time(s)
-		textedit.undo_clear(s, &s.undo)
-		textedit.undo_clear(s, &s.redo)
-	}
+	textedit.update_time(&ui_state.search_box)
 
 	@(static) last_hash: u64
 	if new_hash := hash.fnv64a(transmute([]byte)search_query); new_hash != last_hash {
@@ -268,9 +271,9 @@ draw_search_view :: proc(x, y, w, h: f32) {
 		if ui_state.search_focus {
 			fx.set_char_callback(handle_char_input)
 
-			off_x, off_y := fx.get_mouse()
-			span := f32(off_x) - (text_x)
-			_, fits := fx.measure_text_fits(search_query, TEXT_SIZE, span, 0.5)
+			mouse_x, _ := fx.get_mouse()
+			// Tolerance of 50% allows selections to round from the middle of characters.
+			_, fits := fx.measure_text_fits(search_query, TEXT_SIZE, f32(mouse_x) - text_x, 0.5)
 
 			if fx.mouse_pressed(.LEFT) {
 				// Initial click empties selection, moves cursor to location.
