@@ -1,6 +1,7 @@
 package fx
 
 import "base:runtime"
+import "core:fmt"
 import "core:mem"
 import "core:strings"
 import "core:time"
@@ -166,6 +167,7 @@ init :: proc(title: string, width, height: int) {
 
 	ctx.window.w = int(adjusted_width)
 	ctx.window.h = int(adjusted_height)
+	ctx.prev_time = time.now()
 
 	set_scissor(0, 0, i32(ctx.window.w), i32(ctx.window.h))
 

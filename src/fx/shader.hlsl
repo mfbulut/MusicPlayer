@@ -39,7 +39,7 @@ float3 ScreenSpaceDither( float2 vScreenPos )
 
 float4 ps_main(vs_out input) : SV_TARGET {
 	if(input.texcoord.x < -0.5) {
-		return input.color + float4(ScreenSpaceDither(input.screen_pos), 0) * 2;
+		return input.color + float4(ScreenSpaceDither(input.screen_pos), 0) * 20;
 	} else {
     	return mytexture.Sample(mysampler, input.texcoord) * input.color;
 	}

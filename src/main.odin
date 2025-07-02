@@ -82,6 +82,7 @@ ui_state := UIState {
 	sidebar_anim   = 1.0,
 	search_results = make([dynamic]Track),
 }
+
 @(init)
 init_ui_state :: proc() {
 	textedit.init(&ui_state.search_box, context.allocator, context.allocator)
