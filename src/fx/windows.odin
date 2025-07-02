@@ -1,8 +1,10 @@
 package fx
 
 import "base:runtime"
+import "core:mem"
 import "core:strings"
 import "core:time"
+import "core:unicode/utf8"
 
 import win "core:sys/windows"
 
@@ -11,8 +13,9 @@ Context :: struct {
 	is_running:          bool,
 	is_minimized:        bool,
 	frame_proc:          proc(),
-	text_callback:       proc(char: u8),
+	text_callback:       proc(char: rune),
 	file_drop_callback:  proc(files: []string),
+	clipboard:           strings.Builder,
 	is_hovering_files:   bool,
 	prev_time:           time.Time,
 	delta_time:          f32,
@@ -26,6 +29,7 @@ Context :: struct {
 	key_state:           [256]u8,
 	mouse_state:         [8]u8,
 	mouse_scroll:        int,
+	last_high_surrogate: Maybe(win.WCHAR),
 	last_click_time:     time.Time,
 	last_click_pos:      struct {
 		x, y: int,
@@ -278,6 +282,54 @@ is_hovering_files :: proc() -> bool {
 	return ctx.is_hovering_files
 }
 
+get_clipboard :: proc(allocator := context.temp_allocator) -> (text: string, ok: bool) {
+	win.OpenClipboard(ctx.hwnd) or_return
+	defer win.CloseClipboard()
+
+	win.IsClipboardFormatAvailable(win.CF_UNICODETEXT) or_return
+
+	handle := win.GetClipboardData(win.CF_UNICODETEXT)
+	(handle != nil) or_return
+
+	global := win.HGLOBAL(handle)
+
+	ptr := win.GlobalLock(global)
+	(ptr != nil) or_return
+	defer win.GlobalUnlock(global)
+
+	// Should limit the length, clipboard data is untrusted.
+	str_utf8, allocator_err := win.wstring_to_utf8(win.wstring(ptr), -1, allocator)
+	(allocator_err == nil) or_return
+
+	return str_utf8, true
+}
+
+set_clipboard :: proc(text: string) -> (ok: bool) {
+	win.OpenClipboard(ctx.hwnd) or_return
+	defer win.CloseClipboard()
+
+	text := win.utf8_to_utf16(text, context.temp_allocator)
+	(text != nil) or_return
+
+	data := win.GlobalAlloc(win.GMEM_MOVEABLE, len(text) * size_of(win.WCHAR) + 2)
+	(data != nil) or_return
+	defer if !ok {win.GlobalFree(data)}
+
+	{
+		data := cast([^]byte)win.GlobalLock(win.HGLOBAL(data))
+		(data != nil) or_return
+		defer win.GlobalUnlock(win.HGLOBAL(data))
+		mem.copy_non_overlapping(data, raw_data(text), len(text) * size_of(win.WCHAR))
+		data[len(text) * size_of(win.WCHAR) + 0] = 0
+		data[len(text) * size_of(win.WCHAR) + 1] = 0
+	}
+
+	ret := win.SetClipboardData(win.CF_UNICODETEXT, win.HANDLE(data))
+	(ret != nil) or_return
+
+	return true
+}
+
 side_bar_w := 200
 
 set_sidebar_size :: proc(w: int) {
@@ -468,9 +520,29 @@ win_proc :: proc "stdcall" (
 			return 0
 		}
 	case win.WM_CHAR:
-		char := u8(wparam)
-		if ctx.text_callback != nil && char >= 32 && char != 127 {
-			ctx.text_callback(char)
+		wchar := win.WCHAR(wparam)
+		if wparam >= 0xd800 && wparam <= 0xdbff {
+			// https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-char#remarks.
+			// High surrogate. Store for joining to next mesage.
+			ctx.last_high_surrogate = wchar
+		} else {
+			defer ctx.last_high_surrogate = nil
+
+			if callback := ctx.text_callback; callback != nil {
+				buf_w: [3]win.WCHAR
+				if high_surrogate, ok := ctx.last_high_surrogate.?; ok {
+					buf_w = {high_surrogate, wchar, 0}
+				} else {
+					buf_w = {wchar, 0, 0}
+				}
+
+				buf_utf8: [4]u8
+				str := win.wstring_to_utf8(buf_utf8[:], raw_data(&buf_w))
+
+				if r, len := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
+					callback(r)
+				}
+			}
 		}
 		return 0
 
@@ -548,7 +620,7 @@ get_mouse_scroll :: proc() -> int {
 	return ctx.mouse_scroll
 }
 
-set_char_callback :: proc(callback: proc(char: u8)) {
+set_char_callback :: proc(callback: proc(char: rune)) {
 	ctx.text_callback = callback
 }
 

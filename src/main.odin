@@ -7,6 +7,7 @@ import "core:fmt"
 import "core:os"
 import "core:os/os2"
 import "core:strings"
+import textedit "core:text/edit"
 
 UI_PRIMARY_COLOR := fx.Color{24, 14, 44, 255}
 UI_SECONDARY_COLOR := fx.Color{95, 58, 137, 255}
@@ -52,7 +53,8 @@ UIState :: struct {
 	show_lyrics:               bool,
 	follow_lyrics:             bool,
 	theme:                     int,
-	search_query:              string,
+	search_box:                textedit.State,
+	search_builder:            strings.Builder,
 	search_focus:              bool,
 	search_results:            [dynamic]Track,
 	drag_start_mouse_y:        f32,
@@ -76,10 +78,23 @@ ui_state := UIState {
 	current_view   = .LIKED,
 	show_lyrics    = true,
 	follow_lyrics  = true,
-	search_query   = "",
 	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
 	search_results = make([dynamic]Track),
+}
+@(init)
+init_ui_state :: proc() {
+	textedit.init(&ui_state.search_box, context.allocator, context.allocator)
+	textedit.setup_once(&ui_state.search_box, &ui_state.search_builder)
+	ui_state.search_box.set_clipboard = proc(user_data: rawptr, text: string) -> (ok: bool) {
+		return fx.set_clipboard(text)
+	}
+	ui_state.search_box.get_clipboard = proc(user_data: rawptr) -> (text: string, ok: bool) {
+		contents := fx.get_clipboard(context.temp_allocator) or_return
+		contents, _ = strings.remove_all(contents, "\n", context.temp_allocator)
+		contents, _ = strings.remove_all(contents, "\r", context.temp_allocator)
+		return contents, true
+	}
 }
 
 draw_main_content :: proc(sidebar_width: f32) {
