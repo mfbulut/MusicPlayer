@@ -528,7 +528,7 @@ win_proc :: proc "stdcall" (
 		} else {
 			defer ctx.last_high_surrogate = nil
 
-			if ctx.text_callback != nil {
+			if callback := ctx.text_callback; callback != nil {
 				buf_w: [3]win.WCHAR
 				if high_surrogate, ok := ctx.last_high_surrogate.?; ok {
 					buf_w = {high_surrogate, wchar, 0}
@@ -540,7 +540,7 @@ win_proc :: proc "stdcall" (
 				str := win.wstring_to_utf8(buf_utf8[:], raw_data(&buf_w))
 
 				if r, len := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
-					ctx.text_callback(r)
+					callback(r)
 				}
 			}
 		}
