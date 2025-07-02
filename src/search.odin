@@ -196,8 +196,6 @@ calculate_character_fuzzy :: proc(text: string, query: string) -> f32 {
 }
 
 handle_char_input :: proc(char: rune) {
-	fmt.println(char, i32(char))
-
 	if ui_state.search_focus {
 		switch char {
 		case 32 ..= 126:
