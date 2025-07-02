@@ -292,7 +292,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 	input_color := ui_state.search_focus ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR
 	fx.draw_rect_rounded(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
-	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
+	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 12, 14, 14, fx.WHITE)
 
 	if fx.mouse_held(.LEFT) {
 		if fx.mouse_pressed(.LEFT) {
@@ -325,14 +325,14 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 	if textedit.has_selection(&ui_state.search_box) {
 		// Selection background.
-		color := fx.color_lerp(UI_TEXT_COLOR, input_color, 0.3)
-		fx.draw_rect(text_x + select_l, text_y, select_r - select_l, TEXT_SIZE, color)
+		color := darken(UI_SECONDARY_COLOR, 30)
+		fx.draw_rect_rounded(text_x + select_l - 1, text_y - 3, select_r - select_l + 2, TEXT_SIZE + 6, 4, color)
 	} else if ui_state.search_focus {
 		// Focus blip.
 		off := time.tick_since(last_selection_tick)
 		alpha := math.sin(time.duration_seconds(off) * 5) * 0.5 + 0.5
 		color := fx.color_lerp(UI_TEXT_COLOR, input_color, f32(alpha))
-		fx.draw_rect(text_x + select_r - 1, text_y, 2, TEXT_SIZE, color)
+		fx.draw_rect(text_x + select_r, text_y, 2, TEXT_SIZE, color)
 	}
 
 	if len(search_query) > 0 || ui_state.search_focus {
