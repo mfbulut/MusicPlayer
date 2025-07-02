@@ -196,6 +196,8 @@ calculate_character_fuzzy :: proc(text: string, query: string) -> f32 {
 }
 
 handle_char_input :: proc(char: rune) {
+	fmt.println(char, i32(char))
+
 	if ui_state.search_focus {
 		switch char {
 		case 32 ..= 126:
@@ -247,6 +249,22 @@ draw_search_view :: proc(x, y, w, h: f32) {
 	fx.draw_rect_rounded(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
 
 	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
+
+	if fx.key_pressed(.LEFT) {
+		if fx.key_held(.LEFT_CONTROL) {
+			textedit.perform_command(&ui_state.search_box, .Word_Left)
+		} else {
+			textedit.perform_command(&ui_state.search_box, .Left)
+		}
+	}
+
+	if fx.key_pressed(.RIGHT) {
+		if fx.key_held(.LEFT_CONTROL) {
+			textedit.perform_command(&ui_state.search_box, .Word_Right)
+		} else {
+			textedit.perform_command(&ui_state.search_box, .Right)
+		}
+	}
 
 	search_query := strings.to_string(ui_state.search_builder)
 	textedit.update_time(&ui_state.search_box)

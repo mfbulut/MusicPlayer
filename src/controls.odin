@@ -60,10 +60,8 @@ draw_player_controls :: proc() {
 		}
 	}
 
-	selected_title :=
-		player.current_track.audio_clip.tags.title if player.current_track.audio_clip.has_tags else player.current_track.name
-	selected_album :=
-		player.current_track.audio_clip.tags.album if player.current_track.audio_clip.has_tags else player.current_track.playlist
+	selected_title := player.current_track.audio_clip.tags.title if player.current_track.audio_clip.has_tags else player.current_track.name
+	selected_album := player.current_track.audio_clip.tags.album if player.current_track.audio_clip.has_tags else player.current_track.playlist
 
 	max_size: f32 = 320
 	track_title := truncate_text(selected_title, max_size, 24)
@@ -95,7 +93,7 @@ draw_player_controls :: proc() {
 		hover_color = UI_HOVER_COLOR,
 	}
 
-	if draw_icon_button(prev_btn) || fx.key_pressed(.MEDIA_PREV_TRACK) {
+	if draw_icon_button(prev_btn) || (fx.key_pressed(.MEDIA_PREV_TRACK) && !ui_state.search_focus) {
 		previous_track()
 	}
 
@@ -108,9 +106,7 @@ draw_player_controls :: proc() {
 		hover_color = UI_HOVER_COLOR,
 	}
 
-	if draw_icon_button(play_btn) ||
-	   fx.key_pressed(fx.Key.MEDIA_PLAY_PAUSE) ||
-	   fx.key_pressed(.SPACE) {
+	if draw_icon_button(play_btn) || ((fx.key_pressed(fx.Key.MEDIA_PLAY_PAUSE) || fx.key_pressed(.SPACE)) && !ui_state.search_focus) {
 		toggle_playback()
 	}
 
@@ -123,7 +119,7 @@ draw_player_controls :: proc() {
 		hover_color = UI_HOVER_COLOR,
 	}
 
-	if draw_icon_button(next_btn) || fx.key_pressed(.MEDIA_NEXT_TRACK) {
+	if draw_icon_button(next_btn) || (fx.key_pressed(.MEDIA_NEXT_TRACK) && !ui_state.search_focus) {
 		next_track()
 	}
 
@@ -258,9 +254,7 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
 	mouse_x, mouse_y := fx.get_mouse()
 
-	progress_bar_height: f32 = 20
-	is_over_progress :=
-		f32(mouse_y) >= player_y - progress_bar_height && f32(mouse_y) <= player_y + 10
+	is_over_progress := f32(mouse_y) >= player_y - 5 && f32(mouse_y) <= player_y + 15
 
 	if fx.mouse_pressed(.LEFT) && is_over_progress && !ui_state.is_dragging_time {
 		ui_state.is_dragging_progress = true
