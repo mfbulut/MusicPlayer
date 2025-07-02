@@ -8,7 +8,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	hover := is_hovering(x, y, w, h)
 	bg_color := UI_TRACK_COLOR
 
-	if player.current_track.path == track.path {
+	if player.current_track.hash == track.hash {
 		bg_color = UI_SECONDARY_COLOR
 	}
 

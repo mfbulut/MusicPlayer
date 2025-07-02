@@ -7,6 +7,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:os/os2"
+import "core:hash"
 import "core:path/filepath"
 import "core:slice"
 import "core:strconv"
@@ -18,6 +19,7 @@ Lyrics :: struct {
 }
 
 Track :: struct {
+	hash:       u64,
 	path:       string,
 	name:       string,
 	playlist:   string,
@@ -145,6 +147,7 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 	dir_name := filepath.base(dir_path)
 
 	music := Track {
+		hash     = hash.fnv64a(transmute([]u8)file.fullpath),
 		path     = file.fullpath,
 		name     = name,
 		playlist = dir_name,

@@ -250,17 +250,33 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 	if fx.key_pressed(.LEFT) {
 		if fx.key_held(.LEFT_CONTROL) {
-			textedit.perform_command(&ui_state.search_box, .Word_Left)
+			if fx.key_held(.LEFT_SHIFT) {
+				textedit.perform_command(&ui_state.search_box, .Select_Word_Left)
+			} else {
+				textedit.perform_command(&ui_state.search_box, .Word_Left)
+			}
 		} else {
-			textedit.perform_command(&ui_state.search_box, .Left)
+			if fx.key_held(.LEFT_SHIFT) {
+				textedit.perform_command(&ui_state.search_box, .Select_Left)
+			} else {
+				textedit.perform_command(&ui_state.search_box, .Left)
+			}
 		}
 	}
 
 	if fx.key_pressed(.RIGHT) {
 		if fx.key_held(.LEFT_CONTROL) {
-			textedit.perform_command(&ui_state.search_box, .Word_Right)
+			if fx.key_held(.LEFT_SHIFT) {
+				textedit.perform_command(&ui_state.search_box, .Select_Word_Right)
+			} else {
+				textedit.perform_command(&ui_state.search_box, .Word_Right)
+			}
 		} else {
-			textedit.perform_command(&ui_state.search_box, .Right)
+			if fx.key_held(.LEFT_SHIFT) {
+				textedit.perform_command(&ui_state.search_box, .Select_Right)
+			} else {
+				textedit.perform_command(&ui_state.search_box, .Right)
+			}
 		}
 	}
 
