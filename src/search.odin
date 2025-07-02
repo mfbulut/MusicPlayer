@@ -3,8 +3,12 @@ package main
 import "fx"
 
 import "core:fmt"
+import "core:hash"
+import "core:math"
 import "core:slice"
 import "core:strings"
+import textedit "core:text/edit"
+import "core:time"
 
 SearchResult :: struct {
 	track: Track,
@@ -191,13 +195,30 @@ calculate_character_fuzzy :: proc(text: string, query: string) -> f32 {
 	return normalized_score + boundary_bonus
 }
 
-handle_char_input :: proc(char: u8) {
+handle_char_input :: proc(char: rune) {
 	if ui_state.search_focus {
-		if char >= 32 && char <= 126 {
-			ui_state.search_query = strings.concatenate(
-				{ui_state.search_query, string([]u8{char})},
-			)
-			search_tracks(ui_state.search_query)
+		switch char {
+		case 32 ..= 126:
+			textedit.input_rune(&ui_state.search_box, char)
+		case 8:
+			textedit.perform_command(&ui_state.search_box, .Backspace)
+		case 127:
+			textedit.perform_command(&ui_state.search_box, .Delete_Word_Left)
+		case 27:
+			ui_state.search_focus = false
+			fx.set_char_callback(nil)
+		case 1:
+			textedit.perform_command(&ui_state.search_box, .Select_All)
+		case 26:
+			textedit.perform_command(&ui_state.search_box, .Undo)
+		case 25:
+			textedit.perform_command(&ui_state.search_box, .Redo)
+		case 3:
+			textedit.perform_command(&ui_state.search_box, .Copy)
+		case 22:
+			textedit.perform_command(&ui_state.search_box, .Paste)
+		case 24:
+			textedit.perform_command(&ui_state.search_box, .Cut)
 		}
 	}
 }
@@ -218,43 +239,78 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
 
-	if len(ui_state.search_query) > 0 || ui_state.search_focus {
-		fx.draw_text(
-			fmt.tprintf("%s|", ui_state.search_query),
-			search_input_x + 30,
-			search_input_y + 9,
-			16,
-			UI_TEXT_COLOR,
-		)
+	search_query := strings.to_string(ui_state.search_builder)
+	{
+		// Inline of "textedit.begin" because we're not immediate mode.
+		s := &ui_state.search_box
+		textedit.update_time(s)
+		textedit.undo_clear(s, &s.undo)
+		textedit.undo_clear(s, &s.redo)
+	}
+
+	@(static) last_hash: u64
+	if new_hash := hash.fnv64a(transmute([]byte)search_query); new_hash != last_hash {
+		search_tracks(search_query)
+		last_hash = new_hash
+	}
+
+	@(static) last_selection_tick: time.Tick
+
+	TEXT_SIZE :: 16
+	text_x := search_input_x + 30
+	text_y := search_input_y + 10
+
+	if fx.mouse_held(.LEFT) {
+		if fx.mouse_pressed(.LEFT) {
+			ui_state.search_focus = is_hovering_input
+		}
+
+		if ui_state.search_focus {
+			fx.set_char_callback(handle_char_input)
+
+			off_x, off_y := fx.get_mouse()
+			span := f32(off_x) - (text_x)
+			_, fits := fx.measure_text_fits(search_query, TEXT_SIZE, span, 0.5)
+
+			if fx.mouse_pressed(.LEFT) {
+				// Initial click empties selection, moves cursor to location.
+				ui_state.search_box.selection = {fits, fits}
+				last_selection_tick = time.tick_now()
+			} else {
+				// Further dragging moves one end of the selection.
+				ui_state.search_box.selection[0] = fits
+			}
+		} else {
+			fx.set_char_callback(nil)
+			ui_state.search_box.selection = {len(search_query), len(search_query)}
+		}
+	}
+
+	select_l := fx.measure_text(search_query[:ui_state.search_box.selection[0]], TEXT_SIZE)
+	select_r := fx.measure_text(search_query[:ui_state.search_box.selection[1]], TEXT_SIZE)
+
+	if textedit.has_selection(&ui_state.search_box) {
+		// Selection background.
+		color := fx.color_lerp(UI_TEXT_COLOR, input_color, 0.3)
+		fx.draw_rect(text_x + select_l, text_y, select_r - select_l, TEXT_SIZE, color)
+	} else if ui_state.search_focus {
+		// Focus blip.
+		off := time.tick_since(last_selection_tick)
+		alpha := math.sin(time.duration_seconds(off) * 5) * 0.5 + 0.5
+		color := fx.color_lerp(UI_TEXT_COLOR, input_color, f32(alpha))
+		fx.draw_rect(text_x + select_r - 1, text_y, 2, TEXT_SIZE, color)
+	}
+
+	if len(search_query) > 0 || ui_state.search_focus {
+		fx.draw_text(search_query, text_x, text_y, TEXT_SIZE, UI_TEXT_COLOR)
 	} else {
 		fx.draw_text(
 			"Type to search tracks and playlists...",
-			search_input_x + 30,
-			search_input_y + 9,
-			16,
+			text_x,
+			text_y,
+			TEXT_SIZE,
 			UI_TEXT_SECONDARY,
 		)
-	}
-
-	if fx.mouse_pressed(.LEFT) {
-		ui_state.search_focus = is_hovering_input
-		if ui_state.search_focus {
-			fx.set_char_callback(handle_char_input)
-		} else {
-			fx.set_char_callback(nil)
-		}
-	}
-
-	if fx.key_pressed(.BACKSPACE) && len(ui_state.search_query) > 0 {
-		if len(ui_state.search_query) > 0 {
-			ui_state.search_query = ui_state.search_query[:len(ui_state.search_query) - 1]
-			search_tracks(ui_state.search_query)
-		}
-
-		if fx.key_held(.LEFT_CONTROL) {
-			ui_state.search_query = ""
-			search_tracks(ui_state.search_query)
-		}
 	}
 
 	results_y := search_input_y + 80
@@ -348,7 +404,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 				}
 			}
 		}
-	} else if len(ui_state.search_query) > 0 {
+	} else if len(search_query) > 0 {
 		fx.draw_text("No results found", search_input_x, results_y + 50, 18, UI_TEXT_SECONDARY)
 	}
 }

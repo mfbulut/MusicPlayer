@@ -231,12 +231,28 @@ measure_text :: proc(text: string, size: f32) -> f32 {
             break
         }
 
-        if int(char) < len(default_font) {
+        #no_bounds_check if char := int(char); char < len(default_font) {
             width += default_font[char].advance * size
         }
     }
 
     return width
+}
+
+measure_text_fits :: proc(text: string, size: f32, max_width: f32, tolerance: f32 = 0) -> (width: f32, chars: int) {
+    for char in text {
+        if char == '\n' {
+            break
+        }
+
+        #no_bounds_check if char := int(char); char < len(default_font) {
+            my_width := default_font[char].advance * size
+            (width + my_width * (1 - tolerance) <= max_width) or_break
+            width += my_width
+            chars += 1
+        }
+    }
+    return
 }
 
 TextAlign :: enum {
