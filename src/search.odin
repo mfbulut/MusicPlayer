@@ -233,21 +233,6 @@ handle_char_input :: proc(char: rune) {
 }
 
 draw_search_view :: proc(x, y, w, h: f32) {
-	search_input_w: f32 = min(500, w - 80)
-	search_input_x := x + (w - search_input_w) / 2
-	search_input_y := y + 20
-
-	is_hovering_input := is_hovering(search_input_x, search_input_y, search_input_w, 40)
-
-	if is_hovering_input {
-		fx.set_cursor(.TEXT)
-	}
-
-	input_color := ui_state.search_focus ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR
-	fx.draw_rect_rounded(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
-
-	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
-
 	if fx.key_pressed(.LEFT) {
 		if fx.key_held(.LEFT_CONTROL) {
 			if fx.key_held(.LEFT_SHIFT) {
@@ -279,7 +264,6 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			}
 		}
 	}
-
 	search_query := strings.to_string(ui_state.search_builder)
 	textedit.update_time(&ui_state.search_box)
 
@@ -292,8 +276,23 @@ draw_search_view :: proc(x, y, w, h: f32) {
 	@(static) last_selection_tick: time.Tick
 
 	TEXT_SIZE :: 16
+
+	search_input_w: f32 = max(min(500, w - 80), fx.measure_text(search_query, TEXT_SIZE) + 50)
+	search_input_x := x + (w - search_input_w) / 2
+	search_input_y := y + 20
+
 	text_x := search_input_x + 30
 	text_y := search_input_y + 10
+
+	is_hovering_input := is_hovering(search_input_x, search_input_y, search_input_w, 40)
+
+	if is_hovering_input {
+		fx.set_cursor(.TEXT)
+	}
+
+	input_color := ui_state.search_focus ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR
+	fx.draw_rect_rounded(search_input_x, search_input_y, search_input_w, 40, 8, input_color)
+	fx.draw_texture(search_icon, search_input_x + 10, search_input_y + 13, 14, 14, fx.WHITE)
 
 	if fx.mouse_held(.LEFT) {
 		if fx.mouse_pressed(.LEFT) {
