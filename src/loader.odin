@@ -35,31 +35,27 @@ Playlist :: struct {
 }
 
 
-loader_query : [dynamic]string
-
 load_files :: proc(dir_path: string) {
-    append(&loader_query, dir_path)
+	w := os2.walker_create(dir_path)
+	defer os2.walker_destroy(&w)
 
-	for {
-		path, ok := pop_safe(&loader_query)
+	for info in os2.walker_walk(&w) {
+		if path, err := os2.walker_error(&w); err != nil {
+			fmt.eprintln("Error reading entry:", path, "->", err)
+			continue
+		}
 
-	    if ok {
-	    	files, err := os2.read_all_directory_by_path(path, context.allocator)
-	    	if err != nil {
-	    		fmt.eprintln("Error reading directory:", path, "->", err)
-	    		return
-	    	}
-
-	    	for file in files {
-	    		if file.type == .Directory {
-	    		    append(&loader_query, file.fullpath)
-	    		} else {
-	    			process_music_file(file)
-	    		}
-	    	}
-	    } else {
-	    	break
-	    }
+		#partial switch info.type {
+		case .Directory:
+			// Ignore ".git", "__MACOSX", etc.
+			if strings.starts_with(info.name, "_") || strings.starts_with(info.name, ".") {
+				os2.walker_skip_dir(&w)
+			}
+		case .Regular:
+			// Failing to clone into permanent allocator probably means OOM, give up.
+			info := os2.file_info_clone(info, context.allocator) or_break
+			process_music_file(info)
+		}
 	}
 }
 
