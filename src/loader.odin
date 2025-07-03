@@ -34,7 +34,6 @@ Playlist :: struct {
 	loaded:     bool,
 }
 
-
 load_files :: proc(dir_path: string) {
 	w := os2.walker_create(dir_path)
 	defer os2.walker_destroy(&w)

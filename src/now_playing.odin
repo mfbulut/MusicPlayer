@@ -7,24 +7,16 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 	has_lyrics := len(track.lyrics) > 0
 
-	if has_lyrics {
-		ui_state.lyrics_target_progress = ui_state.show_lyrics ? 1.0 : 0.0
-	} else {
-		ui_state.lyrics_target_progress = 0.0
-	}
+	target : f32 = ui_state.show_lyrics ? 1.0 : 0.0
 
 	animation_speed: f32 = 8.0
-	ui_state.lyrics_animation_progress +=
-		(ui_state.lyrics_target_progress - ui_state.lyrics_animation_progress) *
-		animation_speed *
-		min(fx.delta_time(), 1.0 / 60.0)
-
+	ui_state.lyrics_animation_progress += (target - ui_state.lyrics_animation_progress) * animation_speed * min(fx.delta_time(), 1.0 / 60.0)
 	ui_state.lyrics_animation_progress = clamp(ui_state.lyrics_animation_progress, 0.0, 1.0)
 
 	lyrics_width_factor := ui_state.lyrics_animation_progress * 0.5
 	content_split := w * (1.0 - lyrics_width_factor)
 
-	art_size: f32 = has_lyrics ? mix(300, 250, ui_state.lyrics_animation_progress) : 300
+	art_size: f32 = has_lyrics ? lerp(300, 250, ui_state.lyrics_animation_progress) : 300
 
 	art_x := x + content_split / 2 - art_size / 2
 	total_h := art_size + 135
@@ -57,14 +49,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 		fx.draw_texture_cropped(background.tx, x, y, w, h, fx.WHITE)
 
-		fx.draw_gradient_rect_vertical(
-			x,
-			y,
-			w,
-			h,
-			NOW_PLAYING_BACKDROP_BRIGHT,
-			NOW_PLAYING_BACKDROP_DARK,
-		)
+		fx.draw_gradient_rect_vertical(x, y, w, h, NOW_PLAYING_BACKDROP_BRIGHT, NOW_PLAYING_BACKDROP_DARK)
 
 		fx.disable_scissor()
 
@@ -79,30 +64,13 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 	info_y := art_y + art_size + 30
 	track_name := truncate_text(selected_title, content_split - 50, 24)
 	track_name_width := fx.measure_text(track_name, 24)
-	fx.draw_text(
-		track_name,
-		x + content_split / 2 - track_name_width / 2,
-		info_y,
-		24,
-		UI_TEXT_COLOR,
-	)
+	fx.draw_text(track_name, x + content_split / 2 - track_name_width / 2, info_y, 24, UI_TEXT_COLOR)
 
 	playlist_name := truncate_text(selected_album, content_split - 50, 16)
 	playlist_name_width := fx.measure_text(playlist_name, 16)
-	fx.draw_text(
-		playlist_name,
-		x + content_split / 2 - playlist_name_width / 2,
-		info_y + 30,
-		16,
-		UI_TEXT_SECONDARY,
-	)
+	fx.draw_text(playlist_name, x + content_split / 2 - playlist_name_width / 2, info_y + 30, 16, UI_TEXT_SECONDARY,)
 
-	if is_hovering(
-		x + content_split / 2 - playlist_name_width / 2,
-		info_y + 30,
-		playlist_name_width,
-		18,
-	) {
+	if is_hovering(x + content_split / 2 - playlist_name_width / 2, info_y + 30, playlist_name_width, 18) {
 		fx.set_cursor(.CLICK)
 
 		if fx.mouse_pressed(.LEFT) {
@@ -135,13 +103,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 	fx.draw_text(current_time, progress_x, progress_y + 12, 16, UI_TEXT_SECONDARY)
 	total_time_width := fx.measure_text(total_time, 16)
-	fx.draw_text(
-		total_time,
-		progress_x + progress_w - total_time_width,
-		progress_y + 12,
-		16,
-		UI_TEXT_SECONDARY,
-	)
+	fx.draw_text(total_time, progress_x + progress_w - total_time_width, progress_y + 12, 16, UI_TEXT_SECONDARY)
 
 	if has_lyrics {
 		toggle_text := ui_state.show_lyrics ? "Hide Lyrics" : "Show Lyrics"
@@ -208,10 +170,6 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 	window_w, window_h := fx.window_size()
 	interaction_rect(0, 0, f32(window_w), f32(window_h))
-}
-
-mix :: proc(a, b, t: f32) -> f32 {
-	return a + (b - a) * t
 }
 
 LYRIC_HEIGHT :: 48

@@ -22,6 +22,8 @@ BACKGROUND_GRADIENT_DARK := fx.Color{24, 15, 39, 255}
 NOW_PLAYING_BACKDROP_BRIGHT :: fx.Color{0, 0, 0, 108}
 NOW_PLAYING_BACKDROP_DARK :: fx.Color{0, 0, 0, 196}
 
+THEME_COUNT :: 8
+
 switch_theme :: proc(theme: int) {
 	if theme == 0 {
 		// Purple theme

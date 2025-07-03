@@ -19,6 +19,7 @@ draw_player_controls :: proc() {
 		CONTROLS_GRADIENT_BRIGHT,
 		{.BOTTOM_LEFT},
 	)
+
 	fx.draw_gradient_rect_rounded_horizontal_selective(
 		f32(window_w) / 2,
 		player_y,
@@ -270,7 +271,6 @@ handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
 
 		new_position := drag_ratio * player.duration
 		seek_to_position(new_position)
-
 	} else if is_over_progress {
 		fx.set_cursor(.CLICK)
 	}

@@ -477,6 +477,7 @@ lerp :: proc(a, b, t: f32) -> f32 {
 	return a + (b - a) * t
 }
 
+
 set_alpha :: proc(color: fx.Color, val: f32) -> fx.Color {
 	return fx.Color {
 		u8(f32(color.r) * val),

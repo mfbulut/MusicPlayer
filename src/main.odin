@@ -8,10 +8,11 @@ import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
 
-UI_SCROLL_SPEED : f32 : 20
 SIDEBAR_WIDTH   : f32 : 220
 TITLE_HEIGHT    : f32 : 40
 PLAYER_HEIGHT   : f32 : 80
+SIDEBAR_ANIM_SPEED : f32 = 4
+UI_SCROLL_SPEED    : f32 : 20
 
 View :: enum {
 	SEARCH,
@@ -33,21 +34,24 @@ UIState :: struct {
 	show_lyrics:               bool,
 	follow_lyrics:             bool,
 	theme:                     int,
+
 	search_box:                textedit.State,
 	search_builder:            strings.Builder,
 	search_focus:              bool,
 	search_results:            [dynamic]Track,
+
+	hide_sidebar:              bool,
+	sidebar_width:             f32,
+	sidebar_anim:              f32,
+
 	drag_start_mouse_y:        f32,
 	drag_start_scroll:         f32,
 	is_dragging_progress:      bool,
 	is_dragging_time:          bool,
 	drag_start_time_x:         f32,
 	drag_start_position:       f32,
-	hide_sidebar:              bool,
-	sidebar_width:             f32,
-	sidebar_anim:              f32,
 	lyrics_animation_progress: f32,
-	lyrics_target_progress:    f32,
+
 	sidebar_scrollbar:         Scrollbar,
 	playlist_scrollbar:        Scrollbar,
 	lyrics_scrollbar:          Scrollbar,
@@ -104,7 +108,7 @@ frame :: proc() {
 	window_w, window_h := fx.window_size()
 
 	if fx.key_pressed(.F4) {
-		ui_state.theme = (ui_state.theme + 1) % 8
+		ui_state.theme = (ui_state.theme + 1) % THEME_COUNT
 		switch_theme(ui_state.theme)
 	}
 
@@ -120,12 +124,10 @@ frame :: proc() {
 	update_player(dt)
 	update_scrollbars(dt)
 
-	sidebar_anim_speed: f32 = 4.0
-
 	if ui_state.hide_sidebar {
-		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim - dt * sidebar_anim_speed, 0, 1)
+		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim - dt * SIDEBAR_ANIM_SPEED, 0, 1)
 	} else {
-		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim + dt * sidebar_anim_speed, 0, 1)
+		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim + dt * SIDEBAR_ANIM_SPEED, 0, 1)
 	}
 
 	eased_progress := ease_in_out_cubic(ui_state.sidebar_anim)
@@ -181,9 +183,7 @@ drop_callback :: proc(files: []string) {
 
 			if playlist_id >= 0 {
 				ok: bool
-				playlists[playlist_id].cover, ok = fx.load_texture(
-					playlists[playlist_id].cover_path,
-				)
+				playlists[playlist_id].cover, ok = fx.load_texture(playlists[playlist_id].cover_path)
 				playlists[playlist_id].loaded = ok
 			}
 
