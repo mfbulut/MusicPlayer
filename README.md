@@ -20,6 +20,7 @@ A **minimalist**, **modern**, and **native** music player
 | --------------------- | -------------------- |
 | Cycle Themes          | `F4`                 |
 | Toggle Sidebar        | `Ctrl + B`           |
+| Toggle Compact Mode   | `Ctrl + C`           |
 | Add to End of Queue   | `Right-Click`        |
 | Add to Start of Queue | `Ctrl + Right-Click` |
 | Remove from Queue     | `Ctrl + Left-Click`  |

@@ -94,6 +94,32 @@ toggle_playback :: proc() {
 	}
 }
 
+get_next_track :: proc() -> (Track, bool) {
+	if len(player.queue.tracks) > 0 {
+		return player.queue.tracks[len(player.queue.tracks) - 1], true
+	}
+
+	if len(player.current_playlist.tracks) == 0 {
+		return {}, false
+	}
+
+	next_index: int
+
+	if player.shuffle {
+		next_shuffle_pos := player.shuffle_position + 1
+
+		if next_shuffle_pos >= len(player.shuffled_indices) {
+			next_index = player.shuffled_indices[0]
+		} else {
+			next_index = player.shuffled_indices[next_shuffle_pos]
+		}
+	} else {
+		next_index = (player.current_index + 1) % len(player.current_playlist.tracks)
+	}
+
+	return player.current_playlist.tracks[next_index], true
+}
+
 next_track :: proc() {
 	if len(player.queue.tracks) > 0 {
 		track := pop(&player.queue.tracks)

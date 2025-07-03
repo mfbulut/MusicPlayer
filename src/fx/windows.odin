@@ -657,9 +657,9 @@ set_resize_cursor :: proc(resize_area: ResizeState) {
 		set_cursor(.VERTICAL_RESIZE)
 	case .TOP_LEFT, .BOTTOM_RIGHT:
 		set_cursor(.DIAGONAL_RESIZE_1)
-	case .TOP_RIGHT, .BOTTOM_LEFT:
+	case .BOTTOM_LEFT:
 		set_cursor(.DIAGONAL_RESIZE_2)
-	case .NONE:
+	case .NONE, .TOP_RIGHT:
 		set_cursor(.DEFAULT)
 	}
 }
@@ -719,6 +719,27 @@ perform_resize :: proc() {
 		new_height = adjusted_point.y - rect.top
 
 	case .NONE:
+	}
+
+	min_width: i32 = 750
+	min_height: i32 = 600
+
+	if new_width < min_width && !ctx.compact_mode {
+		if ctx.resize_state == .LEFT ||
+		   ctx.resize_state == .TOP_LEFT ||
+		   ctx.resize_state == .BOTTOM_LEFT {
+			new_x = rect.right - min_width
+		}
+		new_width = min_width
+	}
+
+	if new_height < min_height && !ctx.compact_mode {
+		if ctx.resize_state == .TOP ||
+		   ctx.resize_state == .TOP_LEFT ||
+		   ctx.resize_state == .TOP_RIGHT {
+			new_y = rect.bottom - min_height
+		}
+		new_height = min_height
 	}
 
 	win.SetWindowPos(

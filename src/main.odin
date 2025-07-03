@@ -129,9 +129,9 @@ frame :: proc() {
 				show_alert({}, "No track is playing", "Open a track before opening compact mode", 2)
 			} else {
 				ui_state.compact_mode = true
-				fx.enable_compact_mode()
 				fx.set_window_size(600, 80)
 				fx.set_window_pos(0, 0)
+				fx.enable_compact_mode()
 			}
 		}
 	}
