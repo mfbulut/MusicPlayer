@@ -2,10 +2,12 @@ package main
 
 import "fx"
 
+import sa "core:container/small_array"
 import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:path/filepath"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:unicode/utf8"
@@ -19,6 +21,76 @@ LyricsResponse :: struct {
 	instrumental: bool `json:"instrumental"`,
 	plainLyrics:  string `json:"plainLyrics"`,
 	syncedLyrics: Maybe(string) `json:"syncedLyrics"`,
+}
+
+// Special casing for file naming formats like:
+// > "00 - Artist - Title"
+// > "00 - Title"
+// > "Artist - Title"
+// > "Title"
+// See: https://lrclib.net/docs.
+guess_search_opts :: proc(
+	title: string,
+	allocator := context.temp_allocator,
+) -> (
+	opts: [2]fx.Request_Query_Param,
+	opts_count: int,
+) {
+	// Literally every dash I can find; https://www.compart.com/en/unicode/category/Pd.
+	DASHES :: [?]rune {
+		'-',
+		0x1806,
+		0x2010,
+		0x2011,
+		0x2012,
+		0x2013,
+		0x2014,
+		0xFE58,
+		0xFE63,
+		0xFF0D,
+		0x002D,
+	}
+
+	attempt: for v in DASHES {
+		title := title
+		pieces: sa.Small_Array(2, string)
+
+		for title != "" {
+			off := strings.index_rune(title, v)
+			piece: string
+
+			if off < 0 {
+				piece = title
+				title = title[len(title):]
+			} else {
+				piece = title[:off]
+				title = title[off + utf8.rune_size(v):]
+			}
+
+			piece = strings.trim_space(piece)
+
+			// Filter pieces that are all unsigned ints.
+			// We'll assume they're track numbers, which aren't used for searches.
+			if _, is_uint := strconv.parse_uint(piece); !is_uint {
+				sa.append(&pieces, piece) or_break
+			}
+		}
+
+		switch sa.len(pieces) {
+		case 0:
+			continue attempt
+		case 1:
+			opts[0] = {"track_name", sa.get(pieces, 0)}
+			return opts, 1
+		case:
+			opts[0] = {"artist_name", sa.get(pieces, 0)}
+			opts[1] = {"track_name", sa.get(pieces, 1)}
+			return opts, 2
+		}
+	}
+
+	opts[0] = {"track_name", title}
+	return opts, 1
 }
 
 download_lyrics :: proc() {
@@ -73,7 +145,8 @@ download_lyrics :: proc() {
 		}
 	}
 
-	res := fx.get("https://lrclib.net/api/search", {{"q", player.current_track.name}})
+	opts, opts_count := guess_search_opts(player.current_track.name)
+	res := fx.get("https://lrclib.net/api/search", opts[:opts_count])
 
 
 	if res.status == 0 {
