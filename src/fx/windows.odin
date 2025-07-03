@@ -1,7 +1,6 @@
 package fx
 
 import "base:runtime"
-import "core:fmt"
 import "core:mem"
 import "core:strings"
 import "core:time"
@@ -272,7 +271,7 @@ is_resizing :: proc() -> bool {
 	return ctx.is_resizing
 }
 
-set_file_drop_callback :: proc(callback: proc(files: []string)) {
+drop_callback :: proc(callback: proc(files: []string)) {
 	ctx.file_drop_callback = callback
 
 	if ctx.hwnd != nil {
@@ -539,7 +538,7 @@ win_proc :: proc "stdcall" (
 				}
 
 				buf_utf8: [4]u8
-				str := win.wstring_to_utf8(buf_utf8[:], raw_data(&buf_w))
+				win.wstring_to_utf8(buf_utf8[:], raw_data(&buf_w))
 
 				if r, len := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
 					callback(r)

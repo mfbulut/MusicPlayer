@@ -74,7 +74,7 @@ draw_sidebar :: proc(x_offset: f32) {
 	}
 
 	if draw_button(liked_btn, 40) {
-		get_all_liked_songs()
+		load_liked_songs()
 		ui_state.current_view = .LIKED
 	}
 

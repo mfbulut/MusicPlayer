@@ -233,7 +233,6 @@ draw_lyrics :: proc(x, y, w, h: f32, track: ^Track, alpha: f32) {
 
 	total_line_height: f32 = 0
 	avg_line_height: f32 = LYRIC_HEIGHT
-	line_height: f32 = LYRIC_HEIGHT
 
 	fx.set_scissor(i32(x + 10), i32(y), i32(w - 25), i32(h))
 	interaction_rect(x + 10, content_y, w - 25, content_h)

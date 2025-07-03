@@ -5,7 +5,6 @@ import "fx"
 import "core:encoding/json"
 import "core:unicode/utf8"
 import "core:fmt"
-import "core:math"
 import "core:os"
 import "core:path/filepath"
 import "core:strconv"
@@ -260,5 +259,5 @@ save_lyrics_as_lrc :: proc(track: ^Track, lyrics_content: string) {
 	lrc_filename := strings.concatenate({base_name, ".lrc"}, context.temp_allocator)
 	lrc_path := filepath.join({dir, lrc_filename}, context.temp_allocator)
 
-	success := os.write_entire_file(lrc_path, transmute([]u8)lyrics_content)
+	os.write_entire_file(lrc_path, transmute([]u8)lyrics_content)
 }

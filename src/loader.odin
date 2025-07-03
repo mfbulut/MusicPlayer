@@ -2,8 +2,6 @@ package main
 
 import "fx"
 
-import "base:runtime"
-
 import "core:fmt"
 import "core:os"
 import "core:os/os2"

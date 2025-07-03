@@ -8,17 +8,6 @@ import "core:math"
 import "core:strings"
 import fp "core:path/filepath"
 
-Button :: struct {
-	x, y, w, h:  f32,
-	text:        string,
-	color:       fx.Color,
-	color_dark:  fx.Color,
-	hover_color: fx.Color,
-	text_color:  fx.Color,
-	expand:      bool,
-	gradient:    int,
-}
-
 truncated_text_buffer: [256]u8
 
 truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
@@ -37,7 +26,6 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
 		target_len = len(truncated_text_buffer) - 1
 	}
 
-
 	copy(truncated_text_buffer[:target_len - 3], text[:target_len - 3])
 	copy(truncated_text_buffer[target_len - 3:target_len], "...")
 	truncated_text_buffer[target_len] = 0
@@ -47,6 +35,17 @@ truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
 
 ANIM_ARRAY_SIZE :: 1024 * 32
 g_anim_values: [ANIM_ARRAY_SIZE]f32
+
+Button :: struct {
+	x, y, w, h:  f32,
+	text:        string,
+	color:       fx.Color,
+	color_dark:  fx.Color,
+	hover_color: fx.Color,
+	text_color:  fx.Color,
+	expand:      bool,
+	gradient:    int,
+}
 
 hash_button :: proc(x, y, w, h: u32) -> u32 {
 	hash: u32 = 2166136261
@@ -154,16 +153,7 @@ draw_icon_button_rect :: proc(
 	}
 
 	if is_exit {
-		fx.draw_gradient_rect_rounded_horizontal_selective(
-			x,
-			y,
-			w,
-			h,
-			8,
-			color,
-			color,
-			{.TOP_RIGHT},
-		)
+		fx.draw_gradient_rect_rounded_horizontal_selective(x, y, w, h, 8, color, color, {.TOP_RIGHT})
 	} else {
 		fx.draw_rect(x, y, w, h, color)
 	}
@@ -239,53 +229,6 @@ draw_icon_button :: proc(btn: IconButton) -> bool {
 	)
 
 	return is_hovered && fx.mouse_pressed(.LEFT)
-}
-
-previous_icon_qoi :: #load("assets/previous.qoi")
-forward_icon_qoi :: #load("assets/forward.qoi")
-pause_icon_qoi :: #load("assets/pause.qoi")
-play_icon_qoi :: #load("assets/play.qoi")
-volume_icon_qoi :: #load("assets/volume.qoi")
-shuffle_icon_qoi :: #load("assets/shuffle.qoi")
-search_icon_qoi :: #load("assets/search.qoi")
-liked_icon_qoi :: #load("assets/liked.qoi")
-empty_icon_qoi :: #load("assets/liked_empty.qoi")
-queue_icon_qoi :: #load("assets/queue.qoi")
-exit_icon_qoi :: #load("assets/exit.qoi")
-maximize_icon_qoi :: #load("assets/maximize.qoi")
-minimize_icon_qoi :: #load("assets/minimize.qoi")
-music_icon_qoi :: #load("assets/music.qoi")
-
-previous_icon: fx.Texture
-forward_icon: fx.Texture
-pause_icon: fx.Texture
-play_icon: fx.Texture
-volume_icon: fx.Texture
-shuffle_icon: fx.Texture
-liked_icon: fx.Texture
-liked_empty: fx.Texture
-search_icon: fx.Texture
-queue_icon: fx.Texture
-exit_icon: fx.Texture
-maximize_icon: fx.Texture
-minimize_icon: fx.Texture
-music_icon: fx.Texture
-
-load_icons :: proc() {
-	previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
-	forward_icon = fx.load_texture_from_bytes(forward_icon_qoi)
-	pause_icon = fx.load_texture_from_bytes(pause_icon_qoi)
-	play_icon = fx.load_texture_from_bytes(play_icon_qoi)
-	volume_icon = fx.load_texture_from_bytes(volume_icon_qoi)
-	shuffle_icon = fx.load_texture_from_bytes(shuffle_icon_qoi)
-	liked_icon = fx.load_texture_from_bytes(liked_icon_qoi)
-	search_icon = fx.load_texture_from_bytes(search_icon_qoi)
-	liked_empty = fx.load_texture_from_bytes(empty_icon_qoi)
-	exit_icon = fx.load_texture_from_bytes(exit_icon_qoi)
-	maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
-	minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
-	queue_icon = fx.load_texture_from_bytes(queue_icon_qoi)
-	music_icon = fx.load_texture_from_bytes(music_icon_qoi)
 }
 
 ProgressBar :: struct {
@@ -472,43 +415,34 @@ draw_scrollbar :: proc(
 	return is_over_thumb
 }
 
-UI_SCROLL_SPEED :: 20.0
+update_scrollbars :: proc(dt: f32) {
+	sidebar_sc  := &ui_state.sidebar_scrollbar
+	playlist_sc := &ui_state.playlist_scrollbar
+	lyrics_sc   := &ui_state.lyrics_scrollbar
+	search_sc   := &ui_state.search_scrollbar
 
-update_smooth_scrolling :: proc(dt: f32) {
-	if abs(ui_state.sidebar_scrollbar.target - ui_state.sidebar_scrollbar.scroll) > 0.5 {
-		ui_state.sidebar_scrollbar.scroll +=
-			(ui_state.sidebar_scrollbar.target - ui_state.sidebar_scrollbar.scroll) *
-			UI_SCROLL_SPEED *
-			dt
+	if abs(sidebar_sc.target - sidebar_sc.scroll) > 0.5 {
+		sidebar_sc.scroll += (sidebar_sc.target - sidebar_sc.scroll) * UI_SCROLL_SPEED * dt
 	} else {
-		ui_state.sidebar_scrollbar.scroll = ui_state.sidebar_scrollbar.target
+		sidebar_sc.scroll = sidebar_sc.target
 	}
 
-	if abs(ui_state.playlist_scrollbar.target - ui_state.playlist_scrollbar.scroll) > 0.5 {
-		ui_state.playlist_scrollbar.scroll +=
-			(ui_state.playlist_scrollbar.target - ui_state.playlist_scrollbar.scroll) *
-			UI_SCROLL_SPEED *
-			dt
+	if abs(playlist_sc.target - playlist_sc.scroll) > 0.5 {
+		playlist_sc.scroll += (playlist_sc.target - playlist_sc.scroll) * UI_SCROLL_SPEED * dt
 	} else {
-		ui_state.playlist_scrollbar.scroll = ui_state.playlist_scrollbar.target
+		playlist_sc.scroll = playlist_sc.target
 	}
 
-	if abs(ui_state.lyrics_scrollbar.target - ui_state.lyrics_scrollbar.scroll) > 0.5 {
-		ui_state.lyrics_scrollbar.scroll +=
-			(ui_state.lyrics_scrollbar.target - ui_state.lyrics_scrollbar.scroll) *
-			UI_SCROLL_SPEED *
-			dt
+	if abs(lyrics_sc.target - lyrics_sc.scroll) > 0.5 {
+		lyrics_sc.scroll += (lyrics_sc.target - lyrics_sc.scroll) * UI_SCROLL_SPEED * dt
 	} else {
-		ui_state.lyrics_scrollbar.scroll = ui_state.lyrics_scrollbar.target
+		lyrics_sc.scroll = lyrics_sc.target
 	}
 
-	if abs(ui_state.search_scrollbar.target - ui_state.search_scrollbar.scroll) > 0.5 {
-		ui_state.search_scrollbar.scroll +=
-			(ui_state.search_scrollbar.target - ui_state.search_scrollbar.scroll) *
-			UI_SCROLL_SPEED *
-			dt
+	if abs(search_sc.target - search_sc.scroll) > 0.5 {
+		search_sc.scroll += (search_sc.target - search_sc.scroll) * UI_SCROLL_SPEED * dt
 	} else {
-		ui_state.search_scrollbar.scroll = ui_state.search_scrollbar.target
+		search_sc.scroll = search_sc.target
 	}
 }
 
@@ -564,7 +498,6 @@ is_hovering :: proc(x, y, w, h: f32) -> bool {
 	return px >= x && px <= x + w && py >= y && py <= y + h && is_valid(px, py)
 }
 
-
 ease_in_out_cubic :: proc(t: f32) -> f32 {
 	if t < 0.5 {
 		return 4 * t * t * t
@@ -573,138 +506,10 @@ ease_in_out_cubic :: proc(t: f32) -> f32 {
 	}
 }
 
-Alert :: struct {
-	image:              fx.Texture,
-	title:              string,
-	description:        string,
-	is_visible:         bool,
-	animation_progress: f32,
-	target_progress:    f32,
-	show_time:          f32,
-	duration:           f32,
-}
-
-g_alert: Alert
-ALERT_ANIMATION_SPEED :: 12.0
-ALERT_DEFAULT_DURATION :: 3.0
-
-show_alert :: proc(
-	image: fx.Texture,
-	title: string,
-	description: string,
-	duration: f32 = ALERT_DEFAULT_DURATION,
-) {
-	g_alert.image = image
-	g_alert.title = title
-	g_alert.description = description
-	g_alert.is_visible = true
-	g_alert.target_progress = 1.0
-	g_alert.show_time = 0.0
-	g_alert.duration = duration
-}
-
-update_alert :: proc(dt: f32) {
-	if !g_alert.is_visible && g_alert.animation_progress <= 0.0 {
-		return
-	}
-
-	if abs(g_alert.target_progress - g_alert.animation_progress) > 0.01 {
-		g_alert.animation_progress +=
-			(g_alert.target_progress - g_alert.animation_progress) * ALERT_ANIMATION_SPEED * dt
-	} else {
-		g_alert.animation_progress = g_alert.target_progress
-	}
-
-	if g_alert.is_visible {
-		g_alert.show_time += dt
-		if g_alert.show_time >= g_alert.duration {
-			g_alert.is_visible = false
-			g_alert.target_progress = 0.0
-		}
-	}
-
-	if !g_alert.is_visible && g_alert.animation_progress <= 0.01 {
-		g_alert.animation_progress = 0.0
-	}
-}
-
-draw_alert :: proc() {
-	if g_alert.animation_progress <= 0.0 {
-		return
-	}
-
-	window_w, window_h := fx.window_size()
-	screen_w := f32(window_w)
-	screen_h := f32(window_h)
-
-	alert_w := f32(350)
-	alert_h := f32(70)
-	padding := f32(20)
-
-	alert_x :=
-		screen_w - alert_w - padding + (1.0 - g_alert.animation_progress) * (alert_w + padding)
-	alert_y := screen_h - alert_h - padding - 75
-
-	bg_color := set_alpha(brighten(UI_PRIMARY_COLOR, 20), min(g_alert.animation_progress, 0.9))
-
-	fx.draw_gradient_rect_rounded_vertical(
-		alert_x,
-		alert_y,
-		alert_w,
-		alert_h,
-		12,
-		brighten(bg_color, 15),
-		bg_color,
-	)
-
-	content_x := alert_x + 15
-	content_y := alert_y + 15
-
-	title_color := set_alpha(fx.Color{255, 255, 255, 255}, g_alert.animation_progress)
-
-	image_size := f32(50)
-	if g_alert.image.width != 0 {
-		fx.draw_texture_rounded(
-			g_alert.image,
-			content_x,
-			content_y + (alert_h - 30 - image_size) / 2,
-			image_size,
-			image_size,
-			8,
-			title_color,
-		)
-		content_x += image_size + 15
-	}
-
-	text_area_w := alert_w - (content_x - alert_x) - 20
-
-	if len(g_alert.title) > 0 {
-		title_text := truncate_text(g_alert.title, text_area_w, 18)
-		fx.draw_text(title_text, content_x, content_y, 18, title_color)
-		content_y += 25
-	}
-
-	desc_color := set_alpha(fx.Color{200, 200, 215, 255}, g_alert.animation_progress)
-	if len(g_alert.description) > 0 {
-		desc_text := truncate_text(g_alert.description, text_area_w, 14)
-		fx.draw_text(desc_text, content_x, content_y, 14, desc_color)
-	}
-}
-
-hide_alert :: proc() {
-	g_alert.is_visible = false
-	g_alert.target_progress = 0.0
-}
-
-is_alert_visible :: proc() -> bool {
-	return g_alert.animation_progress > 0.0
-}
-
-
 is_audio_file :: proc(filepath: string) -> bool {
 	ext := strings.to_lower(fp.ext(filepath), context.temp_allocator)
 	switch ext {
-	case ".mp3", ".wav", ".flac", ".ogg", ".m4a", ".aac", ".wma", ".opus":
+	case ".mp3", ".wav", ".flac", ".ogg", ".opus":
 		return true
 	case:
 		return false
@@ -729,4 +534,51 @@ copy_file :: proc(src, dest: string) -> bool {
     defer delete(data)
 
     return os.write_entire_file(dest, data)
+}
+
+previous_icon_qoi :: #load("assets/previous.qoi")
+forward_icon_qoi :: #load("assets/forward.qoi")
+pause_icon_qoi :: #load("assets/pause.qoi")
+play_icon_qoi :: #load("assets/play.qoi")
+volume_icon_qoi :: #load("assets/volume.qoi")
+shuffle_icon_qoi :: #load("assets/shuffle.qoi")
+search_icon_qoi :: #load("assets/search.qoi")
+liked_icon_qoi :: #load("assets/liked.qoi")
+empty_icon_qoi :: #load("assets/liked_empty.qoi")
+queue_icon_qoi :: #load("assets/queue.qoi")
+exit_icon_qoi :: #load("assets/exit.qoi")
+maximize_icon_qoi :: #load("assets/maximize.qoi")
+minimize_icon_qoi :: #load("assets/minimize.qoi")
+music_icon_qoi :: #load("assets/music.qoi")
+
+previous_icon: fx.Texture
+forward_icon: fx.Texture
+pause_icon: fx.Texture
+play_icon: fx.Texture
+volume_icon: fx.Texture
+shuffle_icon: fx.Texture
+liked_icon: fx.Texture
+liked_empty: fx.Texture
+search_icon: fx.Texture
+queue_icon: fx.Texture
+exit_icon: fx.Texture
+maximize_icon: fx.Texture
+minimize_icon: fx.Texture
+music_icon: fx.Texture
+
+load_icons :: proc() {
+	previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
+	forward_icon = fx.load_texture_from_bytes(forward_icon_qoi)
+	pause_icon = fx.load_texture_from_bytes(pause_icon_qoi)
+	play_icon = fx.load_texture_from_bytes(play_icon_qoi)
+	volume_icon = fx.load_texture_from_bytes(volume_icon_qoi)
+	shuffle_icon = fx.load_texture_from_bytes(shuffle_icon_qoi)
+	liked_icon = fx.load_texture_from_bytes(liked_icon_qoi)
+	search_icon = fx.load_texture_from_bytes(search_icon_qoi)
+	liked_empty = fx.load_texture_from_bytes(empty_icon_qoi)
+	exit_icon = fx.load_texture_from_bytes(exit_icon_qoi)
+	maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
+	minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
+	queue_icon = fx.load_texture_from_bytes(queue_icon_qoi)
+	music_icon = fx.load_texture_from_bytes(music_icon_qoi)
 }

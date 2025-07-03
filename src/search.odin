@@ -233,37 +233,43 @@ handle_char_input :: proc(char: rune) {
 }
 
 draw_search_view :: proc(x, y, w, h: f32) {
-	if fx.key_pressed(.LEFT) {
-		if fx.key_held(.LEFT_CONTROL) {
-			if fx.key_held(.LEFT_SHIFT) {
-				textedit.perform_command(&ui_state.search_box, .Select_Word_Left)
+	control_down := fx.key_held(.LEFT_CONTROL) || fx.key_held(.RIGHT_CONTROL)
+	shift_down   := fx.key_held(.LEFT_SHIFT) || fx.key_held(.RIGHT_SHIFT)
+
+	if ui_state.search_focus {
+		if fx.key_pressed(.LEFT) {
+			if control_down {
+				if shift_down {
+					textedit.perform_command(&ui_state.search_box, .Select_Word_Left)
+				} else {
+					textedit.perform_command(&ui_state.search_box, .Word_Left)
+				}
 			} else {
-				textedit.perform_command(&ui_state.search_box, .Word_Left)
+				if shift_down {
+					textedit.perform_command(&ui_state.search_box, .Select_Left)
+				} else {
+					textedit.perform_command(&ui_state.search_box, .Left)
+				}
 			}
-		} else {
-			if fx.key_held(.LEFT_SHIFT) {
-				textedit.perform_command(&ui_state.search_box, .Select_Left)
+		}
+
+		if fx.key_pressed(.RIGHT) {
+			if control_down {
+				if shift_down {
+					textedit.perform_command(&ui_state.search_box, .Select_Word_Right)
+				} else {
+					textedit.perform_command(&ui_state.search_box, .Word_Right)
+				}
 			} else {
-				textedit.perform_command(&ui_state.search_box, .Left)
+				if shift_down {
+					textedit.perform_command(&ui_state.search_box, .Select_Right)
+				} else {
+					textedit.perform_command(&ui_state.search_box, .Right)
+				}
 			}
 		}
 	}
 
-	if fx.key_pressed(.RIGHT) {
-		if fx.key_held(.LEFT_CONTROL) {
-			if fx.key_held(.LEFT_SHIFT) {
-				textedit.perform_command(&ui_state.search_box, .Select_Word_Right)
-			} else {
-				textedit.perform_command(&ui_state.search_box, .Word_Right)
-			}
-		} else {
-			if fx.key_held(.LEFT_SHIFT) {
-				textedit.perform_command(&ui_state.search_box, .Select_Right)
-			} else {
-				textedit.perform_command(&ui_state.search_box, .Right)
-			}
-		}
-	}
 	search_query := strings.to_string(ui_state.search_builder)
 	textedit.update_time(&ui_state.search_box)
 
@@ -331,20 +337,14 @@ draw_search_view :: proc(x, y, w, h: f32) {
 		// Focus blip.
 		off := time.tick_since(last_selection_tick)
 		alpha := math.sin(time.duration_seconds(off) * 5) * 0.5 + 0.5
-		color := fx.color_lerp(UI_TEXT_COLOR, input_color, f32(alpha))
+		color := lerp_color(UI_TEXT_COLOR, input_color, f32(alpha))
 		fx.draw_rect(text_x + select_r, text_y, 2, TEXT_SIZE, color)
 	}
 
 	if len(search_query) > 0 || ui_state.search_focus {
 		fx.draw_text(search_query, text_x, text_y, TEXT_SIZE, UI_TEXT_COLOR)
 	} else {
-		fx.draw_text(
-			"Type to search tracks and playlists...",
-			text_x,
-			text_y,
-			TEXT_SIZE,
-			UI_TEXT_SECONDARY,
-		)
+		fx.draw_text("Search tracks and playlists...", text_x, text_y, TEXT_SIZE, UI_TEXT_SECONDARY)
 	}
 
 	results_y := search_input_y + 80

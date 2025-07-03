@@ -100,7 +100,7 @@ load_state :: proc() {
 		}
 	}
 
-	switch_theme()
+	switch_theme(ui_state.theme)
 }
 
 save_state :: proc() {
@@ -174,7 +174,7 @@ set_liked_song :: proc(name: string, playlist: string, liked: bool) {
 	save_state()
 }
 
-get_all_liked_songs :: proc() {
+load_liked_songs :: proc() {
 	if len(liked_playlist.tracks) > 0 {
 		delete(liked_playlist.tracks)
 		liked_playlist.tracks = make([dynamic]Track)
