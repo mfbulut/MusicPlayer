@@ -73,10 +73,11 @@ get :: proc(
 	scheme_hostname_path: string,
 	opts: []Request_Query_Param,
 	allocator := context.allocator,
-) -> Response {
+) -> (
+	result: Response,
+	ok: bool,
+) {
 	runtime.DEFAULT_TEMP_ALLOCATOR_TEMP_GUARD()
-
-	result := Response{0, nil}
 
 	urlComp := URL_COMPONENTS{}
 	hostName := make([]u16, 256, context.temp_allocator)
@@ -100,9 +101,7 @@ get :: proc(
 	urlComp.dwUrlPathLength = win.DWORD(len(urlPath))
 
 	url_wstring := win.utf8_to_wstring(scheme_hostname_path)
-	if !WinHttpCrackUrl(url_wstring, 0, 0, &urlComp) {
-		return result
-	}
+	WinHttpCrackUrl(url_wstring, 0, 0, &urlComp) or_return
 
 	// This is a no-op for requests without query parameters.
 	lpszUrlPathWithParams := slice.concatenate(
@@ -117,11 +116,11 @@ get :: proc(
 	userAgent := win.L("github.com/mfbulut/MusicPlayer WinHTTP Client/1.0")
 
 	hSession := WinHttpOpen(userAgent, WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, nil, nil, 0)
-	if hSession == nil do return result
+	(hSession != nil) or_return
 	defer WinHttpCloseHandle(hSession)
 
 	hConnect := WinHttpConnect(hSession, urlComp.lpszHostName, urlComp.nPort, 0)
-	if hConnect == nil do return result
+	(hConnect != nil) or_return
 	defer WinHttpCloseHandle(hConnect)
 
 	flags := urlComp.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0
@@ -136,16 +135,12 @@ get :: proc(
 		nil,
 		win.DWORD(flags),
 	)
-	if hRequest == nil do return result
+	(hRequest != nil) or_return
 	defer WinHttpCloseHandle(hRequest)
 
-	if !WinHttpSendRequest(hRequest, nil, 0, nil, 0, 0, nil) {
-		return result
-	}
+	WinHttpSendRequest(hRequest, nil, 0, nil, 0, 0, nil) or_return
 
-	if !WinHttpReceiveResponse(hRequest, nil) {
-		return result
-	}
+	WinHttpReceiveResponse(hRequest, nil) or_return
 
 	status_code: win.DWORD = 0
 	status_len := win.DWORD(size_of(win.DWORD))
@@ -162,7 +157,7 @@ get :: proc(
 	result.status = i32(status_code)
 
 	totalSize: win.DWORD = 0
-	buffer := make([dynamic]byte, context.allocator)
+	buffer := make([dynamic]byte, context.temp_allocator)
 
 	for {
 		chunkSize: win.DWORD = 0
@@ -177,5 +172,5 @@ get :: proc(
 	}
 
 	result.data = slice.clone(buffer[:totalSize], allocator)
-	return result
+	return result, true
 }

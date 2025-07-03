@@ -29,13 +29,7 @@ LyricsResponse :: struct {
 // > "Artist - Title"
 // > "Title"
 // See: https://lrclib.net/docs.
-guess_search_opts :: proc(
-	title: string,
-	allocator := context.temp_allocator,
-) -> (
-	opts: [2]fx.Request_Query_Param,
-	opts_count: int,
-) {
+guess_search_opts :: proc(title: string) -> (opts: [2]fx.Request_Query_Param, opts_count: int) {
 	// Literally every dash I can find; https://www.compart.com/en/unicode/category/Pd.
 	DASHES :: [?]rune {
 		'-',
@@ -112,7 +106,7 @@ download_lyrics :: proc() {
 		duration_mem: [8]u8
 		duration_str := strconv.itoa(duration_mem[:], duration)
 
-		res := fx.get(
+		res, ok := fx.get(
 			"https://lrclib.net/api/get",
 			{
 				{"title", player.current_track.audio_clip.tags.title},
@@ -122,7 +116,7 @@ download_lyrics :: proc() {
 			},
 		)
 
-		if res.status == 0 {
+		if !ok {
 			show_alert({}, "Network Error", "Check your internet connection and try again", 2)
 			return
 		}
@@ -146,10 +140,10 @@ download_lyrics :: proc() {
 	}
 
 	opts, opts_count := guess_search_opts(player.current_track.name)
-	res := fx.get("https://lrclib.net/api/search", opts[:opts_count])
+	res, ok := fx.get("https://lrclib.net/api/search", opts[:opts_count])
 
 
-	if res.status == 0 {
+	if !ok {
 		show_alert({}, "Network Error", "Check your internet connection and try again", 2)
 		return
 	}
