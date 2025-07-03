@@ -439,6 +439,6 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			}
 		}
 	} else if len(search_query) > 0 {
-		fx.draw_text("No results found", search_input_x, results_y + 50, 18, UI_TEXT_SECONDARY)
+		fx.draw_text_aligned("No results found", search_input_x + search_input_w / 2, search_input_y + 60, 18, UI_TEXT_SECONDARY, .CENTER)
 	}
 }

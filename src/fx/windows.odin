@@ -8,44 +8,6 @@ import "core:unicode/utf8"
 
 import win "core:sys/windows"
 
-Context :: struct {
-	hwnd:                win.HWND,
-	is_running:          bool,
-	is_minimized:        bool,
-	frame_proc:          proc(),
-	text_callback:       proc(char: rune),
-	file_drop_callback:  proc(files: []string),
-	clipboard:           strings.Builder,
-	is_hovering_files:   bool,
-	prev_time:           time.Time,
-	delta_time:          f32,
-	timer:               f32,
-	window:              struct {
-		w, h: int,
-	},
-	mouse_pos:           struct {
-		x, y: int,
-	},
-	key_state:           [256]u8,
-	mouse_state:         [8]u8,
-	mouse_scroll:        int,
-	last_high_surrogate: Maybe(win.WCHAR),
-	last_click_time:     time.Time,
-	last_click_pos:      struct {
-		x, y: int,
-	},
-	resize_state:        ResizeState,
-	resize_mouse_offset: struct {
-		x, y: i32,
-	},
-	is_resizing:         bool,
-}
-
-double_click_threshold :: 0.2
-
-@(private)
-ctx: Context
-
 ICON_DATA: []win.BYTE = #load("icon.ico")
 
 ICONDIR :: struct {
@@ -95,7 +57,7 @@ HOTKEY_NEXT :: 1001
 HOTKEY_PREV :: 1002
 HOTKEY_PLAY_PAUSE :: 1003
 
-init :: proc(title: string, width, height: int) {
+init_windows :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
 
 	// win.SetProcessDPIAware() // TODO(furkan) add dpi aware scaling
@@ -134,6 +96,9 @@ init :: proc(title: string, width, height: int) {
 	adjusted_width := rect.right - rect.left
 	adjusted_height := rect.bottom - rect.top
 
+	ctx.window.w = int(adjusted_width)
+	ctx.window.h = int(adjusted_height)
+
 	ctx.hwnd = win.CreateWindowExW(
 		win.WS_EX_LAYERED,
 		class_name,
@@ -149,98 +114,11 @@ init :: proc(title: string, width, height: int) {
 		nil,
 	)
 
-	win.SetLayeredWindowAttributes(
-		ctx.hwnd,
-		win.RGB(chroma_key.r, chroma_key.g, chroma_key.b),
-		255,
-		0x00000001,
-	)
-
-	init_dx()
-	init_font()
-	init_audio()
+	win.SetLayeredWindowAttributes(ctx.hwnd, win.RGB(chroma_key.r, chroma_key.g, chroma_key.b), 255, 0x00000001)
 
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PLAY_PAUSE, 0, u32(Key.MEDIA_PLAY_PAUSE))
-
-	ctx.window.w = int(adjusted_width)
-	ctx.window.h = int(adjusted_height)
-	ctx.prev_time = time.now()
-
-	set_scissor(0, 0, i32(ctx.window.w), i32(ctx.window.h))
-
-	ctx.is_running = true
-}
-
-update_frame :: proc(frame_proc: proc(), vsync := true) {
-	ci := win.CURSORINFO {
-		cbSize = size_of(win.CURSORINFO),
-	}
-	win.GetCursorInfo(&ci)
-
-	// Probably only works on my machine
-	CURSOR_ID :: 0x705F3
-	if (ci.hCursor == transmute(win.HCURSOR)uintptr(CURSOR_ID)) {
-		ctx.is_hovering_files = true
-	} else {
-		ctx.is_hovering_files = false
-	}
-
-	current_time := time.now()
-	ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
-	ctx.timer += ctx.delta_time
-	ctx.prev_time = current_time
-
-	handle_resize()
-
-	if !ctx.is_minimized {
-		clear_background(chroma_key)
-		begin_render()
-		update_constant_buffer()
-		frame_proc()
-		end_render()
-		swap_buffers(vsync)
-	} else {
-		frame_proc()
-		win.Sleep(16)
-	}
-
-	for &state in ctx.key_state {
-		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
-	}
-	for &state in ctx.mouse_state {
-		state &~= (KEY_STATE_PRESSED | KEY_STATE_RELEASED)
-	}
-
-	ctx.mouse_scroll = 0
-}
-
-run_manual :: proc(frame: proc()) {
-	msg: win.MSG
-	for win.PeekMessageW(&msg, ctx.hwnd, 0, 0, win.PM_REMOVE) {
-		win.TranslateMessage(&msg)
-		win.DispatchMessageW(&msg)
-	}
-
-	update_frame(frame, false)
-}
-
-run :: proc(frame: proc()) {
-	ctx.frame_proc = frame
-
-	current_time := time.now()
-	ctx.prev_time = current_time
-
-	msg: win.MSG
-	for ctx.is_running {
-		for win.PeekMessageW(&msg, ctx.hwnd, 0, 0, win.PM_REMOVE) {
-			win.TranslateMessage(&msg)
-			win.DispatchMessageW(&msg)
-		}
-
-		update_frame(frame)
-	}
 }
 
 @(private)
@@ -267,20 +145,12 @@ switch_keys :: #force_inline proc(virtual_code: u32, lparam: int) -> u32 {
 	return virtual_code
 }
 
-is_resizing :: proc() -> bool {
-	return ctx.is_resizing
-}
-
 drop_callback :: proc(callback: proc(files: []string)) {
 	ctx.file_drop_callback = callback
 
 	if ctx.hwnd != nil {
 		win.DragAcceptFiles(ctx.hwnd, win.TRUE)
 	}
-}
-
-is_hovering_files :: proc() -> bool {
-	return ctx.is_hovering_files
 }
 
 get_clipboard :: proc(allocator := context.temp_allocator) -> (text: string, ok: bool) {
@@ -343,6 +213,11 @@ is_in_title_bar :: proc(x, y: int) -> bool {
 	title_bar_right := ctx.window.w - 150
 
 	title_bar_height := 30
+
+	if ctx.compact_mode {
+		return y >= title_bar_height || x < title_bar_right
+	}
+
 	return y < title_bar_height && x >= title_bar_left && x < title_bar_right
 }
 
@@ -386,7 +261,7 @@ win_proc :: proc "stdcall" (
 		if message == win.WM_LBUTTONDOWN {
 			resize_area := get_resize_area(ctx.mouse_pos.x, ctx.mouse_pos.y)
 
-			if resize_area != .NONE {
+			if resize_area != .NONE && !ctx.compact_mode {
 				ctx.is_resizing = true
 				ctx.resize_state = resize_area
 
@@ -427,7 +302,7 @@ win_proc :: proc "stdcall" (
 					time.duration_seconds(time.diff(ctx.last_click_time, current_time)),
 				)
 
-				if time_diff <= double_click_threshold &&
+				if time_diff <= 0.2 && !ctx.compact_mode &&
 				   abs(ctx.mouse_pos.x - ctx.last_click_pos.x) <= 5 &&
 				   abs(ctx.mouse_pos.y - ctx.last_click_pos.y) <= 5 {
 
@@ -469,7 +344,7 @@ win_proc :: proc "stdcall" (
 		ctx.mouse_pos.x = int(win.GET_X_LPARAM(lparam))
 		ctx.mouse_pos.y = int(win.GET_Y_LPARAM(lparam))
 
-		if !ctx.is_resizing {
+		if !ctx.is_resizing && !ctx.compact_mode {
 			resize_area := get_resize_area(ctx.mouse_pos.x, ctx.mouse_pos.y)
 			set_resize_cursor(resize_area)
 		}
@@ -513,13 +388,6 @@ win_proc :: proc "stdcall" (
 	case win.WM_MOUSEWHEEL:
 		delta := cast(i8)((wparam >> 16) & 0xFFFF)
 		ctx.mouse_scroll += int(delta) / win.WHEEL_DELTA
-	case win.WM_GETMINMAXINFO:
-		{
-			minMax := cast(^win.MINMAXINFO)uintptr(lparam)
-			minMax.ptMinTrackSize.x = 700
-			minMax.ptMinTrackSize.y = 600
-			return 0
-		}
 	case win.WM_CHAR:
 		wchar := win.WCHAR(wparam)
 		if wparam >= 0xd800 && wparam <= 0xdbff {
@@ -582,59 +450,96 @@ win_proc :: proc "stdcall" (
 
 		ctx.is_hovering_files = false
 		return 0
-	case:
-
 	}
 
 	return win.DefWindowProcW(hwnd, message, wparam, lparam)
 }
 
-KEY_STATE_HELD: u8 : 0x0001
-KEY_STATE_PRESSED: u8 : 0x0002
-KEY_STATE_RELEASED: u8 : 0x0004
+set_window_size :: proc(width, height: int) {
+	if ctx.hwnd == nil do return
 
-key_held :: #force_inline proc(key: Key) -> bool {
-	return ctx.key_state[key] & KEY_STATE_HELD != 0
-}
-key_pressed :: #force_inline proc(key: Key) -> bool {
-	return ctx.key_state[key] & KEY_STATE_PRESSED != 0
-}
-key_released :: #force_inline proc(key: Key) -> bool {
-	return ctx.key_state[key] & KEY_STATE_RELEASED != 0
-}
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
 
-mouse_held :: #force_inline proc(button: Mouse) -> bool {
-	return ctx.mouse_state[button] & KEY_STATE_HELD != 0
-}
-mouse_pressed :: #force_inline proc(button: Mouse) -> bool {
-	return ctx.mouse_state[button] & KEY_STATE_PRESSED != 0
-}
-mouse_released :: #force_inline proc(button: Mouse) -> bool {
-	return ctx.mouse_state[button] & KEY_STATE_RELEASED != 0
-}
+	temp_rect := win.RECT {
+		left   = 0,
+		top    = 0,
+		right  = i32(width),
+		bottom = i32(height),
+	}
 
-get_mouse :: proc() -> (int, int) {
-	return ctx.mouse_pos.x, ctx.mouse_pos.y
-}
+	win.AdjustWindowRectEx(&temp_rect, window_styles, win.FALSE, 0)
 
-get_mouse_scroll :: proc() -> int {
-	return ctx.mouse_scroll
-}
+	adjusted_width := temp_rect.right - temp_rect.left
+	adjusted_height := temp_rect.bottom - temp_rect.top
 
-set_char_callback :: proc(callback: proc(char: rune)) {
-	ctx.text_callback = callback
+	win.SetWindowPos(
+		ctx.hwnd,
+		nil,
+		rect.left,
+		rect.top,
+		adjusted_width,
+		adjusted_height,
+		win.SWP_NOZORDER | win.SWP_NOACTIVATE,
+	)
+
+	ctx.window.w = int(adjusted_width)
+	ctx.window.h = int(adjusted_height)
 }
 
-window_size :: proc() -> (int, int) {
-	return ctx.window.w, ctx.window.h
+center_window :: proc() {
+	if ctx.hwnd == nil do return
+
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
+
+	window_width := rect.right - rect.left
+	window_height := rect.bottom - rect.top
+
+	screen_width := win.GetSystemMetrics(win.SM_CXSCREEN)
+	screen_height := win.GetSystemMetrics(win.SM_CYSCREEN)
+
+	x := (screen_width - window_width) / 2
+	y := (screen_height - window_height) / 2
+
+	win.SetWindowPos(
+		ctx.hwnd,
+		nil,
+		x,
+		y,
+		window_width,
+		window_height,
+		win.SWP_NOZORDER | win.SWP_NOACTIVATE,
+	)
 }
 
-delta_time :: proc() -> f32 {
-	return ctx.delta_time
+set_window_pos :: proc(x, y: int) {
+	if ctx.hwnd == nil do return
+
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
+
+	window_width := rect.right - rect.left
+	window_height := rect.bottom - rect.top
+
+	win.SetWindowPos(
+		ctx.hwnd,
+		nil,
+		i32(x),
+		i32(y),
+		window_width,
+		window_height,
+		win.SWP_NOZORDER | win.SWP_NOACTIVATE,
+	)
 }
 
-time :: proc() -> f32 {
-	return ctx.timer
+get_window_pos :: proc() -> (x, y: int) {
+	if ctx.hwnd == nil do return 0, 0
+
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
+
+	return int(rect.left), int(rect.top)
 }
 
 maximize_or_restore_window :: proc() {
@@ -654,7 +559,6 @@ maximize_or_restore_window :: proc() {
 		win.ShowWindow(ctx.hwnd, win.SW_MAXIMIZE)
 	}
 }
-
 
 close_window :: proc() {
 	win.PostMessageW(ctx.hwnd, win.WM_CLOSE, 0, 0)
@@ -760,6 +664,8 @@ set_resize_cursor :: proc(resize_area: ResizeState) {
 }
 
 perform_resize :: proc() {
+	if ctx.compact_mode do return
+
 	rect: win.RECT
 	win.GetWindowRect(ctx.hwnd, &rect)
 
@@ -814,27 +720,6 @@ perform_resize :: proc() {
 	case .NONE:
 	}
 
-	min_width: i32 = 700
-	min_height: i32 = 600
-
-	if new_width < min_width {
-		if ctx.resize_state == .LEFT ||
-		   ctx.resize_state == .TOP_LEFT ||
-		   ctx.resize_state == .BOTTOM_LEFT {
-			new_x = rect.right - min_width
-		}
-		new_width = min_width
-	}
-
-	if new_height < min_height {
-		if ctx.resize_state == .TOP ||
-		   ctx.resize_state == .TOP_LEFT ||
-		   ctx.resize_state == .TOP_RIGHT {
-			new_y = rect.bottom - min_height
-		}
-		new_height = min_height
-	}
-
 	win.SetWindowPos(
 		ctx.hwnd,
 		nil,
@@ -845,7 +730,6 @@ perform_resize :: proc() {
 		win.SWP_NOZORDER | win.SWP_NOACTIVATE,
 	)
 }
-
 
 handle_resize :: proc() {
 	x, y := get_mouse()
@@ -860,136 +744,40 @@ handle_resize :: proc() {
 	}
 }
 
-Cursor :: enum u8 {
-	DEFAULT,
-	CLICK,
-	TEXT,
-	CROSSHAIR,
-	HORIZONTAL_RESIZE,
-	VERTICAL_RESIZE,
-	DIAGONAL_RESIZE_1,
-	DIAGONAL_RESIZE_2,
-	NONE,
+update_window_style :: proc(remove_thick_frame: bool) {
+	if ctx.hwnd == nil do return
+
+	current_style := u32(win.GetWindowLongW(ctx.hwnd, win.GWL_STYLE))
+	current_ex_style := u32(win.GetWindowLongW(ctx.hwnd, win.GWL_EXSTYLE))
+
+	new_style := current_style
+	new_ex_style := current_ex_style
+
+	if remove_thick_frame {
+		new_style &= ~(win.WS_THICKFRAME | win.WS_SIZEBOX)
+		new_ex_style &= ~win.WS_EX_WINDOWEDGE
+	} else {
+		new_style |= win.WS_THICKFRAME | win.WS_SIZEBOX
+		new_ex_style |= win.WS_EX_WINDOWEDGE
+	}
+
+	win.SetWindowLongW(ctx.hwnd, win.GWL_STYLE, i32(new_style))
+	win.SetWindowLongW(ctx.hwnd, win.GWL_EXSTYLE, i32(new_ex_style))
+
+	win.SetWindowPos(
+		ctx.hwnd,
+		nil,
+		0, 0, 0, 0,
+		win.SWP_NOMOVE | win.SWP_NOSIZE | win.SWP_NOZORDER | win.SWP_FRAMECHANGED,
+	)
 }
 
-Mouse :: enum u8 {
-	UNKNOWN = 0,
-	LEFT    = 1,
-	RIGHT   = 2,
-	MIDDLE  = 3,
+enable_compact_mode :: proc() {
+	ctx.compact_mode = true
+	update_window_style(true)
 }
 
-Key :: enum u8 {
-	UNKNOWN          = 0,
-	N0               = '0',
-	N1               = '1',
-	N2               = '2',
-	N3               = '3',
-	N4               = '4',
-	N5               = '5',
-	N6               = '6',
-	N7               = '7',
-	N8               = '8',
-	N9               = '9',
-	A                = 'A',
-	B                = 'B',
-	C                = 'C',
-	D                = 'D',
-	E                = 'E',
-	F                = 'F',
-	G                = 'G',
-	H                = 'H',
-	I                = 'I',
-	J                = 'J',
-	K                = 'K',
-	L                = 'L',
-	M                = 'M',
-	N                = 'N',
-	O                = 'O',
-	P                = 'P',
-	Q                = 'Q',
-	R                = 'R',
-	S                = 'S',
-	T                = 'T',
-	U                = 'U',
-	V                = 'V',
-	W                = 'W',
-	X                = 'X',
-	Y                = 'Y',
-	Z                = 'Z',
-	RETURN           = 0x0D,
-	TAB              = 0x09,
-	BACKSPACE        = 0x08,
-	DELETE           = 0x2E,
-	ESCAPE           = 0x1B,
-	SPACE            = 0x20,
-	LEFT_SHIFT       = 0xA0,
-	RIGHT_SHIFT      = 0xA1,
-	LEFT_CONTROL     = 0xA2,
-	RIGHT_CONTROL    = 0xA3,
-	LEFT_ALT         = 0xA4,
-	RIGHT_ALT        = 0xA5,
-	LEFT_SUPER       = 0x5B,
-	RIGHT_SUPER      = 0x5C,
-	END              = 0x23,
-	HOME             = 0x24,
-	LEFT             = 0x25,
-	UP               = 0x26,
-	RIGHT            = 0x27,
-	DOWN             = 0x28,
-	SEMICOLON        = 0xBA,
-	EQUALS           = 0xBB,
-	COMMA            = 0xBC,
-	MINUS            = 0xBD,
-	DOT              = 0xBE,
-	PERIOD           = DOT,
-	SLASH            = 0xBF,
-	GRAVE            = 0xC0,
-	PAGE_UP          = 0x21,
-	PAGE_DOWN        = 0x22,
-	LEFT_BRACKET     = 0xDB,
-	RIGHT_BRACKET    = 0xDD,
-	BACKSLASH        = 0xDC,
-	QUOTE            = 0xDE,
-	P0               = 0x60,
-	P1               = 0x61,
-	P2               = 0x62,
-	P3               = 0x63,
-	P4               = 0x64,
-	P5               = 0x65,
-	P6               = 0x66,
-	P7               = 0x67,
-	P8               = 0x68,
-	P9               = 0x69,
-	KEYPAD_MULTIPLY  = 0x6A,
-	KEYPAD_PLUS      = 0x6B,
-	KEYPAD_MINUS     = 0x6D,
-	KEYPAD_DOT       = 0x6E,
-	KEYPAD_PERIOD    = KEYPAD_DOT,
-	KEYPAD_DIVIDE    = 0x6F,
-	KEYPAD_RETURN    = RETURN,
-	KEYPAD_EQUALS    = EQUALS,
-	F1               = 0x70,
-	F2               = 0x71,
-	F3               = 0x72,
-	F4               = 0x73,
-	F5               = 0x74,
-	F6               = 0x75,
-	F7               = 0x76,
-	F8               = 0x77,
-	F9               = 0x78,
-	F10              = 0x79,
-	F11              = 0x7A,
-	F12              = 0x7B,
-	F13              = 0x7C,
-	F14              = 0x7D,
-	F15              = 0x7E,
-	F16              = 0x7F,
-	F17              = 0x80,
-	F18              = 0x81,
-	F19              = 0x82,
-	F20              = 0x83,
-	MEDIA_NEXT_TRACK = 0xB0,
-	MEDIA_PREV_TRACK = 0xB1,
-	MEDIA_PLAY_PAUSE = 0xB3,
+disable_compact_mode :: proc() {
+	ctx.compact_mode = false
+	update_window_style(false)
 }

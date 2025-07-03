@@ -252,7 +252,7 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 	}
 }
 
-handle_progress_bar_drag :: proc(window_w: int, player_y: f32) {
+handle_progress_bar_drag :: proc(window_w: f32, player_y: f32) {
 	mouse_x, mouse_y := fx.get_mouse()
 
 	is_over_progress := f32(mouse_y) >= player_y - 5 && f32(mouse_y) <= player_y + 15

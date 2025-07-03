@@ -33,6 +33,7 @@ UIState :: struct {
 	selected_playlist:         string,
 	show_lyrics:               bool,
 	follow_lyrics:             bool,
+	compact_mode:              bool,
 	theme:                     int,
 
 	search_box:                textedit.State,
@@ -103,10 +104,6 @@ draw_main_content :: proc(sidebar_width: f32) {
 }
 
 frame :: proc() {
-	dt := min(fx.delta_time(), 0.05)
-
-	window_w, window_h := fx.window_size()
-
 	if fx.key_pressed(.F4) {
 		ui_state.theme = (ui_state.theme + 1) % THEME_COUNT
 		switch_theme(ui_state.theme)
@@ -119,6 +116,27 @@ frame :: proc() {
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.L) {
 		download_lyrics()
+	}
+
+	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.C) {
+		if ui_state.compact_mode {
+			ui_state.compact_mode = false
+			fx.set_window_size(1280, 720)
+			fx.center_window()
+			fx.disable_compact_mode()
+		} else {
+			ui_state.compact_mode = true
+			fx.enable_compact_mode()
+			fx.set_window_size(600, 80)
+		}
+	}
+
+	dt := min(fx.delta_time(), 0.05)
+	window_w, window_h := fx.window_size()
+
+	if ui_state.compact_mode {
+		compact_mode_frame()
+		return
 	}
 
 	update_player(dt)
@@ -230,7 +248,7 @@ main :: proc() {
 	load_icons()
 	load_state()
 
-	fx.run_manual(proc() {
+	fx.run_once(proc() {
 		frame()
 		window_w, window_h := fx.window_size()
 		fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
@@ -250,3 +268,4 @@ main :: proc() {
 
 	save_state()
 }
+

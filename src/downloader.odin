@@ -22,6 +22,11 @@ LyricsResponse :: struct {
 }
 
 download_lyrics :: proc() {
+	if player.current_track.path == "" {
+		show_alert({}, "No track is playing", "Open a track before downloading lyrics", 2)
+		return
+	}
+
 	track := find_track_by_name(player.current_track.name, player.current_track.playlist)
 
 	title := player.current_track.audio_clip.tags.title

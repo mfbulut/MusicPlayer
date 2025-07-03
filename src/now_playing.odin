@@ -7,7 +7,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 	has_lyrics := len(track.lyrics) > 0
 
-	target : f32 = ui_state.show_lyrics ? 1.0 : 0.0
+	target : f32 = has_lyrics && ui_state.show_lyrics ? 1.0 : 0.0
 
 	animation_speed: f32 = 8.0
 	ui_state.lyrics_animation_progress += (target - ui_state.lyrics_animation_progress) * animation_speed * min(fx.delta_time(), 1.0 / 60.0)

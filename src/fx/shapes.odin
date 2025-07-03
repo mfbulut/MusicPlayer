@@ -50,18 +50,17 @@ draw_rect :: proc(x, y, w, h: f32, color: Color) {
 	if ctx.is_minimized do return
 
 	verts := []Vertex {
-		Vertex{{x, y}, {-1.0, 0.0}, color},
-		Vertex{{x, y + h}, {-1.0, 0.0}, color},
-		Vertex{{x + w, y + h}, {-1.0, 0.0}, color},
-		Vertex{{x, y}, {-1.0, 0.0}, color},
-		Vertex{{x + w, y + h}, {-1.0, 0.0}, color},
 		Vertex{{x + w, y}, {-1.0, 0.0}, color},
+		Vertex{{x + w, y + h}, {-1.0, 0.0}, color},
+		Vertex{{x, y}, {-1.0, 0.0}, color},
+		Vertex{{x + w, y + h}, {-1.0, 0.0}, color},
+		Vertex{{x, y + h}, {-1.0, 0.0}, color},
+		Vertex{{x, y}, {-1.0, 0.0}, color},
 	}
 
 	copy(verticies[verticies_count:verticies_count + len(verts)], verts[:])
 	verticies_count += len(verts)
 }
-
 
 draw_texture :: proc(texture: Texture, x, y, w, h: f32, color: Color) {
 	if ctx.is_minimized do return
@@ -194,14 +193,12 @@ draw_rect_rounded :: proc(x, y, w, h, radius: f32, color: Color, corner_segments
 		return
 	}
 
-
 	corners := [4][2]f32 {
 		{x + clamped_radius, y + clamped_radius},
 		{x + w - clamped_radius, y + clamped_radius},
 		{x + w - clamped_radius, y + h - clamped_radius},
 		{x + clamped_radius, y + h - clamped_radius},
 	}
-
 
 	corner_angles := [4][2]f32 {
 		{math.PI, 3.0 * math.PI / 2.0},
