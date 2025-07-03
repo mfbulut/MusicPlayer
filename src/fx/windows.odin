@@ -215,7 +215,7 @@ is_in_title_bar :: proc(x, y: int) -> bool {
 	title_bar_height := 30
 
 	if ctx.compact_mode {
-		return y >= title_bar_height || x < title_bar_right
+		return (y >= title_bar_height || x < title_bar_right)
 	}
 
 	return y < title_bar_height && x >= title_bar_left && x < title_bar_right
@@ -261,38 +261,41 @@ win_proc :: proc "stdcall" (
 		if message == win.WM_LBUTTONDOWN {
 			resize_area := get_resize_area(ctx.mouse_pos.x, ctx.mouse_pos.y)
 
-			if resize_area != .NONE && !ctx.compact_mode {
-				ctx.is_resizing = true
-				ctx.resize_state = resize_area
+			if resize_area != .NONE {
+				if !ctx.compact_mode {
+					ctx.is_resizing = true
+					ctx.resize_state = resize_area
 
-				point: win.POINT
-				win.GetCursorPos(&point)
+					point: win.POINT
+					win.GetCursorPos(&point)
 
-				rect: win.RECT
-				win.GetWindowRect(ctx.hwnd, &rect)
+					rect: win.RECT
+					win.GetWindowRect(ctx.hwnd, &rect)
 
-				switch resize_area {
-				case .LEFT, .TOP_LEFT, .BOTTOM_LEFT:
-					ctx.resize_mouse_offset.x = point.x - rect.left
-				case .RIGHT, .TOP_RIGHT, .BOTTOM_RIGHT:
-					ctx.resize_mouse_offset.x = point.x - rect.right
-				case .TOP, .BOTTOM:
-					ctx.resize_mouse_offset.x = 0
-				case .NONE:
-				}
+					switch resize_area {
+					case .LEFT, .TOP_LEFT, .BOTTOM_LEFT:
+						ctx.resize_mouse_offset.x = point.x - rect.left
+					case .RIGHT, .TOP_RIGHT, .BOTTOM_RIGHT:
+						ctx.resize_mouse_offset.x = point.x - rect.right
+					case .TOP, .BOTTOM:
+						ctx.resize_mouse_offset.x = 0
+					case .NONE:
+					}
 
-				switch resize_area {
-				case .TOP, .TOP_LEFT, .TOP_RIGHT:
-					ctx.resize_mouse_offset.y = point.y - rect.top
-				case .BOTTOM, .BOTTOM_LEFT, .BOTTOM_RIGHT:
-					ctx.resize_mouse_offset.y = point.y - rect.bottom
-				case .LEFT, .RIGHT:
-					ctx.resize_mouse_offset.y = 0
-				case .NONE:
+					switch resize_area {
+					case .TOP, .TOP_LEFT, .TOP_RIGHT:
+						ctx.resize_mouse_offset.y = point.y - rect.top
+					case .BOTTOM, .BOTTOM_LEFT, .BOTTOM_RIGHT:
+						ctx.resize_mouse_offset.y = point.y - rect.bottom
+					case .LEFT, .RIGHT:
+						ctx.resize_mouse_offset.y = 0
+					case .NONE:
+					}
 				}
 
 				win.SetCapture(hwnd)
 				ctx.mouse_state[button] = KEY_STATE_HELD | KEY_STATE_PRESSED
+
 				break
 			}
 
@@ -301,6 +304,10 @@ win_proc :: proc "stdcall" (
 				time_diff := f32(
 					time.duration_seconds(time.diff(ctx.last_click_time, current_time)),
 				)
+
+				if ctx.compact_mode {
+					ctx.mouse_state[button] = KEY_STATE_HELD | KEY_STATE_PRESSED
+				}
 
 				if time_diff <= 0.2 && !ctx.compact_mode &&
 				   abs(ctx.mouse_pos.x - ctx.last_click_pos.x) <= 5 &&
@@ -571,6 +578,16 @@ minimize_window :: proc() {
 	for &state in ctx.mouse_state {
 		state &= ~KEY_STATE_HELD
 	}
+}
+
+prev_state: [256]bool
+key_pressed_global :: proc(vKey: Key) -> bool {
+    state := i32(win.GetAsyncKeyState(i32(vKey)))
+    is_down := (state & 0x8000) != 0
+
+    result := is_down && !prev_state[vKey]
+    prev_state[vKey] = is_down
+    return result
 }
 
 set_cursor :: proc(cursor: Cursor) {

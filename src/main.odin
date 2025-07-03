@@ -142,11 +142,6 @@ frame :: proc() {
 	update_player(dt)
 	update_scrollbars(dt)
 
-	if ui_state.compact_mode {
-		compact_mode_frame()
-		return
-	}
-
 	if ui_state.hide_sidebar {
 		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim - dt * SIDEBAR_ANIM_SPEED, 0, 1)
 	} else {
@@ -155,16 +150,31 @@ frame :: proc() {
 
 	eased_progress := ease_in_out_cubic(ui_state.sidebar_anim)
 	ui_state.sidebar_width = eased_progress * SIDEBAR_WIDTH
-
-	fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
-
-	draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
-
-	draw_main_content(ui_state.sidebar_width)
-	draw_player_controls()
-
 	update_alert(dt)
-	draw_alert()
+
+	if ui_state.compact_mode {
+		compact_mode_frame()
+	} else {
+		fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
+
+		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
+
+		draw_main_content(ui_state.sidebar_width)
+		draw_player_controls()
+		draw_alert()
+
+		if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
+			fx.close_window()
+		}
+
+		if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
+			fx.maximize_or_restore_window()
+		}
+
+		if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
+			fx.minimize_window()
+		}
+	}
 
 	if loading_covers {
 		loading_covers = !check_all_covers_loaded()
@@ -174,18 +184,6 @@ frame :: proc() {
 		} else {
 			cleanup_cover_loading()
 		}
-	}
-
-	if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
-		fx.close_window()
-	}
-
-	if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
-		fx.maximize_or_restore_window()
-	}
-
-	if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
-		fx.minimize_window()
 	}
 
 	if fx.is_hovering_files() {

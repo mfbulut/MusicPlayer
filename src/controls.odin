@@ -207,8 +207,7 @@ draw_player_controls :: proc() {
 		if controls_x + 200 < time_x {
 			handle_time_drag(time_x, time_y, time_width, 20)
 
-			text_color :=
-				(ui_state.is_dragging_time || ui_state.is_dragging_progress) ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
+			text_color := (ui_state.is_dragging_time || ui_state.is_dragging_progress) ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
 			fx.draw_text(time_text, time_x, time_y, 16, text_color)
 		}
 	}
