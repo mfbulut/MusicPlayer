@@ -119,28 +119,33 @@ frame :: proc() {
 	}
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.C) {
-		if ui_state.compact_mode {
+		 if ui_state.compact_mode {
 			ui_state.compact_mode = false
 			fx.set_window_size(1280, 720)
 			fx.center_window()
 			fx.disable_compact_mode()
 		} else {
-			ui_state.compact_mode = true
-			fx.enable_compact_mode()
-			fx.set_window_size(600, 80)
+ 			if player.current_track.path == "" {
+				show_alert({}, "No track is playing", "Open a track before opening compact mode", 2)
+			} else {
+				ui_state.compact_mode = true
+				fx.enable_compact_mode()
+				fx.set_window_size(600, 80)
+				fx.set_window_pos(0, 0)
+			}
 		}
 	}
 
 	dt := min(fx.delta_time(), 0.05)
 	window_w, window_h := fx.window_size()
 
+	update_player(dt)
+	update_scrollbars(dt)
+
 	if ui_state.compact_mode {
 		compact_mode_frame()
 		return
 	}
-
-	update_player(dt)
-	update_scrollbars(dt)
 
 	if ui_state.hide_sidebar {
 		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim - dt * SIDEBAR_ANIM_SPEED, 0, 1)

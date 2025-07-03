@@ -382,6 +382,7 @@ win_proc :: proc "stdcall" (
 		break
 	case win.WM_EXITSIZEMOVE:
 		win.KillTimer(ctx.hwnd, 1)
+		if ctx.compact_mode do constrain_window_to_screen()
 		break
 	case win.WM_TIMER:
 		update_frame(ctx.frame_proc)
@@ -744,31 +745,76 @@ handle_resize :: proc() {
 	}
 }
 
-update_window_style :: proc(remove_thick_frame: bool) {
+constrain_window_to_screen :: proc() {
 	if ctx.hwnd == nil do return
 
+	rect: win.RECT
+	win.GetWindowRect(ctx.hwnd, &rect)
+
+	window_width := rect.right - rect.left
+	window_height := rect.bottom - rect.top
+
+	screen_width := win.GetSystemMetrics(win.SM_CXSCREEN)
+	screen_height := win.GetSystemMetrics(win.SM_CYSCREEN)
+
+	new_x := rect.left
+	new_y := rect.top
+
+	if new_x < 0 {
+		new_x = 0
+	} else if new_x + window_width > screen_width {
+		new_x = screen_width - window_width
+	}
+
+	if new_y < 0 {
+		new_y = 0
+	} else if new_y + window_height > screen_height {
+		new_y = screen_height - window_height
+	}
+
+	if new_x != rect.left || new_y != rect.top {
+		win.SetWindowPos(
+			ctx.hwnd,
+			nil,
+			new_x,
+			new_y,
+			window_width,
+			window_height,
+			win.SWP_NOZORDER | win.SWP_NOACTIVATE,
+		)
+	}
+}
+
+update_window_style :: proc(enabled: bool) {
+	if ctx.hwnd == nil do return
 	current_style := u32(win.GetWindowLongW(ctx.hwnd, win.GWL_STYLE))
 	current_ex_style := u32(win.GetWindowLongW(ctx.hwnd, win.GWL_EXSTYLE))
-
 	new_style := current_style
 	new_ex_style := current_ex_style
 
-	if remove_thick_frame {
+	if enabled {
 		new_style &= ~(win.WS_THICKFRAME | win.WS_SIZEBOX)
 		new_ex_style &= ~win.WS_EX_WINDOWEDGE
+		new_ex_style |= win.WS_EX_TOPMOST
 	} else {
 		new_style |= win.WS_THICKFRAME | win.WS_SIZEBOX
 		new_ex_style |= win.WS_EX_WINDOWEDGE
+		new_ex_style &= ~win.WS_EX_TOPMOST
 	}
 
 	win.SetWindowLongW(ctx.hwnd, win.GWL_STYLE, i32(new_style))
 	win.SetWindowLongW(ctx.hwnd, win.GWL_EXSTYLE, i32(new_ex_style))
 
+	z_order := win.HWND_NOTOPMOST
+	if enabled {
+		z_order = win.HWND_TOPMOST
+	}
+
 	win.SetWindowPos(
 		ctx.hwnd,
-		nil,
+		z_order,
 		0, 0, 0, 0,
-		win.SWP_NOMOVE | win.SWP_NOSIZE | win.SWP_NOZORDER | win.SWP_FRAMECHANGED,
+		win.SWP_NOMOVE | win.SWP_NOSIZE | win.SWP_FRAMECHANGED,
 	)
 }
 
