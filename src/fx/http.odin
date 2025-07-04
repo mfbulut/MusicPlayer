@@ -1,5 +1,10 @@
 package fx
 
+import "base:runtime"
+import "core:net"
+import "core:slice"
+import "core:strings"
+
 import win "core:sys/windows"
 
 WINHTTP_ACCESS_TYPE_DEFAULT_PROXY :: 0
@@ -14,19 +19,19 @@ HINTERNET :: rawptr
 
 URL_COMPONENTS :: struct {
 	dwStructSize:      win.DWORD,
-	lpszScheme:        ^u16,
+	lpszScheme:        [^]u16,
 	dwSchemeLength:    win.DWORD,
 	nScheme:           i32,
-	lpszHostName:      ^u16,
+	lpszHostName:      [^]u16,
 	dwHostNameLength:  win.DWORD,
 	nPort:             u16,
-	lpszUserName:      ^u16,
+	lpszUserName:      [^]u16,
 	dwUserNameLength:  win.DWORD,
-	lpszPassword:      ^u16,
+	lpszPassword:      [^]u16,
 	dwPasswordLength:  win.DWORD,
-	lpszUrlPath:       ^u16,
+	lpszUrlPath:       [^]u16,
 	dwUrlPathLength:   win.DWORD,
-	lpszExtraInfo:     ^u16,
+	lpszExtraInfo:     [^]u16,
 	dwExtraInfoLength: win.DWORD,
 }
 
@@ -55,21 +60,39 @@ foreign winhttp {
 	WinHttpReadData :: proc(hRequest: HINTERNET, lpBuffer: rawptr, dwNumberOfBytesToRead: win.DWORD, lpdwNumberOfBytesRead: ^win.DWORD) -> win.BOOL ---
 }
 
+Request_Query_Param :: struct {
+	key, value: string,
+}
+
 Response :: struct {
 	status: i32,
 	data:   []u8,
 }
 
-get :: proc(url: string) -> Response {
-	result := Response{0, nil}
-
-	url_wstring := win.utf8_to_wstring(url)
+get :: proc(
+	scheme_hostname_path: string,
+	opts: []Request_Query_Param,
+	allocator := context.allocator,
+) -> (
+	result: Response,
+	ok: bool,
+) {
+	runtime.DEFAULT_TEMP_ALLOCATOR_TEMP_GUARD()
 
 	urlComp := URL_COMPONENTS{}
-	hostName := make([]u16, 256)
-	urlPath := make([]u16, 1024)
-	defer delete(hostName)
-	defer delete(urlPath)
+	hostName := make([]u16, 256, context.temp_allocator)
+	urlPath := make([]u16, 1024, context.temp_allocator)
+
+	// WinHttp has facilities for escaping (ICU_ESCAPE), but sadly without support for >1 "extra infos".
+	// That is, parameters containing an "&" or "?" need be escaped manually first anyways..!
+	urlExtras: strings.Builder
+	strings.builder_init(&urlExtras, context.temp_allocator)
+	for opt, i in opts {
+		strings.write_rune(&urlExtras, i > 0 ? '&' : '?')
+		strings.write_string(&urlExtras, opt.key)
+		strings.write_rune(&urlExtras, '=')
+		strings.write_string(&urlExtras, net.percent_encode(opt.value, context.temp_allocator))
+	}
 
 	urlComp.dwStructSize = win.DWORD(size_of(URL_COMPONENTS))
 	urlComp.lpszHostName = raw_data(hostName)
@@ -77,42 +100,47 @@ get :: proc(url: string) -> Response {
 	urlComp.lpszUrlPath = raw_data(urlPath)
 	urlComp.dwUrlPathLength = win.DWORD(len(urlPath))
 
-	if !WinHttpCrackUrl(url_wstring, 0, 0, &urlComp) {
-		return result
-	}
+	url_wstring := win.utf8_to_wstring(scheme_hostname_path)
+	WinHttpCrackUrl(url_wstring, 0, 0, &urlComp) or_return
 
-	userAgent := win.utf8_to_wstring("github.com/mfbulut/MusicPlayer WinHTTP Client/1.0")
+	// This is a no-op for requests without query parameters.
+	lpszUrlPathWithParams := slice.concatenate(
+		[][]u16 {
+			urlComp.lpszUrlPath[:urlComp.dwUrlPathLength],
+			win.utf8_to_utf16(strings.to_string(urlExtras)),
+			win.L("")[:1],
+		},
+		context.temp_allocator,
+	)
+
+	userAgent := win.L("github.com/mfbulut/MusicPlayer WinHTTP Client/1.0")
 
 	hSession := WinHttpOpen(userAgent, WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, nil, nil, 0)
-	if hSession == nil do return result
+	(hSession != nil) or_return
 	defer WinHttpCloseHandle(hSession)
 
 	hConnect := WinHttpConnect(hSession, urlComp.lpszHostName, urlComp.nPort, 0)
-	if hConnect == nil do return result
+	(hConnect != nil) or_return
 	defer WinHttpCloseHandle(hConnect)
 
 	flags := urlComp.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0
-	verb := win.utf8_to_wstring("GET")
+	verb := win.L("GET")
 
 	hRequest := WinHttpOpenRequest(
 		hConnect,
 		verb,
-		urlComp.lpszUrlPath,
+		raw_data(lpszUrlPathWithParams),
 		nil,
 		nil,
 		nil,
 		win.DWORD(flags),
 	)
-	if hRequest == nil do return result
+	(hRequest != nil) or_return
 	defer WinHttpCloseHandle(hRequest)
 
-	if !WinHttpSendRequest(hRequest, nil, 0, nil, 0, 0, nil) {
-		return result
-	}
+	WinHttpSendRequest(hRequest, nil, 0, nil, 0, 0, nil) or_return
 
-	if !WinHttpReceiveResponse(hRequest, nil) {
-		return result
-	}
+	WinHttpReceiveResponse(hRequest, nil) or_return
 
 	status_code: win.DWORD = 0
 	status_len := win.DWORD(size_of(win.DWORD))
@@ -129,37 +157,20 @@ get :: proc(url: string) -> Response {
 	result.status = i32(status_code)
 
 	totalSize: win.DWORD = 0
-	buffer: []u8
+	buffer := make([dynamic]byte, context.temp_allocator)
 
 	for {
 		chunkSize: win.DWORD = 0
-		if !WinHttpQueryDataAvailable(hRequest, &chunkSize) || chunkSize == 0 {
-			break
-		}
+		WinHttpQueryDataAvailable(hRequest, &chunkSize) or_break
+		(chunkSize > 0) or_break
 
-		old_len := len(buffer)
-		new_buffer := make([]u8, old_len + int(chunkSize))
-		copy(new_buffer[:old_len], buffer)
-		delete(buffer)
-		buffer = new_buffer
+		resize(&buffer, totalSize + chunkSize)
 
 		bytesRead: win.DWORD = 0
-		if !WinHttpReadData(hRequest, raw_data(buffer[old_len:]), chunkSize, &bytesRead) {
-			delete(buffer)
-			buffer = nil
-			break
-		}
-
-		if int(bytesRead) < int(chunkSize) {
-			final_buffer := make([]u8, old_len + int(bytesRead))
-			copy(final_buffer, buffer[:old_len + int(bytesRead)])
-			delete(buffer)
-			buffer = final_buffer
-		}
-
+		WinHttpReadData(hRequest, raw_data(buffer[totalSize:]), chunkSize, &bytesRead) or_break
 		totalSize += bytesRead
 	}
 
-	result.data = buffer
-	return result
+	result.data = slice.clone(buffer[:totalSize], allocator)
+	return result, true
 }

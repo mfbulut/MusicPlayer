@@ -2,23 +2,89 @@ package main
 
 import "fx"
 
+import sa "core:container/small_array"
 import "core:encoding/json"
-import "core:unicode/utf8"
 import "core:fmt"
 import "core:os"
 import "core:path/filepath"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
+import "core:unicode/utf8"
 
 LyricsResponse :: struct {
-	id: int `json:"id"`,
-	trackName: string `json:"trackName"`,
-	artistName: string `json:"artistName"`,
-	albumName: string `json:"albumName"`,
-	duration: int `json:"duration"`,
+	id:           int `json:"id"`,
+	trackName:    string `json:"trackName"`,
+	artistName:   string `json:"artistName"`,
+	albumName:    string `json:"albumName"`,
+	duration:     f32 `json:"duration"`,
 	instrumental: bool `json:"instrumental"`,
-	plainLyrics: string `json:"plainLyrics"`,
+	plainLyrics:  string `json:"plainLyrics"`,
 	syncedLyrics: Maybe(string) `json:"syncedLyrics"`,
+}
+
+// Special casing for file naming formats like:
+// > "00 - Artist - Title"
+// > "00 - Title"
+// > "Artist - Title"
+// > "Title"
+// See: https://lrclib.net/docs.
+guess_search_opts :: proc(title: string) -> (opts: [2]fx.Request_Query_Param, opts_count: int) {
+	// Literally every dash I can find; https://www.compart.com/en/unicode/category/Pd.
+	DASHES :: [?]rune {
+		'-',
+		0x1806,
+		0x2010,
+		0x2011,
+		0x2012,
+		0x2013,
+		0x2014,
+		0xFE58,
+		0xFE63,
+		0xFF0D,
+		0x002D,
+	}
+
+	attempt: for v in DASHES {
+		title := title
+		pieces: sa.Small_Array(2, string)
+
+		for title != "" {
+			off := strings.index_rune(title, v)
+			piece: string
+
+			if off < 0 {
+				piece = title
+				title = title[len(title):]
+			} else {
+				piece = title[:off]
+				title = title[off + utf8.rune_size(v):]
+			}
+
+			piece = strings.trim_space(piece)
+
+			// Filter pieces that are all unsigned ints.
+			// We'll assume they're track numbers, which aren't used for searches.
+			if _, is_uint := strconv.parse_uint(piece); !is_uint {
+				sa.append(&pieces, piece) or_break
+			}
+		}
+
+		switch sa.len(pieces) {
+		case 0:
+			continue attempt
+		case 1:
+			opts[0] = {"track_name", sa.get(pieces, 0)}
+			return opts, 1
+		case:
+			opts[0] = {"artist_name", sa.get(pieces, 0)}
+			opts[1] = {"track_name", sa.get(pieces, 1)}
+			return opts, 2
+		}
+	}
+
+	opts[0] = {"track_name", title}
+	return opts, 1
 }
 
 download_lyrics :: proc() {
@@ -37,18 +103,20 @@ download_lyrics :: proc() {
 	has_required_metadata := len(title) > 0 && len(artist) > 0 && len(album) > 0 && duration > 0
 
 	if track != nil && has_required_metadata {
-		artist_enc := url_encode(artist)
-		title_enc := url_encode(title)
-		album_enc := url_encode(album)
 		duration_mem: [8]u8
 		duration_str := strconv.itoa(duration_mem[:], duration)
 
-		url := fmt.tprintf("https://lrclib.net/api/get?artist_name=%s&track_name=%s&album_name=%s&duration=%s",
-			artist_enc, title_enc, album_enc, duration_str)
+		res, ok := fx.get(
+			"https://lrclib.net/api/get",
+			{
+				{"title", player.current_track.audio_clip.tags.title},
+				{"artist_name", player.current_track.audio_clip.tags.artist},
+				{"album", player.current_track.audio_clip.tags.album},
+				{"duration", strconv.itoa(duration_mem[:], duration)},
+			},
+		)
 
-		res := fx.get(url)
-
-		if res.status == 0 {
+		if !ok {
 			show_alert({}, "Network Error", "Check your internet connection and try again", 2)
 			return
 		}
@@ -57,7 +125,8 @@ download_lyrics :: proc() {
 
 		if res.status == 200 {
 			if lyrics_response, ok := parse_single_lyrics_response(string(res.data)); ok {
-				if synced_lyrics, has_lyrics := lyrics_response.syncedLyrics.?; has_lyrics && len(synced_lyrics) > 0 {
+				if synced_lyrics, has_lyrics := lyrics_response.syncedLyrics.?;
+				   has_lyrics && len(synced_lyrics) > 0 {
 					track.lyrics = load_lyrics_from_string(synced_lyrics)
 					player.current_track.lyrics = track.lyrics
 
@@ -70,13 +139,11 @@ download_lyrics :: proc() {
 		}
 	}
 
-	url := fmt.tprintf("https://lrclib.net/api/search?q=%s", url_encode(player.current_track.name))
-
-	fmt.println(url)
-	res := fx.get(url)
+	opts, opts_count := guess_search_opts(player.current_track.name)
+	res, ok := fx.get("https://lrclib.net/api/search", opts[:opts_count])
 
 
-	if res.status == 0 {
+	if !ok {
 		show_alert({}, "Network Error", "Check your internet connection and try again", 2)
 		return
 	}
@@ -90,8 +157,9 @@ download_lyrics :: proc() {
 			best_duration_diff := max(int)
 
 			for &result in results {
-				if synced_lyrics, has_lyrics := result.syncedLyrics.?; has_lyrics && len(synced_lyrics) > 0 {
-					duration_diff := abs(result.duration - current_duration)
+				if synced_lyrics, has_lyrics := result.syncedLyrics.?;
+				   has_lyrics && len(synced_lyrics) > 0 {
+					duration_diff := abs(int(result.duration) - current_duration)
 					if duration_diff < best_duration_diff {
 						best_duration_diff = duration_diff
 						best_match = &result
@@ -116,7 +184,12 @@ download_lyrics :: proc() {
 					return
 				}
 			} else {
-				show_alert({}, "No Synced Lyrics Available", "No synced lyrics are available for this song", 2)
+				show_alert(
+					{},
+					"No Synced Lyrics Available",
+					"No synced lyrics are available for this song",
+					2,
+				)
 				return
 			}
 		}
@@ -145,113 +218,6 @@ parse_search_lyrics_response :: proc(json_data: string) -> ([]LyricsResponse, bo
 	}
 
 	return results, true
-}
-
-url_encode :: proc(s: string) -> string {
-	builder := strings.builder_make()
-	defer strings.builder_destroy(&builder)
-
-	for r in s {
-		switch r {
-		case ' ':
-			strings.write_string(&builder, "%20")
-		case '!':
-			strings.write_string(&builder, "%21")
-		case '"':
-			strings.write_string(&builder, "%22")
-		case '#':
-			strings.write_string(&builder, "%23")
-		case '$':
-			strings.write_string(&builder, "%24")
-		case '%':
-			strings.write_string(&builder, "%25")
-		case '&':
-			strings.write_string(&builder, "%26")
-		case '\'':
-			strings.write_string(&builder, "%27")
-		case '(':
-			strings.write_string(&builder, "%28")
-		case ')':
-			strings.write_string(&builder, "%29")
-		case '*':
-			strings.write_string(&builder, "%2A")
-		case '+':
-			strings.write_string(&builder, "%2B")
-		case ',':
-			strings.write_string(&builder, "%2C")
-		case '/':
-			strings.write_string(&builder, "%2F")
-		case ':':
-			strings.write_string(&builder, "%3A")
-		case ';':
-			strings.write_string(&builder, "%3B")
-		case '<':
-			strings.write_string(&builder, "%3C")
-		case '=':
-			strings.write_string(&builder, "%3D")
-		case '>':
-			strings.write_string(&builder, "%3E")
-		case '?':
-			strings.write_string(&builder, "%3F")
-		case '@':
-			strings.write_string(&builder, "%40")
-		case '[':
-			strings.write_string(&builder, "%5B")
-		case '\\':
-			strings.write_string(&builder, "%5C")
-		case ']':
-			strings.write_string(&builder, "%5D")
-		case '^':
-			strings.write_string(&builder, "%5E")
-		case '`':
-			strings.write_string(&builder, "%60")
-		case '{':
-			strings.write_string(&builder, "%7B")
-		case '|':
-			strings.write_string(&builder, "%7C")
-		case '}':
-			strings.write_string(&builder, "%7D")
-		case '~':
-			strings.write_string(&builder, "%7E")
-		// Turkish characters
-		case 'ç':
-			strings.write_string(&builder, "%C3%A7")
-		case 'Ç':
-			strings.write_string(&builder, "%C3%87")
-		case 'ğ':
-			strings.write_string(&builder, "%C4%9F")
-		case 'Ğ':
-			strings.write_string(&builder, "%C4%9E")
-		case 'ı':
-			strings.write_string(&builder, "%C4%B1")
-		case 'İ':
-			strings.write_string(&builder, "%C4%B0")
-		case 'ö':
-			strings.write_string(&builder, "%C3%B6")
-		case 'Ö':
-			strings.write_string(&builder, "%C3%96")
-		case 'ş':
-			strings.write_string(&builder, "%C5%9F")
-		case 'Ş':
-			strings.write_string(&builder, "%C5%9E")
-		case 'ü':
-			strings.write_string(&builder, "%C3%BC")
-		case 'Ü':
-			strings.write_string(&builder, "%C3%9C")
-		case:
-			if r >= 0x80 || r < 0x20 {
-				temp_str := utf8.runes_to_string({r}, context.temp_allocator)
-				temp_bytes := transmute([]u8)temp_str
-				for byte in temp_bytes {
-					strings.write_string(&builder, fmt.tprintf("%%%02X", byte))
-				}
-			} else {
-				strings.write_rune(&builder, r)
-			}
-		}
-	}
-
-	return strings.clone(strings.to_string(builder), context.temp_allocator)
 }
 
 save_lyrics_as_lrc :: proc(track: ^Track, lyrics_content: string) {
