@@ -63,8 +63,8 @@ compact_mode_frame :: proc() {
 	}
 
 	track := player.current_track
-	selected_title := track.tags.title if track.has_tags else track.name
-	selected_album := track.tags.album if track.has_tags else track.playlist
+	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
+	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
 
 	track_title := truncate_text(selected_title, window_w - startX - 50, 28)
 	fx.draw_text(track_title, startX, 10, 28, UI_TEXT_COLOR)

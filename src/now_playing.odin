@@ -58,8 +58,8 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 		fx.draw_rect_rounded(art_x, art_y, art_size, art_size, 20, UI_SECONDARY_COLOR)
 	}
 
-	selected_title := track.tags.title if track.has_tags else track.name
-	selected_album := track.tags.album if track.has_tags else track.playlist
+	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
+	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
 
 	info_y := art_y + art_size + 30
 	track_name := truncate_text(selected_title, content_split - 50, 24)

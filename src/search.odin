@@ -34,8 +34,8 @@ search_tracks :: proc(query: string) {
 
 	for playlist in playlists {
 		for track in playlist.tracks {
-			selected_title := track.tags.title if track.has_tags else track.name
-			selected_album := track.tags.album if track.has_tags else track.playlist
+			selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
+			selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
 
 			track_name_lower    := strings.to_lower(selected_title, context.temp_allocator)
 			playlist_name_lower := strings.to_lower(selected_album, context.temp_allocator)

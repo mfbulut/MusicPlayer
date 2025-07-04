@@ -31,8 +31,8 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	text_color := UI_TEXT_COLOR
 	secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
 
-	selected_title := track.tags.title if track.has_tags else track.name
-	selected_album := track.tags.album if track.has_tags else track.playlist
+	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
+	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
 
 	startX : f32 = x + 5
 
