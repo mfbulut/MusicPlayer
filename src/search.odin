@@ -34,20 +34,19 @@ search_tracks :: proc(query: string) {
 
 	for playlist in playlists {
 		for track in playlist.tracks {
-			track_name_lower := strings.to_lower(track.name)
-			playlist_name_lower := strings.to_lower(track.playlist)
+			selected_title := track.tags.title if track.has_tags else track.name
+			selected_album := track.tags.album if track.has_tags else track.playlist
 
-			track_score := calculate_smart_score(track_name_lower, query_lower)
+			track_name_lower    := strings.to_lower(selected_title, context.temp_allocator)
+			playlist_name_lower := strings.to_lower(selected_album, context.temp_allocator)
+
+			track_score    := calculate_smart_score(track_name_lower, query_lower)
 			playlist_score := calculate_smart_score(playlist_name_lower, query_lower) * 0.8
+			final_score    := track_score + playlist_score
 
-			final_score := max(track_score, playlist_score)
-
-			if final_score > 0.01 {
+			if final_score > 0.1 {
 				append(&scored_results, SearchResult{track = track, score = final_score})
 			}
-
-			delete(track_name_lower)
-			delete(playlist_name_lower)
 		}
 	}
 

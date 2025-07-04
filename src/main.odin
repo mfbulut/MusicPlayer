@@ -59,7 +59,6 @@ UIState :: struct {
 }
 
 ui_state := UIState {
-	current_view   = .LIKED,
 	show_lyrics    = true,
 	follow_lyrics  = true,
 	sidebar_width  = SIDEBAR_WIDTH,
