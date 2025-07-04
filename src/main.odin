@@ -176,16 +176,6 @@ frame :: proc() {
 		}
 	}
 
-	if loading_covers {
-		loading_covers = !check_all_covers_loaded()
-
-		if loading_covers {
-			process_loaded_covers()
-		} else {
-			cleanup_cover_loading()
-		}
-	}
-
 	if fx.is_hovering_files() {
 		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 196})
 		fx.draw_text_aligned("Drop files to add to the queue", window_w / 2, window_h / 2, 32, fx.WHITE, .CENTER)
@@ -257,8 +247,8 @@ drop_callback :: proc(files: []string) {
 				track := find_track_by_name(player.current_track.name, player.current_track.playlist)
 
 				ok : bool
-				track.audio_clip.cover, ok = fx.load_texture(file.fullpath)
-				player.current_track.audio_clip.cover = track.audio_clip.cover
+				track.cover, ok = fx.load_texture(file.fullpath)
+				player.current_track.cover = track.cover
 				update_background = ok
 
 				dest_dir := fp.dir(track.path)

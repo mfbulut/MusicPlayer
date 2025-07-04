@@ -190,12 +190,12 @@ load_liked_songs :: proc() {
 			if track.name == liked_song.name {
 
 				track_copy := Track {
-					hash 	   = hash.fnv64a(transmute([]u8)track.path),
-					path       = track.path,
-					name       = track.name,
-					playlist   = track.playlist,
-					lyrics     = track.lyrics,
-					audio_clip = track.audio_clip,
+					hash 	 = hash.fnv64a(transmute([]u8)track.path),
+					path     = track.path,
+					name     = track.name,
+					playlist = track.playlist,
+					lyrics   = track.lyrics,
+					audio    = track.audio,
 				}
 
 				append(&liked_playlist.tracks, track_copy)

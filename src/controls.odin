@@ -31,9 +31,9 @@ draw_player_controls :: proc() {
 		{.BOTTOM_RIGHT},
 	)
 
-	cover := player.current_track.audio_clip.cover
+	cover := player.current_track.cover
 
-	if !player.current_track.audio_clip.has_cover && len(player.current_track.playlist) > 0 {
+	if !player.current_track.has_cover && len(player.current_track.playlist) > 0 {
 		playlist := find_playlist_by_name(player.current_track.playlist)
 		cover = playlist.cover
 	}
@@ -61,8 +61,8 @@ draw_player_controls :: proc() {
 		}
 	}
 
-	selected_title := player.current_track.audio_clip.tags.title if player.current_track.audio_clip.has_tags else player.current_track.name
-	selected_album := player.current_track.audio_clip.tags.album if player.current_track.audio_clip.has_tags else player.current_track.playlist
+	selected_title := player.current_track.tags.title if player.current_track.has_tags else player.current_track.name
+	selected_album := player.current_track.tags.album if player.current_track.has_tags else player.current_track.playlist
 
 	max_size: f32 = 320
 	track_title := truncate_text(selected_title, max_size, 24)
@@ -148,7 +148,7 @@ draw_player_controls :: proc() {
 		hover_color = UI_HOVER_COLOR,
 	}
 
-	if draw_icon_button(heart_btn) && player.current_track.audio_clip.loaded {
+	if draw_icon_button(heart_btn) && player.current_track.audio.loaded {
 		toggle_song_like(player.current_track.name, player.current_track.playlist)
 	}
 
@@ -161,18 +161,18 @@ draw_player_controls :: proc() {
 	if scroll_delta != 0 {
 		if is_hovering(volume_x, volume_y - 10, 100, 24) {
 			player.volume = clamp(player.volume + scroll_delta * 0.05, 0, 1)
-			fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+			fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 		}
 	}
 
 	if fx.key_pressed(.UP) {
 		player.volume = min(player.volume + 0.05, 1)
-		fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	}
 
 	if fx.key_pressed(.DOWN) {
 		player.volume = max(player.volume - 0.05, 0)
-		fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	}
 
 	new_volume := draw_volume_slider(
@@ -192,10 +192,10 @@ draw_player_controls :: proc() {
 	   !ui_state.is_dragging_progress &&
 	   !fx.is_resizing() {
 		player.volume = new_volume
-		fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	}
 
-	if player.current_track.audio_clip.loaded {
+	if player.current_track.audio.loaded {
 		current_time := format_time(player.position)
 		total_time := format_time(player.duration)
 

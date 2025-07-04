@@ -233,6 +233,8 @@ handle_char_input :: proc(char: rune) {
 }
 
 draw_search_view :: proc(x, y, w, h: f32) {
+	search_sc   := &ui_state.search_scrollbar
+
 	control_down := fx.key_held(.LEFT_CONTROL) || fx.key_held(.RIGHT_CONTROL)
 	shift_down   := fx.key_held(.LEFT_SHIFT) || fx.key_held(.RIGHT_SHIFT)
 
@@ -351,19 +353,11 @@ draw_search_view :: proc(x, y, w, h: f32) {
 	results_h := h - (results_y - y)
 
 	result_count := len(ui_state.search_results)
-	track_height: f32 = 65
-	search_max_scroll := calculate_max_scroll(result_count, track_height, results_h)
+	track_height : f32 = 65
+	max_scroll := calculate_max_scroll(result_count, track_height, results_h)
 
-	ui_state.search_scrollbar.target = clamp(
-		ui_state.search_scrollbar.target,
-		0,
-		search_max_scroll,
-	)
-	ui_state.search_scrollbar.scroll = clamp(
-		ui_state.search_scrollbar.scroll,
-		0,
-		search_max_scroll,
-	)
+	search_sc.target = clamp(search_sc.target, 0, max_scroll)
+	search_sc.scroll = clamp(search_sc.scroll, 0, max_scroll)
 
 	if result_count > 0 {
 		fx.draw_text_aligned(
@@ -377,11 +371,11 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 		fx.set_scissor(x, results_y, w - 15, results_h)
 
-		if !ui_state.search_scrollbar.is_dragging {
+		if !search_sc.is_dragging {
 			interaction_rect(x, results_y, w - 15, results_h)
 		}
 
-		track_y := results_y - ui_state.search_scrollbar.scroll
+		track_y := results_y - search_sc.scroll
 
 		for track, _ in ui_state.search_results {
 			if track_y > y + h {
@@ -404,24 +398,24 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 		fx.disable_scissor()
 
-		if search_max_scroll > 0 {
+		if max_scroll > 0 {
 			indicator_x := x + w - 20
 			indicator_y := results_y + 5
 			indicator_h := results_h - 10
 
 			draw_scrollbar(
-				&ui_state.search_scrollbar,
+				search_sc,
 				indicator_x,
 				indicator_y,
 				4,
 				indicator_h,
-				search_max_scroll,
+				max_scroll,
 				UI_PRIMARY_COLOR,
 				UI_SECONDARY_COLOR,
 			)
 		}
 
-		if !ui_state.search_scrollbar.is_dragging {
+		if !search_sc.is_dragging {
 			window_w, window_h := fx.window_size()
 			interaction_rect(0, 0, window_w, window_h)
 
@@ -429,12 +423,8 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			if scroll_delta != 0 {
 				mouse_x, mouse_y := fx.get_mouse()
 				if mouse_x > x && mouse_y < y + h {
-					ui_state.search_scrollbar.target -= scroll_delta * 80
-					ui_state.search_scrollbar.target = clamp(
-						ui_state.search_scrollbar.target,
-						0,
-						search_max_scroll,
-					)
+					search_sc.target -= scroll_delta * 80
+					search_sc.target = clamp(search_sc.target, 0, max_scroll)
 				}
 			}
 		}

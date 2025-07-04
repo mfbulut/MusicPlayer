@@ -3,6 +3,8 @@ package main
 import "fx"
 
 draw_sidebar :: proc(x_offset: f32) {
+	sidebar_sc  := &ui_state.sidebar_scrollbar
+
 	window_w, window_h := fx.window_size()
 
 	y_offset: f32 = 20
@@ -124,30 +126,23 @@ draw_sidebar :: proc(x_offset: f32) {
 		UI_TEXT_SECONDARY,
 		.CENTER,
 	)
+
 	y_offset += 30
 
 	playlist_count := len(playlists)
 	sidebar_visible_height := window_h - y_offset - PLAYER_HEIGHT
-	sidebar_max_scroll := calculate_max_scroll(playlist_count, 41, sidebar_visible_height)
+	max_scroll := calculate_max_scroll(playlist_count, 41, sidebar_visible_height)
 
-	ui_state.sidebar_scrollbar.target = clamp(
-		ui_state.sidebar_scrollbar.target,
-		0,
-		sidebar_max_scroll,
-	)
-	ui_state.sidebar_scrollbar.scroll = clamp(
-		ui_state.sidebar_scrollbar.scroll,
-		0,
-		sidebar_max_scroll,
-	)
+	sidebar_sc.target = clamp(sidebar_sc.target, 0, max_scroll)
+	sidebar_sc.scroll = clamp(sidebar_sc.scroll, 0, max_scroll)
 
 	fx.set_scissor(0, y_offset, SIDEBAR_WIDTH - 15, sidebar_visible_height)
 
-	if !ui_state.sidebar_scrollbar.is_dragging {
+	if !sidebar_sc.is_dragging {
 		interaction_rect(0, y_offset, SIDEBAR_WIDTH - 15, sidebar_visible_height)
 	}
 
-	scroll_y := y_offset - ui_state.sidebar_scrollbar.scroll
+	scroll_y := y_offset - sidebar_sc.scroll
 
 	for playlist in playlists {
 		if scroll_y > window_h {
@@ -180,7 +175,7 @@ draw_sidebar :: proc(x_offset: f32) {
 
 	fx.disable_scissor()
 
-	if sidebar_max_scroll > 0 {
+	if max_scroll > 0 {
 		indicator_x := SIDEBAR_WIDTH - 7 + x_offset
 		indicator_y := y_offset
 		indicator_h := sidebar_visible_height - 2
@@ -189,30 +184,26 @@ draw_sidebar :: proc(x_offset: f32) {
 			indicator_x -= 3
 		}
 		draw_scrollbar(
-			&ui_state.sidebar_scrollbar,
+			sidebar_sc,
 			indicator_x,
 			indicator_y,
 			4,
 			indicator_h,
-			sidebar_max_scroll,
+			max_scroll,
 			UI_PRIMARY_COLOR,
 			UI_SECONDARY_COLOR,
 		)
 	}
 
-	if !ui_state.sidebar_scrollbar.is_dragging {
+	if !sidebar_sc.is_dragging {
 		interaction_rect(0, 0, window_w, window_h)
 
 		scroll_delta := fx.get_mouse_scroll()
 		if scroll_delta != 0 {
 			mouse_x, mouse_y := fx.get_mouse()
 			if mouse_x < SIDEBAR_WIDTH {
-				ui_state.sidebar_scrollbar.target -= scroll_delta * 80
-				ui_state.sidebar_scrollbar.target = clamp(
-					ui_state.sidebar_scrollbar.target,
-					0,
-					sidebar_max_scroll,
-				)
+				sidebar_sc.target -= scroll_delta * 80
+				sidebar_sc.target = clamp(sidebar_sc.target, 0, max_scroll)
 			}
 		}
 	}

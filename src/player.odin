@@ -33,21 +33,21 @@ player := Player {
 
 load_track_audio :: proc(track: ^Track) {
 	clip := fx.load_audio(track.path)
-	track.audio_clip = clip
+	track.audio = clip
 	update_background = true
 	fx.use_shader({})
 }
 
 unload_track_audio :: proc(track: ^Track) {
-	if !track.audio_clip.loaded {
+	if !track.audio.loaded {
 		return
 	}
-	fx.unload_audio(&track.audio_clip)
+	fx.unload_audio(&track.audio)
 }
 
 play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
-	if player.current_track.audio_clip.loaded {
-		fx.stop_audio(&player.current_track.audio_clip)
+	if player.current_track.audio.loaded {
+		unload_cover(&player.current_track)
 		unload_track_audio(&player.current_track)
 	}
 
@@ -56,16 +56,17 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
 	new_track := track
 
-	if !new_track.audio_clip.loaded {
+	if !new_track.audio.loaded {
 		load_track_audio(&new_track)
+		load_metadata(&new_track)
+		load_cover(&new_track)
 	}
 
-	new_track.lyrics = load_lyrics_for_track(new_track.path)
 	player.current_track = new_track
-	player.duration = fx.get_duration(&player.current_track.audio_clip)
+	player.duration = fx.get_duration(&player.current_track.audio)
 	player.position = 0
-	fx.play_audio(&player.current_track.audio_clip)
-	fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+	fx.play_audio(&player.current_track.audio)
+	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	player.state = .PLAYING
 
 	if queue do return
@@ -81,15 +82,15 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 }
 
 toggle_playback :: proc() {
-	if !player.current_track.audio_clip.loaded {
+	if !player.current_track.audio.loaded {
 		return
 	}
 	switch player.state {
 	case .PLAYING:
-		fx.pause_audio(&player.current_track.audio_clip)
+		fx.pause_audio(&player.current_track.audio)
 		player.state = .PAUSED
 	case .PAUSED, .STOPPED:
-		fx.play_audio(&player.current_track.audio_clip)
+		fx.play_audio(&player.current_track.audio)
 		player.state = .PLAYING
 	}
 }
@@ -147,20 +148,20 @@ previous_track :: proc() {
 }
 
 seek_to_position :: proc(position: f32) {
-	if !player.current_track.audio_clip.loaded {
+	if !player.current_track.audio.loaded {
 		return
 	}
 	clamped_pos := clamp(position, 0.0, player.duration)
-	fx.set_time(&player.current_track.audio_clip, clamped_pos)
+	fx.set_time(&player.current_track.audio, clamped_pos)
 	player.position = clamped_pos
 }
 
 update_player :: proc(dt: f32) {
-	if !player.current_track.audio_clip.loaded || player.state != .PLAYING {
+	if !player.current_track.audio.loaded || player.state != .PLAYING {
 		return
 	}
-	player.position = fx.get_time(&player.current_track.audio_clip)
-	if !fx.is_playing(&player.current_track.audio_clip) &&
+	player.position = fx.get_time(&player.current_track.audio)
+	if !fx.is_playing(&player.current_track.audio) &&
 	   player.position >= player.duration - 0.1 {
 		next_track()
 	}

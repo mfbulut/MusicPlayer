@@ -33,25 +33,25 @@ compact_mode_frame :: proc() {
 
 	if fx.key_pressed(.UP) {
 		player.volume = min(player.volume + 0.05, 1)
-		fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	}
 
 	if fx.key_pressed(.DOWN) {
 		player.volume = max(player.volume - 0.05, 0)
-		fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	}
 
 	scroll_delta := fx.get_mouse_scroll()
 	if scroll_delta != 0 {
 		if is_hovering(0, 0, window_w, window_h) {
 			player.volume = clamp(player.volume + scroll_delta * 0.05, 0, 1)
-			fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
+			fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 		}
 	}
 
-	cover := player.current_track.audio_clip.cover
+	cover := player.current_track.cover
 
-	if !player.current_track.audio_clip.has_cover && len(player.current_track.playlist) > 0 {
+	if !player.current_track.has_cover && len(player.current_track.playlist) > 0 {
 		playlist := find_playlist_by_name(player.current_track.playlist)
 		cover = playlist.cover
 	}
@@ -64,8 +64,8 @@ compact_mode_frame :: proc() {
 
 	track := player.current_track
 
-	selected_title := track.audio_clip.tags.title if track.audio_clip.has_tags else track.name
-	selected_album := track.audio_clip.tags.album if track.audio_clip.has_tags else track.playlist
+	selected_title := track.tags.title if track.has_tags else track.name
+	selected_album := track.tags.album if track.has_tags else track.playlist
 
 	track_title := truncate_text(selected_title, window_w - startX - 50, 28)
 	fx.draw_text(track_title, startX, 10, 28, UI_TEXT_COLOR)

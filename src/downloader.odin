@@ -95,9 +95,9 @@ download_lyrics :: proc() {
 
 	track := find_track_by_name(player.current_track.name, player.current_track.playlist)
 
-	title := player.current_track.audio_clip.tags.title
-	artist := player.current_track.audio_clip.tags.artist
-	album := player.current_track.audio_clip.tags.album
+	title := player.current_track.tags.title
+	artist := player.current_track.tags.artist
+	album := player.current_track.tags.album
 	duration := int(player.duration)
 
 	has_required_metadata := len(title) > 0 && len(artist) > 0 && len(album) > 0 && duration > 0
@@ -109,9 +109,9 @@ download_lyrics :: proc() {
 		res, ok := fx.get(
 			"https://lrclib.net/api/get",
 			{
-				{"title", player.current_track.audio_clip.tags.title},
-				{"artist_name", player.current_track.audio_clip.tags.artist},
-				{"album", player.current_track.audio_clip.tags.album},
+				{"title", player.current_track.tags.title},
+				{"artist_name", player.current_track.tags.artist},
+				{"album", player.current_track.tags.album},
 				{"duration", strconv.itoa(duration_mem[:], duration)},
 			},
 		)
