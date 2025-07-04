@@ -127,7 +127,7 @@ draw_sidebar :: proc(x_offset: f32) {
 	y_offset += 30
 
 	playlist_count := len(playlists)
-	sidebar_visible_height := f32(window_h) - y_offset - PLAYER_HEIGHT
+	sidebar_visible_height := window_h - y_offset - PLAYER_HEIGHT
 	sidebar_max_scroll := calculate_max_scroll(playlist_count, 41, sidebar_visible_height)
 
 	ui_state.sidebar_scrollbar.target = clamp(
@@ -141,16 +141,16 @@ draw_sidebar :: proc(x_offset: f32) {
 		sidebar_max_scroll,
 	)
 
-	fx.set_scissor(0, i32(y_offset), i32(SIDEBAR_WIDTH - 15), i32(sidebar_visible_height))
+	fx.set_scissor(0, y_offset, SIDEBAR_WIDTH - 15, sidebar_visible_height)
 
 	if !ui_state.sidebar_scrollbar.is_dragging {
-		interaction_rect(0, f32(y_offset), f32(SIDEBAR_WIDTH - 15), sidebar_visible_height)
+		interaction_rect(0, y_offset, SIDEBAR_WIDTH - 15, sidebar_visible_height)
 	}
 
 	scroll_y := y_offset - ui_state.sidebar_scrollbar.scroll
 
 	for playlist in playlists {
-		if scroll_y > f32(window_h) {
+		if scroll_y > window_h {
 			break
 		}
 
@@ -201,13 +201,13 @@ draw_sidebar :: proc(x_offset: f32) {
 	}
 
 	if !ui_state.sidebar_scrollbar.is_dragging {
-		interaction_rect(0, 0, f32(window_w), f32(window_h))
+		interaction_rect(0, 0, window_w, window_h)
 
 		scroll_delta := fx.get_mouse_scroll()
 		if scroll_delta != 0 {
-			mouse_x, _ := fx.get_mouse()
-			if f32(mouse_x) < SIDEBAR_WIDTH {
-				ui_state.sidebar_scrollbar.target -= f32(scroll_delta) * 80
+			mouse_x, mouse_y := fx.get_mouse()
+			if mouse_x < SIDEBAR_WIDTH {
+				ui_state.sidebar_scrollbar.target -= scroll_delta * 80
 				ui_state.sidebar_scrollbar.target = clamp(
 					ui_state.sidebar_scrollbar.target,
 					0,

@@ -63,15 +63,14 @@ draw_alert :: proc() {
 	}
 
 	window_w, window_h := fx.window_size()
-	screen_w := f32(window_w)
-	screen_h := f32(window_h)
+	screen_w := window_w
+	screen_h := window_h
 
-	alert_w := f32(350)
-	alert_h := f32(70)
-	padding := f32(20)
+	alert_w : f32 = 350
+	alert_h : f32 = 70
+	padding : f32 = 20
 
-	alert_x :=
-		screen_w - alert_w - padding + (1.0 - g_alert.animation_progress) * (alert_w + padding)
+	alert_x := screen_w - alert_w - padding + (1.0 - g_alert.animation_progress) * (alert_w + padding)
 	alert_y := screen_h - alert_h - padding - 75
 
 	bg_color := set_alpha(brighten(UI_PRIMARY_COLOR, 20), min(g_alert.animation_progress, 0.9))
@@ -91,7 +90,8 @@ draw_alert :: proc() {
 
 	title_color := set_alpha(fx.Color{255, 255, 255, 255}, g_alert.animation_progress)
 
-	image_size := f32(50)
+	image_size : f32 = 50
+
 	if g_alert.image.width != 0 {
 		fx.draw_texture_rounded(
 			g_alert.image,

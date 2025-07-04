@@ -7,12 +7,12 @@ import "core:strings"
 
 draw_player_controls :: proc() {
 	window_w, window_h := fx.window_size()
-	player_y := f32(window_h) - PLAYER_HEIGHT
+	player_y := window_h - PLAYER_HEIGHT
 
 	fx.draw_gradient_rect_rounded_horizontal_selective(
 		0,
 		player_y,
-		f32(window_w) / 2,
+		window_w / 2,
 		PLAYER_HEIGHT,
 		8,
 		CONTROLS_GRADIENT_DARK,
@@ -21,9 +21,9 @@ draw_player_controls :: proc() {
 	)
 
 	fx.draw_gradient_rect_rounded_horizontal_selective(
-		f32(window_w) / 2,
+		window_w / 2,
 		player_y,
-		f32(window_w) / 2,
+		window_w / 2,
 		PLAYER_HEIGHT,
 		8,
 		CONTROLS_GRADIENT_BRIGHT,
@@ -70,10 +70,10 @@ draw_player_controls :: proc() {
 
 	track_playlist := truncate_text(selected_album, max_size, 16)
 	title_end = max(title_end, startX + fx.measure_text(track_playlist, 16))
-	controls_x := max(title_end + 70, f32(window_w) / 2 - 80)
+	controls_x := max(title_end + 70, window_w / 2 - 80)
 
-	if controls_x + 250 > f32(window_w) - 160 {
-		controls_x = max(startX, f32(window_w) - 400)
+	if controls_x + 250 > window_w - 160 {
+		controls_x = max(startX, window_w - 400)
 		max_size = controls_x - startX - 90
 	}
 
@@ -152,15 +152,15 @@ draw_player_controls :: proc() {
 		toggle_song_like(player.current_track.name, player.current_track.playlist)
 	}
 
-	volume_x := f32(window_w) - 150
-	volume_y := player_y + 38
+	volume_x : f32 = window_w - 150
+	volume_y : f32 = player_y + 38
 
 	fx.draw_texture(volume_icon, volume_x - 35, volume_y - 10, 24, 24, UI_TEXT_COLOR)
 
 	scroll_delta := fx.get_mouse_scroll()
 	if scroll_delta != 0 {
 		if is_hovering(volume_x, volume_y - 10, 100, 24) {
-			player.volume = clamp(player.volume + f32(scroll_delta) * 0.05, 0, 1)
+			player.volume = clamp(player.volume + scroll_delta * 0.05, 0, 1)
 			fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
 		}
 	}
@@ -175,7 +175,7 @@ draw_player_controls :: proc() {
 		fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
 	}
 
-	new_volume := draw_slider(
+	new_volume := draw_volume_slider(
 		volume_x,
 		volume_y,
 		100,
@@ -217,7 +217,7 @@ draw_player_controls :: proc() {
 	}
 
 	progress := player.duration > 0 ? player.position / player.duration : 0
-	fx.draw_rect(0, player_y, f32(window_w) * progress, 1, UI_TEXT_COLOR)
+	fx.draw_rect(0, player_y, window_w * progress, 1, UI_TEXT_COLOR)
 }
 
 handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
@@ -227,7 +227,7 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 
 	if fx.mouse_pressed(.LEFT) && is_hovering {
 		ui_state.is_dragging_time = true
-		ui_state.drag_start_time_x = f32(mouse_x)
+		ui_state.drag_start_time_x = mouse_x
 		ui_state.drag_start_position = player.position
 	}
 
@@ -236,7 +236,7 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 	}
 
 	if ui_state.is_dragging_time {
-		mouse_delta := f32(mouse_x) - ui_state.drag_start_time_x
+		mouse_delta := mouse_x - ui_state.drag_start_time_x
 
 		time_delta := mouse_delta * 0.1
 
@@ -254,7 +254,7 @@ handle_time_drag :: proc(time_x, time_y, time_width, time_height: f32) {
 handle_progress_bar_drag :: proc(window_w: f32, player_y: f32) {
 	mouse_x, mouse_y := fx.get_mouse()
 
-	is_over_progress := f32(mouse_y) >= player_y - 5 && f32(mouse_y) <= player_y + 15
+	is_over_progress := mouse_y >= player_y - 5 && mouse_y <= player_y + 15
 
 	if fx.mouse_pressed(.LEFT) && is_over_progress && !ui_state.is_dragging_time {
 		ui_state.is_dragging_progress = true
@@ -265,7 +265,7 @@ handle_progress_bar_drag :: proc(window_w: f32, player_y: f32) {
 	}
 
 	if ui_state.is_dragging_progress {
-		drag_ratio := f32(mouse_x) / f32(window_w)
+		drag_ratio := mouse_x / window_w
 		drag_ratio = clamp(drag_ratio, 0, 1)
 
 		new_position := drag_ratio * player.duration

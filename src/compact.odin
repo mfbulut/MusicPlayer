@@ -8,7 +8,7 @@ import "core:math"
 compact_mode_frame :: proc() {
 	window_w, window_h := fx.window_size()
 
-    fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
+    fx.draw_gradient_rect_rounded_vertical(0, 0, window_w, window_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 
 	if fx.key_pressed_global(.MEDIA_PREV_TRACK) || fx.key_pressed(.LEFT) {
 		previous_track()
@@ -44,7 +44,7 @@ compact_mode_frame :: proc() {
 	scroll_delta := fx.get_mouse_scroll()
 	if scroll_delta != 0 {
 		if is_hovering(0, 0, window_w, window_h) {
-			player.volume = clamp(player.volume + f32(scroll_delta) * 0.05, 0, 1)
+			player.volume = clamp(player.volume + scroll_delta * 0.05, 0, 1)
 			fx.set_volume(&player.current_track.audio_clip, math.pow(player.volume, 2.0))
 		}
 	}
@@ -58,7 +58,7 @@ compact_mode_frame :: proc() {
 
 	startX: f32 = 20
 	if cover.width > 0 {
-		fx.draw_texture_rounded_cropped(cover, 0, 0, f32(window_h), f32(window_h), 8, fx.WHITE)
+		fx.draw_texture_rounded_cropped(cover, 0, 0, window_h, window_h, 8, fx.WHITE)
 		startX += window_h - 5
 	}
 
@@ -67,10 +67,10 @@ compact_mode_frame :: proc() {
 	selected_title := track.audio_clip.tags.title if track.audio_clip.has_tags else track.name
 	selected_album := track.audio_clip.tags.album if track.audio_clip.has_tags else track.playlist
 
-	track_title := truncate_text(selected_title, f32(window_w) - startX - 50, 28)
+	track_title := truncate_text(selected_title, window_w - startX - 50, 28)
 	fx.draw_text(track_title, startX, 10, 28, UI_TEXT_COLOR)
 
-	track_playlist := truncate_text(selected_album, f32(window_w) - startX - 50, 16)
+	track_playlist := truncate_text(selected_album, window_w - startX - 50, 16)
 	fx.draw_text(track_playlist, startX + 2, 50, 16, UI_TEXT_SECONDARY)
 
 	vol_text := fmt.tprintf("%%%d", int(player.volume * 100))
@@ -85,16 +85,16 @@ compact_mode_frame :: proc() {
 		if current_lyric_index >= 0 {
 			current_lyric := track.lyrics[current_lyric_index].text
 
-			track_playlist := truncate_text(current_lyric, f32(window_w) - startX - 50, 16)
+			track_playlist := truncate_text(current_lyric, window_w - startX - 50, 16)
 			fx.draw_text(current_lyric, startX + 2, 80, 16, UI_TEXT_SECONDARY)
 		}
 	}
 
-	if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
+	if draw_icon_button_rect(window_w - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
 		fx.close_window()
 	}
 
-	if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
+	if draw_icon_button_rect(window_w - 100, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
 		fx.minimize_window()
 	}
 }

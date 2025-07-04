@@ -45,7 +45,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 		fx.use_render_texture(background)
 
-		fx.set_scissor(i32(x), i32(y), i32(w), i32(h))
+		fx.set_scissor(x, y, w, h)
 
 		fx.draw_texture_cropped(background.tx, x, y, w, h, fx.WHITE)
 
@@ -169,7 +169,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 	}
 
 	window_w, window_h := fx.window_size()
-	interaction_rect(0, 0, f32(window_w), f32(window_h))
+	interaction_rect(0, 0, window_w, window_h)
 }
 
 LYRIC_HEIGHT :: 48
@@ -192,7 +192,7 @@ draw_lyrics :: proc(x, y, w, h: f32, track: ^Track, alpha: f32) {
 	total_line_height: f32 = 0
 	avg_line_height: f32 = LYRIC_HEIGHT
 
-	fx.set_scissor(i32(x + 10), i32(y), i32(w - 25), i32(h))
+	fx.set_scissor(x + 10, y, w - 25, h)
 	interaction_rect(x + 10, content_y, w - 25, content_h)
 
 	current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)

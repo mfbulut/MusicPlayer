@@ -118,7 +118,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
 		playlist_max_scroll,
 	)
 
-	fx.set_scissor(i32(x), i32(list_y), i32(w - 15), i32(list_h))
+	fx.set_scissor(x, list_y, w - 15, list_h)
 
 	if !ui_state.playlist_scrollbar.is_dragging {
 		interaction_rect(f32(x), f32(list_y), f32(w - 15), f32(list_h - 15))

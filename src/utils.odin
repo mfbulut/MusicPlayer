@@ -74,7 +74,7 @@ hash_button :: proc(x, y, w, h: u32) -> u32 {
 draw_button :: proc(btn: Button, text_offset := 0, cursor := true) -> bool {
 	mouse_x, mouse_y := fx.get_mouse()
 	is_hovered := is_hovering(btn.x, btn.y, btn.w, btn.h)
-	is_valid := is_valid(f32(mouse_x), f32(mouse_y))
+	is_valid := is_valid(mouse_x, mouse_y)
 	is_clicked := is_hovered && fx.mouse_pressed(.LEFT) && is_valid
 
 	hash_idx := hash_button(u32(btn.x), u32(btn.y), u32(btn.w), u32(btn.h))
@@ -245,7 +245,7 @@ draw_progress_bar :: proc(bar: ProgressBar) {
 	hovered := is_hovering(bar.x - 10, bar.y - 10, bar.w + 20, bar.h + 25)
 
 	if fx.mouse_pressed(.LEFT) && hovered {
-		progress_width = (f32(mouse_x) - bar.x)
+		progress_width = (mouse_x - bar.x)
 		seek_to_position(progress_width / bar.w * player.duration)
 	}
 
@@ -256,12 +256,12 @@ draw_progress_bar :: proc(bar: ProgressBar) {
 	}
 
 	if hovered {
-		relative_x := clamp(f32(mouse_x) - bar.x, 0, bar.w)
+		relative_x := clamp(mouse_x - bar.x, 0, bar.w)
 		hover_time := relative_x / bar.w * player.duration
 		time_text := format_time(hover_time)
 
 		text_w := fx.measure_text(time_text, 14)
-		popup_x := f32(mouse_x) - text_w / 2
+		popup_x := mouse_x - text_w / 2
 		popup_y := bar.y - 25
 
 		fx.draw_rect_rounded(
@@ -277,7 +277,7 @@ draw_progress_bar :: proc(bar: ProgressBar) {
 	}
 }
 
-draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -> f32 {
+draw_volume_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -> f32 {
 	handle_x := x + (w - h) * value
 	mouse_x, mouse_y := fx.get_mouse()
 	is_hover := is_hovering(x - 10, y - 30, w + 20, h + 60)
@@ -290,11 +290,11 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
 		fx.draw_circle(handle_x + 2, y + h / 2, 4, brighten(fg_color, 10))
 
 		if fx.mouse_held(.LEFT) {
-			new_value = clamp((f32(mouse_x) - x) / w, 0, 1)
+			new_value = clamp((mouse_x - x) / w, 0, 1)
 
 			vol_text := fmt.tprintf("%%%d", int(new_value * 100))
 			text_w := fx.measure_text(vol_text, 14)
-			popup_x := f32(mouse_x) - text_w / 2
+			popup_x := mouse_x - text_w / 2
 			popup_y := y - 27
 
 			fx.draw_rect_rounded(
@@ -315,7 +315,6 @@ draw_slider :: proc(x, y, w, h: f32, value: f32, bg_color, fg_color: fx.Color) -
 
 	return new_value
 }
-
 
 format_time :: proc(seconds: f32) -> string {
 	mins := int(seconds) / 60
@@ -369,8 +368,8 @@ draw_scrollbar :: proc(
 
 	mouse_x, mouse_y := fx.get_mouse()
 	is_over_thumb := is_inside(
-		f32(mouse_x),
-		f32(mouse_y),
+		mouse_x,
+		mouse_y,
 		x - 10,
 		thumb_y - 20,
 		w + 20,
@@ -387,7 +386,7 @@ draw_scrollbar :: proc(
 	if fx.mouse_pressed(.LEFT) {
 		if is_over_thumb {
 			scrollbar.is_dragging = true
-			ui_state.drag_start_mouse_y = f32(mouse_y)
+			ui_state.drag_start_mouse_y = mouse_y
 			ui_state.drag_start_scroll = scrollbar.scroll
 		}
 	}
@@ -400,7 +399,7 @@ draw_scrollbar :: proc(
 		thumb_size = max(20, h * (h / (h + max_scroll)))
 		available_drag_space := h - thumb_size
 
-		mouse_delta := f32(mouse_y) - ui_state.drag_start_mouse_y
+		mouse_delta := mouse_y - ui_state.drag_start_mouse_y
 
 		scroll_ratio = mouse_delta / available_drag_space
 		scroll_delta := scroll_ratio * max_scroll
@@ -493,8 +492,8 @@ is_inside :: proc(px, py, x, y, w, h: f32) -> bool {
 
 is_hovering :: proc(x, y, w, h: f32) -> bool {
 	mouse_x, mouse_y := fx.get_mouse()
-	px := f32(mouse_x)
-	py := f32(mouse_y)
+	px := mouse_x
+	py := mouse_y
 
 	return px >= x && px <= x + w && py >= y && py <= y + h && is_valid(px, py)
 }

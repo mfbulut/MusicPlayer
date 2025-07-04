@@ -771,8 +771,7 @@ perform_resize :: proc() {
 }
 
 handle_resize :: proc() {
-	x, y := get_mouse()
-	resize_area := get_resize_area(x, y)
+	resize_area := get_resize_area(ctx.mouse_pos.x, ctx.mouse_pos.y)
 
 	if ctx.is_resizing {
 		set_resize_cursor(resize_area)

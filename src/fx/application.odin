@@ -77,7 +77,7 @@ update_frame :: proc(frame_proc: proc(), vsync := true) {
 	handle_resize()
 
 	if !ctx.is_minimized {
-		set_scissor(0, 0, i32(ctx.window.w), i32(ctx.window.h))
+		set_scissor(0, 0, f32(ctx.window.w), f32(ctx.window.h))
 		clear_background(chroma_key)
 		begin_render()
 		update_constant_buffer()
@@ -150,12 +150,12 @@ mouse_released :: #force_inline proc(button: Mouse) -> bool {
 	return ctx.mouse_state[button] & KEY_STATE_RELEASED != 0
 }
 
-get_mouse :: proc() -> (int, int) {
-	return ctx.mouse_pos.x, ctx.mouse_pos.y
+get_mouse :: proc() -> (f32, f32) {
+	return f32(ctx.mouse_pos.x), f32(ctx.mouse_pos.y)
 }
 
-get_mouse_scroll :: proc() -> int {
-	return ctx.mouse_scroll
+get_mouse_scroll :: proc() -> f32 {
+	return f32(ctx.mouse_scroll)
 }
 
 delta_time :: proc() -> f32 {

@@ -2,16 +2,15 @@ package main
 
 import "fx"
 
-import "core:os"
 import "core:os/os2"
 import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
 
-SIDEBAR_WIDTH   : f32 : 220
-TITLE_HEIGHT    : f32 : 40
-PLAYER_HEIGHT   : f32 : 80
-SIDEBAR_ANIM_SPEED : f32 = 4
+SIDEBAR_WIDTH      : f32 : 220
+TITLE_HEIGHT       : f32 : 40
+PLAYER_HEIGHT      : f32 : 80
+SIDEBAR_ANIM_SPEED : f32 : 4
 UI_SCROLL_SPEED    : f32 : 20
 
 View :: enum {
@@ -31,10 +30,10 @@ Scrollbar :: struct {
 UIState :: struct {
 	current_view:              View,
 	selected_playlist:         string,
+	theme:                     int,
 	show_lyrics:               bool,
 	follow_lyrics:             bool,
 	compact_mode:              bool,
-	theme:                     int,
 
 	search_box:                textedit.State,
 	search_builder:            strings.Builder,
@@ -45,13 +44,13 @@ UIState :: struct {
 	sidebar_width:             f32,
 	sidebar_anim:              f32,
 
+	lyrics_animation_progress: f32,
 	drag_start_mouse_y:        f32,
 	drag_start_scroll:         f32,
-	is_dragging_progress:      bool,
-	is_dragging_time:          bool,
 	drag_start_time_x:         f32,
 	drag_start_position:       f32,
-	lyrics_animation_progress: f32,
+	is_dragging_progress:      bool,
+	is_dragging_time:          bool,
 
 	sidebar_scrollbar:         Scrollbar,
 	playlist_scrollbar:        Scrollbar,
@@ -86,8 +85,8 @@ draw_main_content :: proc(sidebar_width: f32) {
 	window_w, window_h := fx.window_size()
 
 	content_x := sidebar_width
-	content_w := f32(window_w) - sidebar_width
-	content_h := f32(window_h) - PLAYER_HEIGHT
+	content_w := window_w - sidebar_width
+	content_h := window_h - PLAYER_HEIGHT
 
 	switch ui_state.current_view {
 	case .SEARCH:
@@ -137,6 +136,7 @@ frame :: proc() {
 	}
 
 	dt := min(fx.delta_time(), 0.05)
+
 	window_w, window_h := fx.window_size()
 
 	update_player(dt)
@@ -155,7 +155,7 @@ frame :: proc() {
 	if ui_state.compact_mode {
 		compact_mode_frame()
 	} else {
-		fx.draw_gradient_rect_rounded_vertical(0, 0, f32(window_w), f32(window_h), 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
+		fx.draw_gradient_rect_rounded_vertical(0, 0, window_w, window_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 
 		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
@@ -163,15 +163,15 @@ frame :: proc() {
 		draw_player_controls()
 		draw_alert()
 
-		if draw_icon_button_rect(f32(window_w) - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
+		if draw_icon_button_rect(window_w - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
 			fx.close_window()
 		}
 
-		if draw_icon_button_rect(f32(window_w) - 100, 0, 50, 25, maximize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
+		if draw_icon_button_rect(window_w - 100, 0, 50, 25, maximize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
 			fx.maximize_or_restore_window()
 		}
 
-		if draw_icon_button_rect(f32(window_w) - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
+		if draw_icon_button_rect(window_w - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
 			fx.minimize_window()
 		}
 	}
@@ -187,9 +187,50 @@ frame :: proc() {
 	}
 
 	if fx.is_hovering_files() {
-		fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
-		fx.draw_text_aligned("Drop files to add to the queue", f32(window_w) / 2, f32(window_h) / 2, 32, fx.WHITE, .CENTER)
+		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 196})
+		fx.draw_text_aligned("Drop files to add to the queue", window_w / 2, window_h / 2, 32, fx.WHITE, .CENTER)
 	}
+}
+
+blur_shader_hlsl :: #load("assets/shaders/gaussian_blur.hlsl")
+blur_shader: fx.Shader
+background: fx.RenderTexture
+
+playlists: [dynamic]Playlist
+
+loading_covers: bool
+update_background: bool
+music_dir: string
+
+main :: proc() {
+	fx.init("Music Player", 1280, 720)
+
+	blur_shader = fx.load_shader(blur_shader_hlsl)
+	background  = fx.create_render_texture(2048, 2048)
+	music_dir   = fp.join({os2.get_env("USERPROFILE", context.allocator), "Music"})
+
+	load_icons()
+	load_state()
+
+	fx.run_once(proc() {
+		frame()
+		window_w, window_h := fx.window_size()
+		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 196})
+		fx.draw_text_aligned("Loading...", window_w / 2, window_h / 2 - 16, 32, fx.WHITE, .CENTER)
+	})
+
+	load_files(music_dir)
+
+	load_liked_songs()
+
+	sort_playlists()
+	init_cover_loading()
+	search_tracks("")
+
+	fx.drop_callback(drop_callback)
+	fx.run(frame)
+
+	save_state()
 }
 
 drop_callback :: proc(files: []string) {
@@ -215,9 +256,10 @@ drop_callback :: proc(files: []string) {
 			} else if is_image_file(file.name) {
 				track := find_track_by_name(player.current_track.name, player.current_track.playlist)
 
-				track.audio_clip.cover, _ = fx.load_texture(file.fullpath)
+				ok : bool
+				track.audio_clip.cover, ok = fx.load_texture(file.fullpath)
 				player.current_track.audio_clip.cover = track.audio_clip.cover
-				update_background = true
+				update_background = ok
 
 				dest_dir := fp.dir(track.path)
 				dest_stem := fp.stem(track.path)
@@ -230,45 +272,3 @@ drop_callback :: proc(files: []string) {
 		}
 	}
 }
-
-blur_shader_hlsl :: #load("assets/shaders/gaussian_blur.hlsl")
-blur_shader: fx.Shader
-background: fx.RenderTexture
-
-playlists: [dynamic]Playlist
-
-loading_covers: bool
-update_background: bool
-music_dir: string
-
-main :: proc() {
-	fx.init("Music Player", 1280, 720)
-
-	blur_shader = fx.load_shader(blur_shader_hlsl)
-	background = fx.create_render_texture(2048, 2048)
-	music_dir = strings.join({os.get_env("USERPROFILE"), "Music"}, "\\")
-
-	load_icons()
-	load_state()
-
-	fx.run_once(proc() {
-		frame()
-		window_w, window_h := fx.window_size()
-		fx.draw_rect(0, 0, f32(window_w), f32(window_h), fx.Color{0, 0, 0, 196})
-		fx.draw_text_aligned("Loading...", f32(window_w) / 2, f32(window_h) / 2 - 16, 32, fx.WHITE, .CENTER)
-	})
-
-	load_files(music_dir)
-
-	load_liked_songs()
-
-	sort_playlists()
-	init_cover_loading()
-	search_tracks("")
-
-	fx.drop_callback(drop_callback)
-	fx.run(frame)
-
-	save_state()
-}
-

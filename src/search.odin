@@ -375,7 +375,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			.CENTER,
 		)
 
-		fx.set_scissor(i32(x), i32(results_y), i32(w - 15), i32(results_h))
+		fx.set_scissor(x, results_y, w - 15, results_h)
 
 		if !ui_state.search_scrollbar.is_dragging {
 			interaction_rect(x, results_y, w - 15, results_h)
@@ -423,13 +423,13 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 		if !ui_state.search_scrollbar.is_dragging {
 			window_w, window_h := fx.window_size()
-			interaction_rect(0, 0, f32(window_w), f32(window_h))
+			interaction_rect(0, 0, window_w, window_h)
 
 			scroll_delta := fx.get_mouse_scroll()
 			if scroll_delta != 0 {
 				mouse_x, mouse_y := fx.get_mouse()
-				if f32(mouse_x) > x && f32(mouse_y) < y + h {
-					ui_state.search_scrollbar.target -= f32(scroll_delta) * 80
+				if mouse_x > x && mouse_y < y + h {
+					ui_state.search_scrollbar.target -= scroll_delta * 80
 					ui_state.search_scrollbar.target = clamp(
 						ui_state.search_scrollbar.target,
 						0,

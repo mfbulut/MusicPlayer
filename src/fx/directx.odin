@@ -453,16 +453,16 @@ swap_buffers :: proc(vsync: bool) {
 	}
 }
 
-set_scissor :: proc(x, y, width, height: i32) {
+set_scissor :: proc(x, y, width, height: f32) {
 	if (verticies_count > 0) {
 		end_render()
 	}
 
 	rect := D3D11.RECT {
-		left   = x,
-		top    = y,
-		right  = x + width,
-		bottom = y + height,
+		left   = i32(x),
+		top    = i32(y),
+		right  = i32(x) + i32(width),
+		bottom = i32(y) + i32(height),
 	}
 	device_context->RSSetScissorRects(1, &rect)
 }
