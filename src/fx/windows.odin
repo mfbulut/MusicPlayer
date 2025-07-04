@@ -8,50 +8,9 @@ import "core:unicode/utf8"
 
 import win "core:sys/windows"
 
-ICON_DATA: []win.BYTE = #load("icon.ico")
-
-ICONDIR :: struct {
-	reserved: u16,
-	type_:    u16,
-	count:    u16,
-}
-
-ICONDIRENTRY :: struct {
-	width:        u8,
-	height:       u8,
-	color_count:  u8,
-	reserved:     u8,
-	planes:       u16,
-	bit_count:    u16,
-	bytes_in_res: u32,
-	image_offset: u32,
-}
-
-load_icon_by_size :: proc(desired_size: int) -> win.HICON {
-	dir := cast(^ICONDIR)&ICON_DATA[0]
-	entries := cast([^]ICONDIRENTRY)&ICON_DATA[size_of(ICONDIR)]
-
-	best_entry := entries[0]
-	best_diff: i32 = abs(i32(entries[0].width) - i32(desired_size))
-
-	for i in 1 ..< dir.count {
-		e := entries[i]
-		diff := abs(i32(e.width) - i32(desired_size))
-		if diff < best_diff {
-			best_entry = e
-			best_diff = diff
-		}
-	}
-
-	icon_data := &ICON_DATA[best_entry.image_offset]
-	icon_size := best_entry.bytes_in_res
-
-	return win.CreateIconFromResourceEx(icon_data, icon_size, win.TRUE, 0x00030000, 0, 0, 0)
-}
+chroma_key :: Color{16, 0, 16, 0}
 
 window_styles :: win.WS_OVERLAPPEDWINDOW | win.WS_VISIBLE
-
-chroma_key :: Color{16, 0, 16, 0}
 
 HOTKEY_NEXT :: 1001
 HOTKEY_PREV :: 1002
@@ -65,15 +24,15 @@ init_windows :: proc(title: string, width, height: int) {
 	instance := win.HINSTANCE(win.GetModuleHandleW(nil))
 	class_name := win.L("Window Class")
 
-	cls := win.WNDCLASSEXW {
-		cbSize        = size_of(win.WNDCLASSEXW),
-		lpfnWndProc   = win_proc,
-		lpszClassName = class_name,
-		hInstance     = instance,
-		hCursor       = win.LoadCursorA(nil, win.IDC_ARROW),
-		hIcon         = load_icon_by_size(256),
-		hIconSm       = load_icon_by_size(32),
-		style         = win.CS_HREDRAW | win.CS_VREDRAW,
+	cls := win.WNDCLASSEXW{
+	    cbSize        = size_of(win.WNDCLASSEXW),
+	    lpfnWndProc   = win_proc,
+	    lpszClassName = class_name,
+	    hInstance     = instance,
+	    hCursor       = win.LoadCursorA(nil, win.IDC_ARROW),
+	    hIcon         = load_icon_by_size(256),
+	    hIconSm       = load_icon_by_size(32),
+	    style         = win.CS_HREDRAW | win.CS_VREDRAW,
 	}
 
 	win.RegisterClassExW(&cls)
@@ -119,6 +78,18 @@ init_windows :: proc(title: string, width, height: int) {
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PLAY_PAUSE, 0, u32(Key.MEDIA_PLAY_PAUSE))
+}
+
+load_icon_by_size :: proc(size: i32) -> win.HICON {
+    icon := win.LoadImageW(
+        win.HANDLE(win.GetModuleHandleW(nil)),
+        win.MAKEINTRESOURCEW(1), // icon resource ID 1
+        win.IMAGE_ICON,
+        size,
+        size,
+        win.LR_DEFAULTCOLOR,
+    );
+    return win.HICON(icon);
 }
 
 @(private)
