@@ -75,6 +75,8 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 }
 
 draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) {
+	playlist_sc := &ui_state.playlist_scrollbar
+
 	list_y := y + 120
 	list_h := h - 120
 
@@ -84,47 +86,29 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
 		list_h -= 10
 		playlist_title := truncate_text(playlist.name, w - 180, 32)
 		fx.draw_text(playlist_title, x + 160, y + 35, 32, UI_TEXT_COLOR)
-		fx.draw_text(
-			fmt.tprintf("%d tracks", len(playlist.tracks)),
-			x + 160,
-			y + 75,
-			16,
-			UI_TEXT_SECONDARY,
-		)
+		track_count := fmt.tprintf("%d tracks", len(playlist.tracks))
+		fx.draw_text(track_count, x + 162, y + 75, 16, UI_TEXT_SECONDARY)
 	} else {
 		playlist_title := truncate_text(playlist.name, w - 60, 32)
 		fx.draw_text(playlist_title, x + 40, y + 35, 32, UI_TEXT_COLOR)
-		fx.draw_text(
-			fmt.tprintf("%d tracks", len(playlist.tracks)),
-			x + 40,
-			y + 75,
-			16,
-			UI_TEXT_SECONDARY,
-		)
+		track_count := fmt.tprintf("%d tracks", len(playlist.tracks))
+		fx.draw_text(track_count, x + 42, y + 75, 16, UI_TEXT_SECONDARY)
 	}
 
-	track_count := len(playlist.tracks)
-	track_height: f32 = 65
-	playlist_max_scroll := calculate_max_scroll(track_count, track_height, list_h)
+	track_count  := len(playlist.tracks)
+	track_height : f32 = 65
+	max_scroll := calculate_max_scroll(track_count, track_height, list_h)
 
-	ui_state.playlist_scrollbar.target = clamp(
-		ui_state.playlist_scrollbar.target,
-		0,
-		playlist_max_scroll,
-	)
-	ui_state.playlist_scrollbar.scroll = clamp(
-		ui_state.playlist_scrollbar.scroll,
-		0,
-		playlist_max_scroll,
-	)
+	playlist_sc.target = clamp(playlist_sc.target, 0, max_scroll)
+	playlist_sc.scroll = clamp(playlist_sc.scroll, 0, max_scroll)
 
 	fx.set_scissor(x, list_y, w - 15, list_h)
 
-	if !ui_state.playlist_scrollbar.is_dragging {
-		interaction_rect(f32(x), f32(list_y), f32(w - 15), f32(list_h - 15))
+	if !playlist_sc.is_dragging {
+		interaction_rect(x, list_y, w - 15, list_h - 15)
 	}
 
-	track_y := list_y - ui_state.playlist_scrollbar.scroll
+	track_y := list_y - playlist_sc.scroll
 
 	mouse_x, mouse_y := fx.get_mouse()
 
@@ -148,36 +132,32 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
 
 	fx.disable_scissor()
 
-	if playlist_max_scroll > 0 {
+	if max_scroll > 0 {
 		indicator_x := x + w - 20
 		indicator_y := list_y + 5
 		indicator_h := list_h - 15
 
 		draw_scrollbar(
-			&ui_state.playlist_scrollbar,
+			playlist_sc,
 			indicator_x,
 			indicator_y,
 			4,
 			indicator_h,
-			playlist_max_scroll,
+			max_scroll,
 			UI_PRIMARY_COLOR,
 			UI_SECONDARY_COLOR,
 		)
 	}
 
-	if !ui_state.playlist_scrollbar.is_dragging {
+	if !playlist_sc.is_dragging {
 		window_w, window_h := fx.window_size()
-		interaction_rect(0, 0, f32(window_w), f32(window_h))
+		interaction_rect(0, 0, window_w, window_h)
 
 		scroll_delta := fx.get_mouse_scroll()
 		if scroll_delta != 0 {
-			if f32(mouse_x) > x && f32(mouse_y) < y + h {
-				ui_state.playlist_scrollbar.target -= f32(scroll_delta) * 80
-				ui_state.playlist_scrollbar.target = clamp(
-					ui_state.playlist_scrollbar.target,
-					0,
-					playlist_max_scroll,
-				)
+			if mouse_x > x && mouse_y < y + h {
+				playlist_sc.target -= scroll_delta * 80
+				playlist_sc.target = clamp(playlist_sc.target, 0, max_scroll)
 			}
 		}
 	}

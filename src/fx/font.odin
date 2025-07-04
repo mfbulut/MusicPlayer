@@ -181,6 +181,8 @@ draw_char :: proc(char: int, x, y, size: f32, color: Color) -> f32 {
     return ch.advance * size
 }
 
+screenPxRange :: 0.063
+
 draw_text :: proc(text: string, x, y, size: f32, color: Color, boldness : f32 = 1.0) {
     if(verticies_count > 0) {
         end_render()
@@ -188,7 +190,7 @@ draw_text :: proc(text: string, x, y, size: f32, color: Color, boldness : f32 = 
 
     use_texture(font_texture)
 
-    update_constant_buffer({size * 0.065 * boldness})
+    update_constant_buffer({size * screenPxRange * boldness})
 
 	device_context->PSSetShader(font_shader, nil, 0)
 
@@ -288,7 +290,7 @@ draw_text_wrapped :: proc(text: string, x, y, max_width, size: f32, color: Color
 
     use_texture(font_texture)
 
-    update_constant_buffer({size * 0.065})
+    update_constant_buffer({size * screenPxRange})
 
 	device_context->PSSetShader(font_shader, nil, 0)
     device_context->PSSetConstantBuffers(0, 1, &constant_buffer)
@@ -384,7 +386,6 @@ main :: proc() {
         bottom  := f32(strconv.atof(r[3]))
         right   := f32(strconv.atof(r[4]))
         top     := f32(strconv.atof(r[5]))
-
 
         inv_tex_width  := 1.0 / f32(texture_width)
         inv_tex_height := 1.0 / f32(texture_height)
