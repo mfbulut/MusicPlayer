@@ -14,7 +14,7 @@ load_metadata :: proc(track : ^Track) {
 	track.lyrics = load_lyrics_for_track(track.path)
 
 	tags, tags_ok := load_id3_tags(track.path)
-	
+
 	if tags_ok {
 		track.tags = tags
 		track.has_tags = true

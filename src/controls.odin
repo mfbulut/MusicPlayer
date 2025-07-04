@@ -61,9 +61,10 @@ draw_player_controls :: proc() {
 		}
 	}
 
-	selected_title := player.current_track.tags.title if player.current_track.has_tags else player.current_track.name
-	selected_album := player.current_track.tags.album if player.current_track.has_tags else player.current_track.playlist
-
+	track := player.current_track
+	selected_title := track.tags.title if track.has_tags else track.name
+	selected_album := track.tags.album if track.has_tags else track.playlist
+	
 	max_size: f32 = 320
 	track_title := truncate_text(selected_title, max_size, 24)
 	title_end := startX + fx.measure_text(track_title, 24)

@@ -214,6 +214,7 @@ main :: proc() {
 
 	sort_playlists()
 	init_cover_loading()
+	init_metadata_loading()
 	search_tracks("")
 
 	fx.drop_callback(drop_callback)

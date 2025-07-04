@@ -10,6 +10,7 @@ import "core:path/filepath"
 import "core:slice"
 import "core:strings"
 import "core:thread"
+import "core:sync"
 
 Lyrics :: struct {
 	time: f32,
@@ -42,6 +43,8 @@ Track :: struct {
 
 	tags:         Tags,
 	has_tags:     bool,
+
+	metadata_loaded : bool,
 }
 
 Playlist :: struct {
@@ -169,9 +172,6 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 		playlist = dir_name,
 	}
 
-	// Quite slow should be async
-	// load_metadata(&music)
-
 	if queue {
 		append(&player.queue.tracks, music)
 	} else {
@@ -203,4 +203,37 @@ cover_loading_worker :: proc(t: ^thread.Thread) {
 cleanup_cover_loading :: proc() {
 	thread.join(cover_loading_thread)
 	thread.destroy(cover_loading_thread)
+}
+
+metadata_loading_thread : ^thread.Thread
+metadata_load_mutex : sync.Mutex
+metadata_thread_over : bool
+
+init_metadata_loading :: proc() {
+	metadata_loading_thread = thread.create(metadata_loading_worker)
+	thread.start(metadata_loading_thread)
+}
+
+metadata_loading_worker :: proc(t: ^thread.Thread) {
+	for &playlist in playlists {
+		for &track in playlist.tracks {
+			if !track.metadata_loaded {
+				track_copy := track
+				load_metadata(&track_copy)
+
+				sync.lock(&metadata_load_mutex)
+				track = track_copy
+				sync.unlock(&metadata_load_mutex)
+			}
+		}
+	}
+
+	cleanup_cover_loading()
+
+	metadata_thread_over = true
+}
+
+cleanup_metadata_loading :: proc() {
+	thread.join(metadata_loading_thread)
+	thread.destroy(metadata_loading_thread)
 }

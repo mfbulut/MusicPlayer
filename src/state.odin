@@ -196,6 +196,11 @@ load_liked_songs :: proc() {
 					playlist = track.playlist,
 					lyrics   = track.lyrics,
 					audio    = track.audio,
+					
+					cover     = track.cover,
+					has_cover = track.has_cover,
+					tags      = track.tags,
+					has_tags  = track.has_tags,
 				}
 
 				append(&liked_playlist.tracks, track_copy)

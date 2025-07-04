@@ -4,6 +4,7 @@ import "fx"
 
 import "core:math"
 import "core:math/rand"
+import "core:sync"
 
 PlayerState :: enum {
 	STOPPED,
@@ -12,17 +13,20 @@ PlayerState :: enum {
 }
 
 Player :: struct {
-	current_track:    Track,
 	state:            PlayerState,
 	position:         f32,
 	duration:         f32,
 	volume:           f32,
-	shuffle:          bool,
-	current_playlist: Playlist,
-	current_index:    int,
+
 	queue:            Playlist,
-	shuffled_indices: []int,
+
+	current_index:    int,
+	current_track:    Track,
+	current_playlist: Playlist,
+
+	shuffle:          bool,
 	shuffle_position: int,
+	shuffled_indices: []int,
 }
 
 player := Player {
@@ -58,16 +62,30 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
 	if !new_track.audio.loaded {
 		load_track_audio(&new_track)
-		load_metadata(&new_track) // TODO async metadata loading for showing year and album info on tracks
 		load_cover(&new_track)
+	}
+
+	if metadata_thread_over {
+		if !track.metadata_loaded {
+			load_metadata(&new_track)
+		}
+	} else {
+		sync.lock(&metadata_load_mutex)
+
+		if !track.metadata_loaded {
+			load_metadata(&new_track)
+		}
+
+		sync.unlock(&metadata_load_mutex)
 	}
 
 	player.current_track = new_track
 	player.duration = fx.get_duration(&player.current_track.audio)
 	player.position = 0
+	player.state = .PLAYING
+
 	fx.play_audio(&player.current_track.audio)
 	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
-	player.state = .PLAYING
 
 	if queue do return
 	player.current_playlist = playlist
