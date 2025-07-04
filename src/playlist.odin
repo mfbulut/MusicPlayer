@@ -34,11 +34,35 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	selected_title := track.tags.title if track.has_tags else track.name
 	selected_album := track.tags.album if track.has_tags else track.playlist
 
+	startX : f32 = x + 5
+
+	/*
+
+	// Experimental code
+
+	if track.cover.width > 0 {
+		padding :: 8
+
+		fx.draw_texture_rounded_cropped(
+			track.cover,
+			startX + padding,
+			y + padding,
+			h - padding * 2,
+			h - padding * 2,
+			12,
+			fx.WHITE,
+		)
+
+		startX += 45
+	}
+
+	*/
+
 	track_title := truncate_text(selected_title, w - 70, 20)
-	fx.draw_text(track_title, x + 20, y + 9, 20, text_color)
+	fx.draw_text(track_title, startX + 15, y + 9, 20, text_color)
 
 	track_playlist := truncate_text(selected_album, w - 70, 15)
-	fx.draw_text(track_playlist, x + 20, y + 35, 15, secondary_color)
+	fx.draw_text(track_playlist, startX + 15, y + 35, 15, secondary_color)
 
 	is_liked := is_song_liked(track.name, track.playlist)
 
@@ -103,7 +127,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) 
 
 	track_count  := len(playlist.tracks)
 	track_height : f32 = 65
-	max_scroll := calculate_max_scroll(track_count, track_height, list_h)
+	max_scroll   := calculate_max_scroll(track_count, track_height, list_h)
 
 	playlist_sc.target = clamp(playlist_sc.target, 0, max_scroll)
 	playlist_sc.scroll = clamp(playlist_sc.scroll, 0, max_scroll)

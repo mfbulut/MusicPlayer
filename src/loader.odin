@@ -219,10 +219,22 @@ metadata_loading_worker :: proc(t: ^thread.Thread) {
 		for &track in playlist.tracks {
 			if !track.metadata_loaded {
 				track_copy := track
-				load_metadata(&track_copy)
+
+				buffer, ok := os.read_entire_file_from_filename(track_copy.path, context.temp_allocator)
+				if !ok {
+					continue
+				}
+
+				// Setting the last bool to true makes gpu run out of memory
+				// Also if you enable this you should disable cover unloading
+				// Also see commented experimental code at playlist.odin
+
+				load_metadata(&track_copy, buffer, false)
 
 				sync.lock(&metadata_load_mutex)
+
 				track = track_copy
+
 				sync.unlock(&metadata_load_mutex)
 			}
 		}

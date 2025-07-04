@@ -10,28 +10,36 @@ import "core:slice"
 import fp "core:path/filepath"
 import "core:unicode/utf8"
 
-load_metadata :: proc(track : ^Track) {
-	track.lyrics = load_lyrics_for_track(track.path)
+load_metadata :: proc(track : ^Track, buffer : []u8, cover := false) {
+	if cover && track.cover.width == 0 {
+		load_cover(track, buffer)
+	}
 
-	tags, tags_ok := load_id3_tags(track.path)
+	if !track.metadata_loaded {
+		track.lyrics = load_lyrics_for_track(track.path)
 
-	if tags_ok {
-		track.tags = tags
-		track.has_tags = true
+		tags, tags_ok := load_id3_tags(buffer)
+
+		if tags_ok {
+			track.tags = tags
+			track.has_tags = true
+		}
+
+		track.metadata_loaded = true
 	}
 }
 
-load_cover :: proc(track : ^Track) {
+load_cover :: proc(track : ^Track, buffer : []u8) {
 	extension := fp.ext(track.path)
 
 	if extension == ".mp3" {
-		cover, ok := load_album_art_mp3(track.audio.file_data)
+		cover, ok := load_album_art_mp3(buffer)
 		if ok {
 			track.cover = cover
 			track.has_cover = true
 		}
 	} else if extension == ".flac" {
-		cover, ok := load_album_art_from_flac(track.audio.file_data)
+		cover, ok := load_album_art_from_flac(buffer)
 		if ok {
 			track.cover = cover
 			track.has_cover = true
@@ -77,6 +85,8 @@ unload_cover :: proc(track: ^Track) {
 	if track.has_cover {
 		fx.unload_texture(&track.cover)
 	}
+
+	track.has_cover = false
 }
 
 // Lyrics
@@ -230,9 +240,7 @@ bytes_to_string :: proc(data: []u8) -> (string, bool) {
 	return strings.clone(text_str), true
 }
 
-load_id3_tags :: proc(path: string) -> (tags: Tags, success: bool) {
-	buffer := os.read_entire_file_from_filename(path, context.temp_allocator) or_return;
-
+load_id3_tags :: proc(buffer: []u8) -> (tags: Tags, success: bool) {
 	if !strings.has_prefix(string(buffer[:3]), "ID3") {
 		return
 	}
