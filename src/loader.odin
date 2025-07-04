@@ -8,7 +8,6 @@ import "core:os/os2"
 import "core:hash"
 import "core:path/filepath"
 import "core:slice"
-import "core:strconv"
 import "core:strings"
 import "core:thread"
 
@@ -36,7 +35,7 @@ Track :: struct {
 
 	audio: fx.Audio,
 
-	lyrics:     [dynamic]Lyrics,
+	lyrics:       [dynamic]Lyrics,
 
 	cover:        fx.Texture,
 	has_cover:    bool,
@@ -170,6 +169,9 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 		playlist = dir_name,
 	}
 
+	// Quite slow should be async
+	// load_metadata(&music)
+
 	if queue {
 		append(&player.queue.tracks, music)
 	} else {
@@ -181,8 +183,6 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 cover_loading_thread: ^thread.Thread
 
 init_cover_loading :: proc() {
-	loading_covers = true
-
 	cover_loading_thread = thread.create(cover_loading_worker)
 	thread.start(cover_loading_thread)
 }
@@ -192,7 +192,6 @@ cover_loading_worker :: proc(t: ^thread.Thread) {
 		if !playlist.loaded && len(playlist.cover_path) > 0 {
 			texture := fx.load_texture(playlist.cover_path) or_else fx.Texture{}
 
-			fmt.println(texture.width)
 			playlist.cover = texture
 			playlist.loaded = true
 		}

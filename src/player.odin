@@ -58,7 +58,7 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
 	if !new_track.audio.loaded {
 		load_track_audio(&new_track)
-		load_metadata(&new_track)
+		load_metadata(&new_track) // TODO async metadata loading for showing year and album info on tracks
 		load_cover(&new_track)
 	}
 

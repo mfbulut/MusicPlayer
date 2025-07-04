@@ -4,9 +4,7 @@ import "vendor:miniaudio"
 
 import "core:fmt"
 import "core:os"
-import "core:strings"
 
-import "core:unicode/utf8"
 import fp "core:path/filepath"
 
 Audio :: struct {

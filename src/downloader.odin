@@ -7,7 +7,6 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:path/filepath"
-import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:unicode/utf8"
@@ -104,7 +103,6 @@ download_lyrics :: proc() {
 
 	if track != nil && has_required_metadata {
 		duration_mem: [8]u8
-		duration_str := strconv.itoa(duration_mem[:], duration)
 
 		res, ok := fx.get(
 			"https://lrclib.net/api/get",

@@ -188,7 +188,6 @@ background: fx.RenderTexture
 
 playlists: [dynamic]Playlist
 
-loading_covers: bool
 update_background: bool
 music_dir: string
 

@@ -2,7 +2,6 @@ package main
 
 import "fx"
 
-import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:strconv"
@@ -12,31 +11,20 @@ import fp "core:path/filepath"
 import "core:unicode/utf8"
 
 load_metadata :: proc(track : ^Track) {
-	extension := fp.ext(track.path)
-
 	track.lyrics = load_lyrics_for_track(track.path)
 
-	if extension == ".mp3" {
-		tags, tags_ok := load_id3_tags(track.audio.file_data)
-		if tags_ok {
-			track.tags = tags
-			track.has_tags = true
-		}
+	tags, tags_ok := load_id3_tags(track.path)
+	
+	if tags_ok {
+		track.tags = tags
+		track.has_tags = true
 	}
 }
 
 load_cover :: proc(track : ^Track) {
 	extension := fp.ext(track.path)
 
-	track.lyrics = load_lyrics_for_track(track.path)
-
 	if extension == ".mp3" {
-		tags, tags_ok := load_id3_tags(track.audio.file_data)
-		if tags_ok {
-			track.tags = tags
-			track.has_tags = true
-		}
-
 		cover, ok := load_album_art_mp3(track.audio.file_data)
 		if ok {
 			track.cover = cover
@@ -44,7 +32,6 @@ load_cover :: proc(track : ^Track) {
 		}
 	} else if extension == ".flac" {
 		cover, ok := load_album_art_from_flac(track.audio.file_data)
-
 		if ok {
 			track.cover = cover
 			track.has_cover = true
@@ -243,7 +230,9 @@ bytes_to_string :: proc(data: []u8) -> (string, bool) {
 	return strings.clone(text_str), true
 }
 
-load_id3_tags :: proc(buffer: []u8) -> (tags: Tags, success: bool) {
+load_id3_tags :: proc(path: string) -> (tags: Tags, success: bool) {
+	buffer := os.read_entire_file_from_filename(path, context.temp_allocator) or_return;
+
 	if !strings.has_prefix(string(buffer[:3]), "ID3") {
 		return
 	}

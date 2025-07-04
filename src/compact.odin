@@ -83,9 +83,8 @@ compact_mode_frame :: proc() {
 		current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)
 
 		if current_lyric_index >= 0 {
-			current_lyric := track.lyrics[current_lyric_index].text
-
-			track_playlist := truncate_text(current_lyric, window_w - startX - 50, 16)
+			current_lyric := truncate_text(track.lyrics[current_lyric_index].text, window_w - startX - 50, 16)
+			
 			fx.draw_text(current_lyric, startX + 2, 80, 16, UI_TEXT_SECONDARY)
 		}
 	}
