@@ -91,7 +91,7 @@ draw_main_content :: proc(sidebar_width: f32) {
 	case .SEARCH:
 		draw_search_view(content_x, 10, content_w, content_h - 10)
 	case .PLAYLIST_DETAIL:
-		draw_playlist_view(content_x, 0, content_w, content_h, find_playlist_by_name(ui_state.selected_playlist))
+		draw_playlist_view(content_x, 0, content_w, content_h, find_playlist_by_name(ui_state.selected_playlist)^)
 	case .NOW_PLAYING:
 		draw_now_playing_view(content_x, 0, content_w, content_h)
 	case .LIKED:
@@ -102,6 +102,16 @@ draw_main_content :: proc(sidebar_width: f32) {
 }
 
 frame :: proc() {
+	if loading_covers {
+		loading_covers = !check_all_covers_loaded()
+
+		if loading_covers {
+			process_loaded_covers()
+		} else {
+			cleanup_cover_loading()
+		}
+	}
+
 	if fx.key_pressed(.F4) {
 		ui_state.theme = (ui_state.theme + 1) % THEME_COUNT
 		switch_theme(ui_state.theme)
@@ -187,6 +197,7 @@ background: fx.RenderTexture
 
 playlists: [dynamic]Playlist
 
+loading_covers: bool
 update_background: bool
 music_dir: string
 
@@ -212,9 +223,12 @@ main :: proc() {
 	load_liked_songs()
 
 	sort_playlists()
-	init_cover_loading()
-	init_metadata_loading()
 	search_tracks("")
+
+	init_cover_loading()
+
+	// Not stable enough
+	// init_thumbnail_loading()
 
 	fx.drop_callback(drop_callback)
 	fx.run(frame)

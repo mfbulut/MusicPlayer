@@ -8,6 +8,7 @@ import "core:image/png"
 import "core:image/qoi"
 import "core:math"
 import "core:os"
+import "core:mem"
 
 import stb "vendor:stb/image"
 
@@ -94,49 +95,97 @@ load_texture_from_image :: proc(img: ^image.Image, generate_mipmaps := true) -> 
 	return tex
 }
 
+// TODO cleanup this code
+
+SMALL_SIZE :: 64
+
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample := false) -> Texture {
 	img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
-
+	// Use stb_image for jpg files
 	if err != nil {
 		w, h, channels_in_file: i32
 		pixels_ptr := stb.load_from_memory(&data[0], i32(len(data)), &w, &h, &channels_in_file, 4)
-
+		pixels_slice : [][4]u8 = mem.slice_ptr(cast([^][4]u8)pixels_ptr, int(w) * int(h))
 		if pixels_ptr == nil {
-			fmt.printfln(
+			fmt.eprintfln(
 				"[ERROR] Failed to load texture from bytes using both image and STB loaders",
 			)
 			return Texture{}
 		}
-
-		pixel_count := int(w * h)
-		rgba_pixels := make([][4]u8, pixel_count)
-
-		for i in 0 ..< pixel_count {
-			rgba_pixels[i] = {
-				pixels_ptr[i * 4 + 0],
-				pixels_ptr[i * 4 + 1],
-				pixels_ptr[i * 4 + 2],
-				pixels_ptr[i * 4 + 3],
+		if downsample && (w > SMALL_SIZE || h > SMALL_SIZE) {
+			target_w, target_h: i32
+			if w > h {
+				target_w = SMALL_SIZE
+				target_h = max(1, (h * SMALL_SIZE) / w)
+			} else {
+				target_h = SMALL_SIZE
+				target_w = max(1, (w * SMALL_SIZE) / h)
 			}
+
+			resized_pixel_count := int(target_w * target_h)
+			resized_pixels := make([][4]u8, resized_pixel_count)
+			stb.resize_uint8(
+				cast([^]u8)&pixels_ptr[0], i32(w), i32(h), 0,
+				cast([^]u8)&resized_pixels[0], target_w, target_h, 0,
+				4,
+			)
+			stb.image_free(pixels_ptr)
+			fallback_img, ok := image.pixels_to_image(resized_pixels, int(target_w), int(target_h))
+			if !ok {
+				fmt.eprintfln("[ERROR] Failed to convert resized STB pixels to image")
+				delete(resized_pixels)
+				return Texture{}
+			}
+
+			texture := load_texture_from_image(&fallback_img)
+			delete(resized_pixels)
+			return texture
+		} else {
+			fallback_img, ok := image.pixels_to_image(pixels_slice, int(w), int(h))
+			if !ok {
+				fmt.eprintfln("[ERROR] Failed to convert STB pixels to image")
+				stb.image_free(pixels_ptr)
+				return Texture{}
+			}
+			texture := load_texture_from_image(&fallback_img)
+			stb.image_free(pixels_ptr)
+			return texture
+		}
+	}
+	if downsample && (img.width > SMALL_SIZE || img.height > SMALL_SIZE) {
+		original_pixels := img.pixels.buf
+
+		target_w, target_h: i32
+		if img.width > img.height {
+			target_w = SMALL_SIZE
+			target_h = max(1, (i32(img.height) * SMALL_SIZE) / i32(img.width))
+		} else {
+			target_h = SMALL_SIZE
+			target_w = max(1, (i32(img.width) * SMALL_SIZE) / i32(img.height))
 		}
 
-		stb.image_free(pixels_ptr)
-
-		fallback_img, ok := image.pixels_to_image(rgba_pixels, int(w), int(h))
+		resized_pixel_count := int(target_w * target_h)
+		resized_pixels := make([][4]u8, resized_pixel_count)
+		stb.resize_uint8(
+			&original_pixels[0], i32(img.width), i32(img.height), 0,
+			cast([^]u8)&resized_pixels[0], target_w, target_h, 0,
+			4,
+		)
+		image.destroy(img)
+		resized_img, ok := image.pixels_to_image(resized_pixels, int(target_w), int(target_h))
 		if !ok {
-			fmt.printfln("[ERROR] Failed to convert STB pixels to image")
+			fmt.eprintfln("[ERROR] Failed to convert resized pixels to image")
+			delete(resized_pixels)
 			return Texture{}
 		}
-
-		texture := load_texture_from_image(&fallback_img)
-		delete(rgba_pixels)
+		texture := load_texture_from_image(&resized_img)
+		delete(resized_pixels)
 		return texture
 	} else {
 		texture := load_texture_from_image(img)
 		image.destroy(img)
 		return texture
 	}
-
 	return Texture{}
 }
 

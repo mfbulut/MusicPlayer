@@ -36,15 +36,11 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 
 	startX : f32 = x + 5
 
-	/*
-
-	// Experimental code
-
-	if track.cover.width > 0 {
+	if track.small_cover.width > 0 {
 		padding :: 8
 
 		fx.draw_texture_rounded_cropped(
-			track.cover,
+			track.small_cover,
 			startX + padding,
 			y + padding,
 			h - padding * 2,
@@ -55,8 +51,6 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 
 		startX += 45
 	}
-
-	*/
 
 	track_title := truncate_text(selected_title, w - 70, 20)
 	fx.draw_text(track_title, startX + 15, y + 9, 20, text_color)

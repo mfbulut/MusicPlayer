@@ -10,22 +10,19 @@ import "core:slice"
 import fp "core:path/filepath"
 import "core:unicode/utf8"
 
-load_metadata :: proc(track : ^Track, buffer : []u8, cover := false) {
-	if cover && track.cover.width == 0 {
-		load_cover(track, buffer)
-	}
+load_small_cover :: proc(track : ^Track, buffer : []u8) {
+	extension := fp.ext(track.path)
 
-	if !track.metadata_loaded {
-		track.lyrics = load_lyrics_for_track(track.path)
-
-		tags, tags_ok := load_id3_tags(buffer)
-
-		if tags_ok {
-			track.tags = tags
-			track.has_tags = true
+	if extension == ".mp3" {
+		cover, ok := load_album_art_mp3(buffer, true)
+		if ok {
+			track.small_cover = cover
 		}
-
-		track.metadata_loaded = true
+	} else if extension == ".flac" {
+		cover, ok := load_album_art_from_flac(buffer, true)
+		if ok {
+			track.small_cover = cover
+		}
 	}
 }
 
@@ -199,7 +196,6 @@ load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
 	return load_lyrics_from_string(lrc_content)
 }
 
-
 // ID3 Tags
 
 ID3_Frame_Header :: struct {
@@ -240,41 +236,69 @@ bytes_to_string :: proc(data: []u8) -> (string, bool) {
 	return strings.clone(text_str), true
 }
 
-load_id3_tags :: proc(buffer: []u8) -> (tags: Tags, success: bool) {
-	if !strings.has_prefix(string(buffer[:3]), "ID3") {
+load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
+	file, err := os.open(filepath)
+	if err != os.ERROR_NONE {
+		return
+	}
+	defer os.close(file)
+
+	header_buffer := make([]u8, 10)
+	defer delete(header_buffer)
+
+	bytes_read, read_err := os.read(file, header_buffer)
+	if read_err != os.ERROR_NONE || bytes_read < 10 {
 		return
 	}
 
-	version := buffer[3]
+	if !strings.has_prefix(string(header_buffer[:3]), "ID3") {
+		return
+	}
+
+	version := header_buffer[3]
+
 	size :=
-		(int(buffer[6]) & 0x7F) << 21 |
-		(int(buffer[7]) & 0x7F) << 14 |
-		(int(buffer[8]) & 0x7F) << 7 |
-		(int(buffer[9]) & 0x7F)
+		(int(header_buffer[6]) & 0x7F) << 21 |
+		(int(header_buffer[7]) & 0x7F) << 14 |
+		(int(header_buffer[8]) & 0x7F) << 7 |
+		(int(header_buffer[9]) & 0x7F)
 
 	pos := 10
 
-	if buffer[5] & 0x40 != 0 {
-		if pos + 4 > len(buffer) {
+	if header_buffer[5] & 0x40 != 0 {
+		ext_header_size_buf := make([]u8, 4)
+		defer delete(ext_header_size_buf)
+
+		bytes_read, read_err = os.read(file, ext_header_size_buf)
+		if read_err != os.ERROR_NONE || bytes_read < 4 {
 			return
 		}
+
 		extended_size :=
-			int(buffer[pos]) << 24 |
-			int(buffer[pos + 1]) << 16 |
-			int(buffer[pos + 2]) << 8 |
-			int(buffer[pos + 3])
+			int(ext_header_size_buf[0]) << 24 |
+			int(ext_header_size_buf[1]) << 16 |
+			int(ext_header_size_buf[2]) << 8 |
+			int(ext_header_size_buf[3])
+
+		os.seek(file, i64(extended_size), os.SEEK_CUR)
 		pos += 4 + extended_size
 	}
 
-	for pos < size && pos + 10 < len(buffer) {
+	frame_header_buf := make([]u8, 10)
+	defer delete(frame_header_buf)
+
+	for pos < size {
+		bytes_read, read_err = os.read(file, frame_header_buf)
+		if read_err != os.ERROR_NONE || bytes_read < 10 {
+			break
+		}
+
 		frame: ID3_Frame_Header
-
-		frame.id[0] = buffer[pos + 0]
-		frame.id[1] = buffer[pos + 1]
-		frame.id[2] = buffer[pos + 2]
-		frame.id[3] = buffer[pos + 3]
+		frame.id[0] = frame_header_buf[0]
+		frame.id[1] = frame_header_buf[1]
+		frame.id[2] = frame_header_buf[2]
+		frame.id[3] = frame_header_buf[3]
 		frame_id := string(frame.id[:])
-
 
 		if frame.id[0] == 0 && frame.id[1] == 0 && frame.id[2] == 0 && frame.id[3] == 0 {
 			break
@@ -282,68 +306,64 @@ load_id3_tags :: proc(buffer: []u8) -> (tags: Tags, success: bool) {
 
 		frame.size = 0
 		if version >= 4 {
-
 			frame.size =
-				(int(buffer[pos + 4]) & 0x7F) << 21 |
-				(int(buffer[pos + 5]) & 0x7F) << 14 |
-				(int(buffer[pos + 6]) & 0x7F) << 7 |
-				(int(buffer[pos + 7]) & 0x7F)
+				(int(frame_header_buf[4]) & 0x7F) << 21 |
+				(int(frame_header_buf[5]) & 0x7F) << 14 |
+				(int(frame_header_buf[6]) & 0x7F) << 7 |
+				(int(frame_header_buf[7]) & 0x7F)
 		} else {
-
 			frame.size =
-				int(buffer[pos + 4]) << 24 |
-				int(buffer[pos + 5]) << 16 |
-				int(buffer[pos + 6]) << 8 |
-				int(buffer[pos + 7])
+				int(frame_header_buf[4]) << 24 |
+				int(frame_header_buf[5]) << 16 |
+				int(frame_header_buf[6]) << 8 |
+				int(frame_header_buf[7])
 		}
 
-		frame.flags[0] = buffer[pos + 8]
-		frame.flags[1] = buffer[pos + 9]
-
-		if pos + 10 + frame.size > len(buffer) {
-			break
-		}
-
-		frame_data := buffer[pos + 10:pos + 10 + frame.size]
-
+		frame.flags[0] = frame_header_buf[8]
+		frame.flags[1] = frame_header_buf[9]
 
 		switch frame_id {
-		case "TIT2":
-			tags.title = bytes_to_string(frame_data) or_return
-		case "TPE1":
-			tags.artist = bytes_to_string(frame_data) or_return
-		case "TALB":
-			tags.album = bytes_to_string(frame_data) or_return
-		case "TDRC", "TYER":
-			tags.year = bytes_to_string(frame_data) or_return
-		case "TCON":
-			genre_str := bytes_to_string(frame_data) or_return
+		case "TIT2", "TPE1", "TALB", "TDRC", "TYER", "TCON", "TRCK", "COMM", "TPE2":
+			frame_data := make([]u8, frame.size)
+			defer delete(frame_data)
 
-			if strings.has_prefix(genre_str, "(") && strings.has_suffix(genre_str, ")") {
-
-				tags.genre = genre_str
-			} else {
-				tags.genre = genre_str
+			bytes_read, read_err = os.read(file, frame_data)
+			if read_err != os.ERROR_NONE || bytes_read < frame.size {
+				break
 			}
-		case "TRCK":
-			tags.track = bytes_to_string(frame_data) or_return
-		case "COMM":
-			if len(frame_data) > 4 {
 
-				comment_start := 4
-
-				for i in comment_start ..< len(frame_data) {
-					if frame_data[i] == 0 {
-						comment_start = i + 1
-						break
+			switch frame_id {
+			case "TIT2":
+				tags.title = bytes_to_string(frame_data) or_return
+			case "TPE1":
+				tags.artist = bytes_to_string(frame_data) or_return
+			case "TALB":
+				tags.album = bytes_to_string(frame_data) or_return
+			case "TDRC", "TYER":
+				tags.year = bytes_to_string(frame_data) or_return
+			case "TCON":
+				genre_str := bytes_to_string(frame_data) or_return
+				tags.genre = genre_str
+			case "TRCK":
+				tags.track = bytes_to_string(frame_data) or_return
+			case "COMM":
+				if len(frame_data) > 4 {
+					comment_start := 4
+					for i in comment_start ..< len(frame_data) {
+						if frame_data[i] == 0 {
+							comment_start = i + 1
+							break
+						}
+					}
+					if comment_start < len(frame_data) {
+						tags.comment = bytes_to_string(frame_data[comment_start:]) or_return
 					}
 				}
-				if comment_start < len(frame_data) {
-					tags.comment = bytes_to_string(frame_data[comment_start:]) or_return
-				}
+			case "TPE2":
+				tags.album_artist = bytes_to_string(frame_data) or_return
 			}
-		case "TPE2":
-			tags.album_artist = bytes_to_string(frame_data) or_return
+		case:
+			os.seek(file, i64(frame.size), os.SEEK_CUR)
 		}
 
 		pos += 10 + frame.size
@@ -362,11 +382,10 @@ load_id3_tags :: proc(buffer: []u8) -> (tags: Tags, success: bool) {
 	return tags, has_any_tags
 }
 
-
 // Album art readers
 // TODO: Add ogg cover reader
 
-load_album_art_mp3 :: proc(buffer: []u8) -> (fx.Texture, bool) {
+load_album_art_mp3 :: proc(buffer: []u8, downsample := false) -> (fx.Texture, bool) {
 	if !strings.has_prefix(string(buffer[:3]), "ID3") {
 		return fx.Texture{}, false
 	}
@@ -429,7 +448,7 @@ load_album_art_mp3 :: proc(buffer: []u8) -> (fx.Texture, bool) {
 
 			image_data := buffer[data_pos:pos + 10 + frame.size]
 
-			image := fx.load_texture_from_bytes(image_data)
+			image := fx.load_texture_from_bytes(image_data, true, downsample)
 			if image.width > 0 {
 				return image, true
 			} else {
@@ -449,7 +468,7 @@ FLAC_Metadata_Block_Header :: struct {
 	length:  int,
 }
 
-load_album_art_from_flac :: proc(buffer: []u8) -> (fx.Texture, bool) {
+load_album_art_from_flac :: proc(buffer: []u8, downsample := false) -> (fx.Texture, bool) {
 	if !strings.has_prefix(string(buffer[:4]), "fLaC") {
 		return fx.Texture{}, false
 	}
@@ -508,7 +527,7 @@ load_album_art_from_flac :: proc(buffer: []u8) -> (fx.Texture, bool) {
 
 			image_data := data[cursor:cursor + pic_data_length]
 
-			image := fx.load_texture_from_bytes(image_data)
+			image := fx.load_texture_from_bytes(image_data, true, downsample)
 			if image.width > 0 {
 				return image, true
 			} else {

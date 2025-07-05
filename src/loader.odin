@@ -9,8 +9,9 @@ import "core:hash"
 import "core:path/filepath"
 import "core:slice"
 import "core:strings"
-import "core:thread"
 import "core:sync"
+import "core:thread"
+import "core:time"
 
 Lyrics :: struct {
 	time: f32,
@@ -44,7 +45,8 @@ Track :: struct {
 	tags:         Tags,
 	has_tags:     bool,
 
-	metadata_loaded : bool,
+	small_cover:     fx.Texture,
+	thumbnail_loaded: bool,
 }
 
 Playlist :: struct {
@@ -80,13 +82,13 @@ load_files :: proc(dir_path: string) {
 	}
 }
 
-find_playlist_by_name :: proc(name: string) -> Playlist {
-	for playlist in playlists {
+find_playlist_by_name :: proc(name: string) -> ^Playlist {
+	for playlist, i in playlists {
 		if playlist.name == name {
-			return playlist
+			return &playlists[i]
 		}
 	}
-	return Playlist{}
+	return nil
 }
 
 playlist_id :: proc(name: string) -> int {
@@ -170,6 +172,14 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 		path     = file.fullpath,
 		name     = name,
 		playlist = dir_name,
+		lyrics   = load_lyrics_for_track(file.fullpath)
+	}
+
+	tags, tags_ok := load_id3_tags(music.path)
+
+	if tags_ok {
+		music.tags = tags
+		music.has_tags = true
 	}
 
 	if queue {
@@ -180,72 +190,114 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 	}
 }
 
+
+Cover_Load_Result :: struct {
+	playlist_index: int,
+	cover_path:     string,
+	texture:        fx.Texture,
+	success:        bool,
+}
+
+cover_load_queue: [dynamic]Cover_Load_Result
+cover_load_mutex: sync.Mutex
 cover_loading_thread: ^thread.Thread
+should_stop_loading: bool
 
 init_cover_loading :: proc() {
+	loading_covers = true
+
+	clear(&cover_load_queue)
+
+	for &playlist, i in playlists {
+		if !playlist.loaded && len(playlist.cover_path) > 0 {
+			append(
+				&cover_load_queue,
+				Cover_Load_Result {
+					playlist_index = i,
+					cover_path = playlist.cover_path,
+					texture = {},
+					success = false,
+				},
+			)
+		}
+	}
+
 	cover_loading_thread = thread.create(cover_loading_worker)
 	thread.start(cover_loading_thread)
 }
 
 cover_loading_worker :: proc(t: ^thread.Thread) {
-	for &playlist, i in playlists {
-		if !playlist.loaded && len(playlist.cover_path) > 0 {
-			texture := fx.load_texture(playlist.cover_path) or_else fx.Texture{}
+	for i := 0; i < len(cover_load_queue) && !should_stop_loading; i += 1 {
+		texture := fx.load_texture(cover_load_queue[i].cover_path) or_else fx.Texture{}
 
-			playlist.cover = texture
-			playlist.loaded = true
+		sync.lock(&cover_load_mutex)
+		cover_load_queue[i].texture = texture
+		cover_load_queue[i].success = true
+		sync.unlock(&cover_load_mutex)
+	}
+}
+
+process_loaded_covers :: proc() {
+	sync.lock(&cover_load_mutex)
+	defer sync.unlock(&cover_load_mutex)
+
+	for i := 0; i < len(cover_load_queue); i += 1 {
+		result := cover_load_queue[i]
+		if result.success && result.playlist_index >= 0 && result.playlist_index < len(playlists) {
+			playlists[result.playlist_index].cover = result.texture
+			playlists[result.playlist_index].loaded = true
 		}
 	}
+}
 
-	cleanup_cover_loading()
+check_all_covers_loaded :: proc() -> bool {
+	for playlist in playlists {
+		if !playlist.loaded && len(playlist.cover_path) > 0 {
+			return false
+		}
+	}
+	return true
 }
 
 cleanup_cover_loading :: proc() {
+	should_stop_loading = true
 	thread.join(cover_loading_thread)
 	thread.destroy(cover_loading_thread)
+
+	delete(cover_load_queue)
 }
 
-metadata_loading_thread : ^thread.Thread
-metadata_load_mutex : sync.Mutex
-metadata_thread_over : bool
+//////////////////////////////////////////////////
 
-init_metadata_loading :: proc() {
-	metadata_loading_thread = thread.create(metadata_loading_worker)
-	thread.start(metadata_loading_thread)
+// Experimental
+
+init_thumbnail_loading :: proc() {
+	thumbnail_loading_thread := thread.create(thumbnail_loading_worker)
+	thread.start(thumbnail_loading_thread)
 }
 
-metadata_loading_worker :: proc(t: ^thread.Thread) {
-	for &playlist in playlists {
-		for &track in playlist.tracks {
-			if !track.metadata_loaded {
-				track_copy := track
+thumbnail_loading_worker :: proc(t: ^thread.Thread) {
+	for {
+		playlist := find_playlist_by_name(ui_state.selected_playlist)
 
-				buffer, ok := os.read_entire_file_from_filename(track_copy.path, context.temp_allocator)
-				if !ok {
-					continue
+		if playlist != nil {
+			for &track in playlist.tracks {
+				if !track.thumbnail_loaded {
+					buffer := os.read_entire_file_from_filename(track.path, context.allocator) or_continue
+
+					load_small_cover(&track, buffer)
+
+					delete(buffer)
+
+					track.thumbnail_loaded = true
+
+					break
 				}
-
-				// Setting the last bool to true makes gpu run out of memory
-				// Also if you enable this you should disable cover unloading
-				// Also see commented experimental code at playlist.odin
-
-				load_metadata(&track_copy, buffer, false)
-
-				sync.lock(&metadata_load_mutex)
-
-				track = track_copy
-
-				sync.unlock(&metadata_load_mutex)
 			}
 		}
+
+		// Prevent cpu from working fast
+		time.sleep(10 * time.Millisecond)
 	}
-
-	cleanup_cover_loading()
-
-	metadata_thread_over = true
 }
 
-cleanup_metadata_loading :: proc() {
-	thread.join(metadata_loading_thread)
-	thread.destroy(metadata_loading_thread)
-}

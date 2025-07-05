@@ -384,7 +384,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			if track_y + 60 > results_y {
 				draw_track_item(
 					track,
-					find_playlist_by_name(track.playlist),
+					find_playlist_by_name(track.playlist)^,
 					x + 30,
 					track_y,
 					w - 70,

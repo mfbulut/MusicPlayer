@@ -50,10 +50,6 @@ unload_track_audio :: proc(track: ^Track) {
 }
 
 play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
-	if !metadata_thread_over {
-		sync.lock(&metadata_load_mutex)
-	}
-
 	if player.current_track.audio.loaded {
 		unload_cover(&player.current_track)
 		unload_track_audio(&player.current_track)
@@ -65,12 +61,12 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 	new_track := track
 
 	load_track_audio(&new_track)
-	load_metadata(&new_track, new_track.audio.file_data, true)
+	load_cover(&new_track, new_track.audio.file_data)
 
 	player.current_track = new_track
-	player.duration = fx.get_duration(&player.current_track.audio)
-	player.position = 0
 	player.state = .PLAYING
+	player.position = 0
+	player.duration = fx.get_duration(&player.current_track.audio)
 
 	fx.play_audio(&player.current_track.audio)
 	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
@@ -84,10 +80,6 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 				player.current_index = i
 			}
 		}
-	}
-
-	if !metadata_thread_over {
-		sync.unlock(&metadata_load_mutex)
 	}
 }
 
