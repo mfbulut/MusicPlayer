@@ -5,13 +5,16 @@ A **minimalist**, **modern**, and **native** music player
 ### [Download Here](https://github.com/mfbulut/MusicPlayer/releases/latest)
 
 ### Features
-- **Auto-scans Music Folder**: By default, scans `C:\Users\{username}\Music\` for Music files.
-  - Each folder treated as a playlist
 - **Supported formats**: mp3, flac, wav and ogg
+- **Music Folder**:
+  - By default, scans `C:\Users\{username}\Music\` for music files.
+  - Each subfolder treated as a playlist
+  - Uses `cover{.png .jpg .qoi}` as album cover
 - **Cover Art Support**:
-  - Extracts embedded cover art from file metadata.
-  - If unavailable, tries to load cover.png, cover.jpg, or cover.qoi from the music folder.
-- **Lyrics**: Supports synced lyrics via lrcget or local .lrc files
+  - Uses embedded cover art from track
+  - Fallbacks to `songname{.png .jpg .qoi}`
+- **Lyrics**: Supports **synced** lyrics via **lrcget** or local **.lrc** files
+- **Fuzzy Search**, **Queue**, **Likes** etc.
 
 ### Controls
 
@@ -26,10 +29,10 @@ A **minimalist**, **modern**, and **native** music player
 
 ## Screenshots
 
-![screenshot](screenshots/1.png)
-![screenshot](screenshots/2.png)
-![screenshot](screenshots/3.png)
-![screenshot](screenshots/4.png)
+![Screenshot](screenshots/1.png)
+![Screenshot](screenshots/2.png)
+![Screenshot](screenshots/3.png)
+![Screenshot](screenshots/4.png)
 
 ## Building
 
@@ -39,17 +42,17 @@ Currently only Windows is supported
 
 ```odin build src -out:music.exe -o:speed -resource:src/assets/resource.rc -subsystem:windows```
 
-## Recommended Stuff
+## Recommended Tools
 
-Metadata:
+**Metadata:**
 * https://picard.musicbrainz.org/
 
-Lyrics:
+**Lyrics:**
 * https://github.com/tranxuanthang/lrcget
 
-Album covers
+**Album covers**
 * https://covers.musichoarders.xyz/
 
-Audio files:
+**Audio files:**
 * https://cobalt.tools/
 * https://github.com/yt-dlp/yt-dlp
