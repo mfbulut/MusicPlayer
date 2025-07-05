@@ -168,8 +168,8 @@ frame :: proc() {
 
 		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
-		draw_main_content(ui_state.sidebar_width)
 		draw_player_controls()
+		draw_main_content(ui_state.sidebar_width)
 		draw_alert()
 
 		if draw_icon_button_rect(window_w - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
@@ -186,7 +186,7 @@ frame :: proc() {
 	}
 
 	if fx.is_hovering_files() {
-		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 196})
+		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 180})
 		fx.draw_text_aligned("Drop files to add to the queue", window_w / 2, window_h / 2, 32, fx.WHITE, .CENTER)
 	}
 }
@@ -214,7 +214,7 @@ main :: proc() {
 	fx.run_once(proc() {
 		frame()
 		window_w, window_h := fx.window_size()
-		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 196})
+		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 180})
 		fx.draw_text_aligned("Loading...", window_w / 2, window_h / 2 - 16, 32, fx.WHITE, .CENTER)
 	})
 
@@ -227,13 +227,8 @@ main :: proc() {
 
 	init_cover_loading()
 
-	/////////////////////
-
-	// Experimental - Could randomly crash
+	// Experimental thumbnails - Could randomly crash
 	init_thumbnail_loading()
-
-	//////////////////////
-
 
 	fx.drop_callback(drop_callback)
 	fx.run(frame)

@@ -24,6 +24,8 @@ load_small_cover :: proc(track : ^Track, buffer : []u8) {
 			track.small_cover = cover
 		}
 	}
+
+	// TODO add loading from file
 }
 
 load_cover :: proc(track : ^Track, buffer : []u8) {
