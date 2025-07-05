@@ -267,9 +267,7 @@ cleanup_cover_loading :: proc() {
 	delete(cover_load_queue)
 }
 
-//////////////////////////////////////////////////
-
-// Experimental
+//////////////////////////////////////
 
 init_thumbnail_loading :: proc() {
 	thumbnail_loading_thread := thread.create(thumbnail_loading_worker)
@@ -277,7 +275,7 @@ init_thumbnail_loading :: proc() {
 }
 
 thumbnail_loading_worker :: proc(t: ^thread.Thread) {
-	for {
+	out: for {
 		playlist := find_playlist_by_name(ui_state.selected_playlist)
 
 		if playlist != nil {
@@ -286,18 +284,18 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 					buffer := os.read_entire_file_from_filename(track.path, context.allocator) or_continue
 
 					load_small_cover(&track, buffer)
+					track.thumbnail_loaded = true
 
 					delete(buffer)
 
-					track.thumbnail_loaded = true
-
-					break
+					// Don't stress cpu too much
+					time.sleep(10 * time.Millisecond)
+					continue out
 				}
 			}
 		}
 
-		// Prevent cpu from working fast
-		time.sleep(10 * time.Millisecond)
+		time.sleep(300 * time.Millisecond)
 	}
 }
 

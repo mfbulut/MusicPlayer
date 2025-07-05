@@ -34,14 +34,14 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
 	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
 
-	startX : f32 = x + 5
+	offset : f32 = 0
 
 	if track.small_cover.width > 0 {
 		padding :: 8
 
 		fx.draw_texture_rounded_cropped(
 			track.small_cover,
-			startX + padding,
+			x + 5 + padding,
 			y + padding,
 			h - padding * 2,
 			h - padding * 2,
@@ -49,14 +49,14 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 			fx.WHITE,
 		)
 
-		startX += 45
+		offset += 50
 	}
 
-	track_title := truncate_text(selected_title, w - 70, 20)
-	fx.draw_text(track_title, startX + 15, y + 9, 20, text_color)
+	track_title := truncate_text(selected_title, w - 75 - offset, 20)
+	fx.draw_text(track_title, x + 20 + offset, y + 9, 20, text_color)
 
-	track_playlist := truncate_text(selected_album, w - 70, 15)
-	fx.draw_text(track_playlist, startX + 15, y + 35, 15, secondary_color)
+	track_playlist := truncate_text(selected_album, w - 75 - offset, 15)
+	fx.draw_text(track_playlist, x + 21 + offset, y + 35, 15, secondary_color)
 
 	is_liked := is_song_liked(track.name, track.playlist)
 

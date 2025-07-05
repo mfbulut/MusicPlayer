@@ -243,10 +243,9 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 	}
 	defer os.close(file)
 
-	header_buffer := make([]u8, 10)
-	defer delete(header_buffer)
+	header_buffer : [10]u8
 
-	bytes_read, read_err := os.read(file, header_buffer)
+	bytes_read, read_err := os.read(file, header_buffer[:10])
 	if read_err != os.ERROR_NONE || bytes_read < 10 {
 		return
 	}
@@ -266,10 +265,9 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 	pos := 10
 
 	if header_buffer[5] & 0x40 != 0 {
-		ext_header_size_buf := make([]u8, 4)
-		defer delete(ext_header_size_buf)
+		ext_header_size_buf : [4]u8
 
-		bytes_read, read_err = os.read(file, ext_header_size_buf)
+		bytes_read, read_err = os.read(file, ext_header_size_buf[:4])
 		if read_err != os.ERROR_NONE || bytes_read < 4 {
 			return
 		}
@@ -284,11 +282,10 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 		pos += 4 + extended_size
 	}
 
-	frame_header_buf := make([]u8, 10)
-	defer delete(frame_header_buf)
+	frame_header_buf : [10]u8
 
 	for pos < size {
-		bytes_read, read_err = os.read(file, frame_header_buf)
+		bytes_read, read_err = os.read(file, frame_header_buf[:10])
 		if read_err != os.ERROR_NONE || bytes_read < 10 {
 			break
 		}

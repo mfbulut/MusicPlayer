@@ -227,8 +227,13 @@ main :: proc() {
 
 	init_cover_loading()
 
-	// Not stable enough
-	// init_thumbnail_loading()
+	/////////////////////
+
+	// Experimental - Could randomly crash
+	init_thumbnail_loading()
+
+	//////////////////////
+
 
 	fx.drop_callback(drop_callback)
 	fx.run(frame)

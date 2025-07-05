@@ -101,12 +101,13 @@ SMALL_SIZE :: 64
 
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample := false) -> Texture {
 	img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
+
 	// Use stb_image for jpg files
 	if err != nil {
 		w, h, channels_in_file: i32
 		pixels_ptr := stb.load_from_memory(&data[0], i32(len(data)), &w, &h, &channels_in_file, 4)
 		pixels_slice : [][4]u8 = mem.slice_ptr(cast([^][4]u8)pixels_ptr, int(w) * int(h))
-		if pixels_ptr == nil {
+		if pixels_ptr == nil || w == 0 || h == 0 {
 			fmt.eprintfln(
 				"[ERROR] Failed to load texture from bytes using both image and STB loaders",
 			)

@@ -42,7 +42,7 @@ Vertex :: struct {
 	color:    Color,
 }
 
-MAX_VERTICIES :: 2048
+MAX_VERTICIES :: 1024 * 64
 verticies: [MAX_VERTICIES]Vertex
 verticies_count: int
 
