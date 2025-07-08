@@ -278,6 +278,10 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 	out: for {
 		playlist := find_playlist_by_name(ui_state.selected_playlist)
 
+		if ui_state.current_view == .LIKED {
+			playlist = &liked_playlist
+		}
+
 		if playlist != nil {
 			for &track in playlist.tracks {
 				if !track.thumbnail_loaded {
