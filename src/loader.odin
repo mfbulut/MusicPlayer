@@ -14,8 +14,8 @@ import "core:thread"
 import "core:time"
 
 Lyrics :: struct {
-	time: f32,
 	text: string,
+	time: f32,
 }
 
 Tags :: struct {

@@ -98,9 +98,6 @@ update_frame :: proc(frame_proc: proc(), vsync := true) {
 
 	cursor_pos: win.POINT
 	if win.GetCursorPos(&cursor_pos) {
-		screen_x := int(cursor_pos.x)
-		screen_y := int(cursor_pos.y)
-
 		if win.ScreenToClient(ctx.hwnd, &cursor_pos) {
 			ctx.mouse_pos.x = int(cursor_pos.x)
 			ctx.mouse_pos.y = int(cursor_pos.y)

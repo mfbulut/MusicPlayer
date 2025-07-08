@@ -75,8 +75,6 @@ compact_mode_frame :: proc() {
 	vol_text := fmt.tprintf("%%%d", int(player.volume * 100 + 0.1))
 	fx.draw_text(vol_text, window_w - 50 , 40, 16, UI_TEXT_SECONDARY)
 
-	fmt.printfln("%f", player.volume)
-
 	progress := player.duration > 0 ? player.position / player.duration : 0
 	fx.draw_rect(10, window_h - 1, f32(window_w - 20) * progress, 1, UI_TEXT_COLOR)
 

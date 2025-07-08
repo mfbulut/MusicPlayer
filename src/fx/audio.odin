@@ -12,9 +12,9 @@ Audio :: struct {
 	sound:        ^miniaudio.sound,
 	decoder:      ^miniaudio.decoder,
 
-	duration:     f32,
 	total_frames: u64,
 	sample_rate:  u32,
+	duration:     f32,
 
 	loaded:       bool,
 }
