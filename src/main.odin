@@ -37,8 +37,8 @@ UIState :: struct {
 
 	search_box:                textedit.State,
 	search_builder:            strings.Builder,
-	search_focus:              bool,
 	search_results:            [dynamic]Track,
+	search_focus:              bool,
 
 	hide_sidebar:              bool,
 	sidebar_width:             f32,
@@ -227,8 +227,6 @@ main :: proc() {
 	search_tracks("")
 
 	init_cover_loading()
-
-	// Experimental thumbnails - Could randomly crash
 	init_thumbnail_loading()
 
 	fx.drop_callback(drop_callback)
@@ -265,9 +263,9 @@ drop_callback :: proc(files: []string) {
 				player.current_track.cover = track.cover
 				update_background = ok
 
-				dest_dir := fp.dir(track.path)
+				dest_dir  := fp.dir(track.path)
 				dest_stem := fp.stem(track.path)
-				dest_ext := fp.ext(file.fullpath)
+				dest_ext  := fp.ext(file.fullpath)
 
 				dest_path := strings.join({dest_dir, "\\", dest_stem, dest_ext}, "")
 

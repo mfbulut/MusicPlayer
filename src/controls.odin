@@ -40,7 +40,7 @@ draw_player_controls :: proc() {
 
 	startX: f32 = 20
 	if cover.width > 0 {
-		padding :: 7
+		padding :: 9
 		fx.draw_texture_rounded_cropped(
 			cover,
 			padding,
@@ -84,7 +84,7 @@ draw_player_controls :: proc() {
 	fx.draw_text(track_title, startX, player_y + 15, 24, UI_TEXT_COLOR)
 
 	track_playlist = truncate_text(selected_album, max_size, 16)
-	fx.draw_text(track_playlist, startX, player_y + 45, 16, UI_TEXT_SECONDARY)
+	fx.draw_text(track_playlist, startX + 1, player_y + 45, 16, UI_TEXT_SECONDARY)
 
 	prev_btn := IconButton {
 		x           = controls_x,
