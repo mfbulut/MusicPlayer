@@ -165,7 +165,7 @@ download_lyrics :: proc() {
 				}
 			}
 
-			if best_duration_diff > 10 {
+			if best_duration_diff > 5 {
 				show_alert({}, "No Lyrics Found", "No lyrics are found for this song", 2)
 				return
 			}

@@ -1,3 +1,4 @@
+
 package main
 
 import "fx"
@@ -78,7 +79,7 @@ compact_mode_frame :: proc() {
 	progress := player.duration > 0 ? player.position / player.duration : 0
 	fx.draw_rect(10, window_h - 1, f32(window_w - 20) * progress, 1, UI_TEXT_COLOR)
 
-	if len(track.lyrics) > 0 {
+	if len(track.lyrics) > 0 && ui_state.show_lyrics {
 		current_lyric_index := get_current_lyric_index(track.lyrics[:], player.position)
 
 		if current_lyric_index >= 0 {
