@@ -447,7 +447,7 @@ load_album_art_mp3 :: proc(buffer: []u8, downsample := false) -> (fx.Texture, bo
 
 			image_data := buffer[data_pos:pos + 10 + frame.size]
 
-			image := fx.load_texture_from_bytes(image_data, true, downsample)
+			image := fx.load_texture_from_bytes(image_data, !downsample, downsample)
 			if image.width > 0 {
 				return image, true
 			} else {
@@ -526,7 +526,7 @@ load_album_art_from_flac :: proc(buffer: []u8, downsample := false) -> (fx.Textu
 
 			image_data := data[cursor:cursor + pic_data_length]
 
-			image := fx.load_texture_from_bytes(image_data, true, downsample)
+			image := fx.load_texture_from_bytes(image_data, !downsample, downsample)
 			if image.width > 0 {
 				return image, true
 			} else {

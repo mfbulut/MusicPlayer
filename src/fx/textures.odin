@@ -138,7 +138,7 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample
 				return Texture{}
 			}
 
-			texture := load_texture_from_image(&fallback_img)
+			texture := load_texture_from_image(&fallback_img, generate_mipmaps)
 			delete(resized_pixels)
 			return texture
 		} else {
@@ -148,7 +148,7 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample
 				stb.image_free(pixels_ptr)
 				return Texture{}
 			}
-			texture := load_texture_from_image(&fallback_img)
+			texture := load_texture_from_image(&fallback_img, generate_mipmaps)
 			stb.image_free(pixels_ptr)
 			return texture
 		}
@@ -179,11 +179,11 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample
 			delete(resized_pixels)
 			return Texture{}
 		}
-		texture := load_texture_from_image(&resized_img)
+		texture := load_texture_from_image(&resized_img, generate_mipmaps)
 		delete(resized_pixels)
 		return texture
 	} else {
-		texture := load_texture_from_image(img)
+		texture := load_texture_from_image(img, generate_mipmaps)
 		image.destroy(img)
 		return texture
 	}
