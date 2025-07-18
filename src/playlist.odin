@@ -78,12 +78,15 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 
 	if hover && fx.mouse_pressed(.RIGHT) {
 		playlist := find_playlist_by_name(track.playlist)
+
+		cover := track.small_cover if track.thumbnail_loaded else playlist.cover
+
 		if fx.key_held(.LEFT_CONTROL) {
 			insert_as_next_track(track)
-			show_alert(playlist.cover, track.name, "Added to the start of the queue", 1)
+			show_alert(cover, track.name, "Added to the start of the queue", 1)
 		} else {
 			insert_as_last_track(track)
-			show_alert(playlist.cover, track.name, "Added to the end of the queue", 1)
+			show_alert(cover, track.name, "Added to the end of the queue", 1)
 		}
 	}
 

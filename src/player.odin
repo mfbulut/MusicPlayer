@@ -31,7 +31,6 @@ Player :: struct {
 
 player := Player {
 	volume = 0.5,
-	state = .STOPPED,
 	queue = {name = "Queue"},
 }
 

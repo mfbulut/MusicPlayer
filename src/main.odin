@@ -2,6 +2,8 @@ package main
 
 import "fx"
 
+import "core:fmt"
+import "core:time"
 import "core:os/os2"
 import "core:strings"
 import fp "core:path/filepath"
@@ -217,6 +219,17 @@ main :: proc() {
 		window_w, window_h := fx.window_size()
 		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 180})
 		fx.draw_text_aligned("Loading...", window_w / 2, window_h / 2 - 16, 32, fx.WHITE, .CENTER)
+
+		compile_time := time.Time{ODIN_COMPILE_TIMESTAMP}
+		date_buf : [time.MIN_YYYY_DATE_LEN]u8
+		time_buf : [time.MIN_HMS_LEN]u8
+
+		fx.draw_text_aligned(
+			fmt.tprintf(
+				"%s %s",
+				time.to_string_yyyy_mm_dd(compile_time, date_buf[:]),
+				time.to_string_hms(compile_time, time_buf[:]),
+			), window_w / 2, window_h / 2 + 64, 24, fx.GRAY, .CENTER)
 	})
 
 	load_files(music_dir)
