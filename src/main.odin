@@ -229,7 +229,7 @@ main :: proc() {
 				"%s %s",
 				time.to_string_yyyy_mm_dd(compile_time, date_buf[:]),
 				time.to_string_hms(compile_time, time_buf[:]),
-			), window_w / 2, window_h / 2 + 64, 24, fx.GRAY, .CENTER)
+			), window_w / 2, window_h / 2 + 64, 24, fx.Color{64, 64, 64, 64}, .CENTER)
 	})
 
 	load_files(music_dir)

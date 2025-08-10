@@ -22,7 +22,7 @@ init_windows :: proc(title: string, width, height: int) {
 	// win.SetProcessDPIAware() // TODO(furkan) add dpi aware scaling
 
 	instance := win.HINSTANCE(win.GetModuleHandleW(nil))
-	class_name := win.L("Window Class")
+	class_name : cstring16 = "Window Class"
 
 	cls := win.WNDCLASSEXW{
 	    cbSize        = size_of(win.WNDCLASSEXW),
@@ -83,7 +83,7 @@ init_windows :: proc(title: string, width, height: int) {
 load_icon_by_size :: proc(size: i32) -> win.HICON {
     icon := win.LoadImageW(
         win.HANDLE(win.GetModuleHandleW(nil)),
-        win.MAKEINTRESOURCEW(1), // icon resource ID 1
+        transmute(cstring16)win.MAKEINTRESOURCEW(1), // icon resource ID 1
         win.IMAGE_ICON,
         size,
         size,
@@ -385,7 +385,7 @@ win_proc :: proc "stdcall" (
 				}
 
 				buf_utf8: [4]u8
-				win.wstring_to_utf8(buf_utf8[:], raw_data(&buf_w))
+				win.wstring_to_utf8(buf_utf8[:], transmute(cstring16)raw_data(&buf_w))
 
 				if r, len := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
 					callback(r)
@@ -413,7 +413,7 @@ win_proc :: proc "stdcall" (
 
 					win.DragQueryFileW(hdrop, u32(i), raw_data(buffer), u32(len(buffer)))
 
-					if utf8_str, err := win.wstring_to_utf8(raw_data(buffer), len(buffer));
+					if utf8_str, err := win.wstring_to_utf8(transmute(cstring16)raw_data(buffer), len(buffer));
 					   err == nil {
 						files[i] = strings.clone(utf8_str)
 					}

@@ -51,7 +51,7 @@ foreign winhttp {
 
 	WinHttpCloseHandle :: proc(hInternet: HINTERNET) -> win.BOOL ---
 
-	WinHttpCrackUrl :: proc(pwszUrl: ^u16, dwUrlLength: win.DWORD, dwFlags: win.DWORD, lpUrlComponents: ^URL_COMPONENTS) -> win.BOOL ---
+	WinHttpCrackUrl :: proc(pwszUrl: cstring16, dwUrlLength: win.DWORD, dwFlags: win.DWORD, lpUrlComponents: ^URL_COMPONENTS) -> win.BOOL ---
 
 	WinHttpQueryHeaders :: proc(hRequest: HINTERNET, dwInfoLevel: win.DWORD, pwszName: ^u16, lpBuffer: rawptr, lpdwBufferLength: ^win.DWORD, lpdwIndex: ^win.DWORD) -> win.BOOL ---
 
