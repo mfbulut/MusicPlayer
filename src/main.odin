@@ -53,7 +53,7 @@ UIState :: struct {
 	drag_start_position:       f32,
 	is_dragging_progress:      bool,
 	is_dragging_time:          bool,
-
+	was_dragging:              bool,
 	sidebar_scrollbar:         Scrollbar,
 	playlist_scrollbar:        Scrollbar,
 	lyrics_scrollbar:          Scrollbar,
@@ -66,6 +66,7 @@ ui_state := UIState {
 	follow_lyrics  = true,
 	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
+	was_dragging   = false 
 }
 
 @(init)
