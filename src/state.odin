@@ -22,7 +22,6 @@ liked_songs: [dynamic]LikedSong
 
 liked_playlist: Playlist = Playlist {
 	name   = "Liked Songs",
-	tracks = make([dynamic]Track),
 }
 
 save_path := "setting.ini"
@@ -196,7 +195,7 @@ load_liked_songs :: proc() {
 					playlist = track.playlist,
 					lyrics   = track.lyrics,
 					audio    = track.audio,
-					
+
 					cover     = track.cover,
 					has_cover = track.has_cover,
 					tags      = track.tags,

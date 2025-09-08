@@ -66,10 +66,9 @@ ui_state := UIState {
 	follow_lyrics  = true,
 	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
-	was_dragging   = false 
+	was_dragging   = false
 }
 
-@(init)
 init_ui_state :: proc() {
 	textedit.init(&ui_state.search_box, context.allocator, context.allocator)
 	textedit.setup_once(&ui_state.search_box, &ui_state.search_builder)
@@ -212,6 +211,7 @@ main :: proc() {
 	background  = fx.create_render_texture(2048, 2048)
 	music_dir   = fp.join({os2.get_env("USERPROFILE", context.allocator), "Music"})
 
+	init_ui_state()
 	load_icons()
 	load_state()
 
