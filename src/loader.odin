@@ -101,6 +101,7 @@ load_files :: proc(dir_path: string, load_from_cache := true) {
 
 	if load_from_cache {
 		load_cache(cache_path)
+		return
 	}
 
 	clear(&playlists)
