@@ -8,8 +8,6 @@ import "core:unicode/utf8"
 
 import win "core:sys/windows"
 
-chroma_key :: Color{0, 0, 0, 0}
-
 window_styles :: win.WS_OVERLAPPEDWINDOW | win.WS_VISIBLE
 
 HOTKEY_NEXT :: 1001

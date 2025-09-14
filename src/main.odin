@@ -171,7 +171,7 @@ frame :: proc() {
 	if ui_state.compact_mode {
 		compact_mode_frame()
 	} else {
-		fx.draw_gradient_rect_rounded_vertical(0, 0, window_w, window_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
+		fx.draw_gradient_rect_vertical(0, 0, window_w, window_h, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 
 		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 

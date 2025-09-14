@@ -378,14 +378,14 @@ resize_swapchain :: proc(width, height: int) {
 	update_constant_buffer()
 }
 
-clear_background :: proc(color: Color) {
+clear_background :: proc() {
 	device_context->ClearRenderTargetView(
 		msaa_render_target_view,
 		&[4]f32 {
-			f32(color.r) / 255.0,
-			f32(color.g) / 255.0,
-			f32(color.b) / 255.0,
-			f32(color.a) / 255.0,
+			0,
+			0,
+			0,
+			0,
 		},
 	)
 	device_context->ClearDepthStencilView(msaa_depth_stencil_view, {.DEPTH, .STENCIL}, 1.0, 0)
