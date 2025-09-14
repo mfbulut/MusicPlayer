@@ -53,6 +53,7 @@ UIState :: struct {
 	drag_start_position:       f32,
 	is_dragging_progress:      bool,
 	is_dragging_time:          bool,
+	was_dragging:              bool,
 
 	sidebar_scrollbar:         Scrollbar,
 	playlist_scrollbar:        Scrollbar,
