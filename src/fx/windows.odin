@@ -8,7 +8,7 @@ import "core:unicode/utf8"
 
 import win "core:sys/windows"
 
-chroma_key :: Color{16, 0, 16, 0}
+chroma_key :: Color{0, 0, 0, 0}
 
 window_styles :: win.WS_OVERLAPPEDWINDOW | win.WS_VISIBLE
 
@@ -72,8 +72,6 @@ init_windows :: proc(title: string, width, height: int) {
 		instance,
 		nil,
 	)
-
-	win.SetLayeredWindowAttributes(ctx.hwnd, win.RGB(chroma_key.r, chroma_key.g, chroma_key.b), 255, 0x00000001)
 
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
