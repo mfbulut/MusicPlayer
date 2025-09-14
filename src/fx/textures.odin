@@ -6,8 +6,9 @@ import "core:fmt"
 import "core:image"
 import "core:image/png"
 import "core:image/qoi"
+import "core:image/jpeg"
 import "core:math"
-import "core:os"
+import "core:os/os2"
 import "core:mem"
 
 import stb "vendor:stb/image"
@@ -20,15 +21,16 @@ Texture :: struct {
 }
 
 load_texture :: proc(filepath: string, generate_mipmaps := true) -> (Texture, bool) {
-	image_data, ok := os.read_entire_file(filepath)
+	image_data, err := os2.read_entire_file(filepath, context.allocator)
 
-	if ok {
-		texture := load_texture_from_bytes(image_data, generate_mipmaps)
-		delete(image_data)
-		return texture, true
+	if err != nil {
+		return Texture{}, false
 	}
 
-	return Texture{}, false
+	texture := load_texture_from_bytes(image_data, generate_mipmaps)
+	delete(image_data)
+
+	return texture, true
 }
 
 load_texture_from_image :: proc(img: ^image.Image, generate_mipmaps := true) -> Texture {
@@ -95,64 +97,15 @@ load_texture_from_image :: proc(img: ^image.Image, generate_mipmaps := true) -> 
 	return tex
 }
 
-// TODO cleanup this code
-
 SMALL_SIZE :: 64
 
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample := false) -> Texture {
 	img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
 
-	// Use stb_image for jpg files
 	if err != nil {
-		w, h, channels_in_file: i32
-		pixels_ptr := stb.load_from_memory(&data[0], i32(len(data)), &w, &h, &channels_in_file, 4)
-		pixels_slice : [][4]u8 = mem.slice_ptr(cast([^][4]u8)pixels_ptr, int(w) * int(h))
-		if pixels_ptr == nil || w == 0 || h == 0 {
-			fmt.eprintfln(
-				"[ERROR] Failed to load texture from bytes using both image and STB loaders",
-			)
-			return Texture{}
-		}
-		if downsample && (w > SMALL_SIZE || h > SMALL_SIZE) {
-			target_w, target_h: i32
-			if w > h {
-				target_w = SMALL_SIZE
-				target_h = max(1, (h * SMALL_SIZE) / w)
-			} else {
-				target_h = SMALL_SIZE
-				target_w = max(1, (w * SMALL_SIZE) / h)
-			}
-
-			resized_pixel_count := int(target_w * target_h)
-			resized_pixels := make([][4]u8, resized_pixel_count)
-			stb.resize_uint8(
-				cast([^]u8)&pixels_ptr[0], i32(w), i32(h), 0,
-				cast([^]u8)&resized_pixels[0], target_w, target_h, 0,
-				4,
-			)
-			stb.image_free(pixels_ptr)
-			fallback_img, ok := image.pixels_to_image(resized_pixels, int(target_w), int(target_h))
-			if !ok {
-				fmt.eprintfln("[ERROR] Failed to convert resized STB pixels to image")
-				delete(resized_pixels)
-				return Texture{}
-			}
-
-			texture := load_texture_from_image(&fallback_img, generate_mipmaps)
-			delete(resized_pixels)
-			return texture
-		} else {
-			fallback_img, ok := image.pixels_to_image(pixels_slice, int(w), int(h))
-			if !ok {
-				fmt.eprintfln("[ERROR] Failed to convert STB pixels to image")
-				stb.image_free(pixels_ptr)
-				return Texture{}
-			}
-			texture := load_texture_from_image(&fallback_img, generate_mipmaps)
-			stb.image_free(pixels_ptr)
-			return texture
-		}
+		return Texture{}
 	}
+
 	if downsample && (img.width > SMALL_SIZE || img.height > SMALL_SIZE) {
 		original_pixels := img.pixels.buf
 
@@ -187,7 +140,6 @@ load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample
 		image.destroy(img)
 		return texture
 	}
-	return Texture{}
 }
 
 unload_texture :: proc(tex: ^Texture) {

@@ -2,6 +2,7 @@ package main
 
 import "fx"
 
+import "core:os/os2"
 import "core:math"
 import "core:math/rand"
 import "core:sync"
@@ -56,6 +57,11 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 
 	ui_state.lyrics_scrollbar.scroll = 0
 	ui_state.lyrics_scrollbar.target = 0
+
+	if !os2.exists(track.path) {
+		show_alert({}, "File not found", "Ensure file exist then refresh using F5", 2)
+		return
+	}
 
 	new_track := track
 

@@ -1,7 +1,7 @@
 package main
 
 import "core:fmt"
-import "core:os"
+import "core:os/os2"
 import "core:time"
 import "core:hash"
 
@@ -21,19 +21,19 @@ LikedSong :: struct {
 liked_songs: [dynamic]LikedSong
 
 liked_playlist: Playlist = Playlist {
-	name   = "Liked Songs",
+	name   = "Liked Songs"
 }
 
 save_path := "setting.ini"
 
 get_save_path :: proc() {
-	appdata := os.get_env("LOCALAPPDATA", context.allocator)
+	appdata := os2.get_env("LOCALAPPDATA", context.allocator)
 	if appdata == "" {
 		fmt.eprintf("Could not find LOCALAPPDATA env var\n")
 	}
 
 	app_dir := fmt.tprintf("%s\\fxMusic", appdata)
-	_ = os.make_directory(app_dir)
+	_ = os2.make_directory(app_dir)
 
 	save_path = fmt.tprintf("%s\\settings.ini", app_dir)
 }
@@ -43,7 +43,7 @@ load_state :: proc() {
 
 	liked_songs = make([dynamic]LikedSong)
 
-	if os.exists(save_path) {
+	if os2.exists(save_path) {
 		ini_map, err, ok := ini.load_map_from_path(save_path, context.allocator)
 		if !ok {
 			fmt.printf("Could not read liked songs file: %s\n", err)
@@ -125,8 +125,8 @@ save_state :: proc() {
 
 	ini_data := strings.to_string(builder)
 
-	write_success := os.write_entire_file(save_path, transmute([]u8)ini_data)
-	if !write_success {
+	err := os2.write_entire_file(save_path, transmute([]u8)ini_data)
+	if err != nil {
 		fmt.printf("Error writing liked songs to file: %s\n", save_path)
 	}
 }

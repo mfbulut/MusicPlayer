@@ -3,7 +3,7 @@ package fx
 import "vendor:miniaudio"
 
 import "core:fmt"
-import "core:os"
+import "core:os/os2"
 
 import fp "core:path/filepath"
 
@@ -57,8 +57,8 @@ init_audio :: proc() -> bool {
 load_audio :: proc(filepath: string) -> Audio {
 	clip := Audio{}
 
-	file_data, read_ok := os.read_entire_file(filepath)
-	if !read_ok {
+	file_data, err := os2.read_entire_file_from_path(filepath, context.allocator)
+	if err != nil {
 		fmt.printf("Failed to read audio file '%s'\n", filepath)
 		return {}
 	}

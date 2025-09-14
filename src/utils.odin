@@ -2,7 +2,7 @@ package main
 
 import "fx"
 
-import "core:os"
+import "core:os/os2"
 import "core:fmt"
 import "core:math"
 import "core:strings"
@@ -476,7 +476,6 @@ lerp :: proc(a, b, t: f32) -> f32 {
 	return a + (b - a) * t
 }
 
-
 set_alpha :: proc(color: fx.Color, val: f32) -> fx.Color {
 	return fx.Color {
 		u8(f32(color.r) * val),
@@ -526,14 +525,20 @@ is_image_file :: proc(filepath: string) -> bool {
 	}
 }
 
-copy_file :: proc(src, dest: string) -> bool {
-    data, ok := os.read_entire_file(src)
-    if !ok {
-        return false
+copy_file :: proc(src, dest: string) {
+    data, err := os2.read_entire_file(src, context.allocator)
+    if err != nil {
+		fmt.printf("Error copying file", err)
+        return
     }
-    defer delete(data)
 
-    return os.write_entire_file(dest, data)
+    err2 := os2.write_entire_file(dest, data)
+
+	if err != nil {
+		fmt.printf("Error copying file", err)
+	}
+
+    delete(data)
 }
 
 previous_icon_qoi :: #load("assets/previous.qoi")

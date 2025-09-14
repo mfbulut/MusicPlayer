@@ -53,7 +53,7 @@ UIState :: struct {
 	drag_start_position:       f32,
 	is_dragging_progress:      bool,
 	is_dragging_time:          bool,
-	was_dragging:              bool,
+
 	sidebar_scrollbar:         Scrollbar,
 	playlist_scrollbar:        Scrollbar,
 	lyrics_scrollbar:          Scrollbar,
@@ -66,7 +66,6 @@ ui_state := UIState {
 	follow_lyrics  = true,
 	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
-	was_dragging   = false
 }
 
 init_ui_state :: proc() {
@@ -127,6 +126,10 @@ frame :: proc() {
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.L) {
 		download_lyrics()
+	}
+
+	if fx.key_pressed(.F5) {
+		load_files(music_dir, false)
 	}
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.C) {
@@ -206,12 +209,12 @@ music_dir: string
 
 main :: proc() {
 	fx.init("Music Player", 1280, 720)
+	init_ui_state()
 
 	blur_shader = fx.load_shader(blur_shader_hlsl)
 	background  = fx.create_render_texture(2048, 2048)
 	music_dir   = fp.join({os2.get_env("USERPROFILE", context.allocator), "Music"})
 
-	init_ui_state()
 	load_icons()
 	load_state()
 
@@ -221,7 +224,7 @@ main :: proc() {
 		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 180})
 		fx.draw_text_aligned("Loading...", window_w / 2, window_h / 2 - 16, 32, fx.WHITE, .CENTER)
 
-		compile_time := time.Time{ODIN_COMPILE_TIMESTAMP}
+		compile_time :: time.Time{ODIN_COMPILE_TIMESTAMP}
 		date_buf : [time.MIN_YYYY_DATE_LEN]u8
 		time_buf : [time.MIN_HMS_LEN]u8
 

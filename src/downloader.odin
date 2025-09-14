@@ -5,7 +5,7 @@ import "fx"
 import sa "core:container/small_array"
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
+import "core:os/os2"
 import "core:path/filepath"
 import "core:strconv"
 import "core:strings"
@@ -228,5 +228,9 @@ save_lyrics_as_lrc :: proc(track: ^Track, lyrics_content: string) {
 	lrc_filename := strings.concatenate({base_name, ".lrc"}, context.temp_allocator)
 	lrc_path := filepath.join({dir, lrc_filename}, context.temp_allocator)
 
-	os.write_entire_file(lrc_path, transmute([]u8)lyrics_content)
+	err := os2.write_entire_file(lrc_path, transmute([]u8)lyrics_content)
+
+	if err != nil {
+		fmt.printf("Error saving lyrics file: %v\n", err)
+	}
 }

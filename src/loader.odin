@@ -1,10 +1,8 @@
-
 package main
 
 import "fx"
-
+import "core:encoding/json"
 import "core:fmt"
-import "core:os"
 import "core:os/os2"
 import "core:hash"
 import "core:path/filepath"
@@ -15,80 +13,125 @@ import "core:thread"
 import "core:time"
 
 Lyrics :: struct {
-	text: string,
-	time: f32,
+	text: string `json:"text"`,
+	time: f32    `json:"time"`,
 }
 
 Tags :: struct {
-	title:        string,
-	artist:       string,
-	album:        string,
-	year:         string,
-	genre:        string,
-	track:        string,
-	comment:      string,
-	album_artist: string,
+	title:        string `json:"title"`,
+	artist:       string `json:"artist"`,
+	album:        string `json:"album"`,
+	year:         string `json:"year"`,
+	genre:        string `json:"genre"`,
+	track:        string `json:"track"`,
+	comment:      string `json:"comment"`,
+	album_artist: string `json:"album_artist"`,
 }
 
 Track :: struct {
-	hash:       u64,
-	path:       string,
-	name:       string,
-	playlist:   string,
+	hash:       u64                `json:"hash"`,
+	path:       string             `json:"path"`,
+	name:       string             `json:"name"`,
+	playlist:   string             `json:"playlist"`,
 
-	audio: fx.Audio,
+	audio: fx.Audio                `json:"-"`,
+	lyrics:       [dynamic]Lyrics  `json:"lyrics"`,
 
-	lyrics:       [dynamic]Lyrics,
+	cover:        fx.Texture       `json:"-"`,
+	has_cover:    bool             `json:"has_cover"`,
 
-	cover:        fx.Texture,
-	has_cover:    bool,
+	tags:         Tags             `json:"tags"`,
+	has_tags:     bool             `json:"has_tags"`,
 
-	tags:         Tags,
-	has_tags:     bool,
-
-	small_cover:     fx.Texture,
-	thumbnail_loaded: bool,
+	small_cover:     fx.Texture    `json:"-"`,
+	thumbnail_loaded: bool         `json:"-"`,
 }
 
 Playlist :: struct {
-	path:       string,
-	name:       string,
-	tracks:     [dynamic]Track,
-	cover:      fx.Texture,
-	cover_path: string,
-	loaded:     bool,
+	path:       string         `json:"path"`,
+	name:       string         `json:"name"`,
+	tracks:     [dynamic]Track `json:"tracks"`,
+	cover:      fx.Texture     `json:"-"`,
+	cover_path: string         `json:"cover_path"`,
+	loaded:     bool           `json:"-"`,
+}
+
+save_cache :: proc(playlists: []Playlist, path: string) -> bool {
+	json_data, marshal_err := json.marshal(playlists)
+	if marshal_err != nil {
+		fmt.eprintln("Error marshaling cache data:", marshal_err)
+		return false
+	}
+	defer delete(json_data)
+
+	write_err := os2.write_entire_file(path, json_data)
+	if write_err != nil {
+		fmt.eprintln("Error writing cache file:", write_err)
+		return false
+	}
+
+	return true
+}
+
+load_cache :: proc(path: string) -> (bool) {
+	if !os2.exists(path) {
+		return false
+	}
+
+	json_data, read_err := os2.read_entire_file(path, context.allocator)
+	if read_err != nil {
+		fmt.eprintln("Error reading cache file:", read_err)
+		return false
+	}
+	defer delete(json_data)
+
+	unmarshal_err := json.unmarshal(json_data, &playlists)
+	if unmarshal_err != nil {
+		fmt.eprintln("Error unmarshaling cache data:", unmarshal_err)
+		return false
+	}
+
+	return true
 }
 
 loader_query : [dynamic]string
 
-load_files :: proc(dir_path: string) {
-    append(&loader_query, dir_path)
+load_files :: proc(dir_path: string, load_from_cache := true) {
+	cache_path := fmt.tprintf("%s\\fxMusic\\cache.json", os2.get_env("LOCALAPPDATA", context.temp_allocator))
+
+	if load_from_cache {
+		load_cache(cache_path)
+	}
+
+	clear(&playlists)
+	append(&loader_query, dir_path)
 
 	for {
 		path, ok := pop_safe(&loader_query)
 
-	    if ok {
-	    	files, err := os2.read_all_directory_by_path(path, context.allocator)
-	    	if err != nil {
-	    		fmt.eprintln("Error reading directory:", path, "->", err)
-	    		return
-	    	}
+		if ok {
+			files, err := os2.read_all_directory_by_path(path, context.allocator)
+			if err != nil {
+				fmt.eprintln("Error reading directory:", path, "->", err)
+				return
+			}
 
-	    	for file in files {
-	    		if file.type == .Directory {
+			for file in files {
+				if file.type == .Directory {
 					if strings.starts_with(file.name, "_") || strings.starts_with(file.name, ".") {
 						continue
 					}
-
-	    		    append(&loader_query, file.fullpath)
-	    		} else {
-	    			process_music_file(file)
-	    		}
-	    	}
-	    } else {
-	    	break
-	    }
+					append(&loader_query, file.fullpath)
+				} else {
+					process_music_file(file)
+				}
+			}
+		} else {
+			break
+		}
 	}
+
+	save_cache(playlists[:], cache_path)
 }
 
 find_playlist_by_name :: proc(name: string) -> ^Playlist {
@@ -133,22 +176,21 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
 	playlist := Playlist {
 		path   = dir_path,
 		name   = dir_name,
-		tracks = make([dynamic]Track, 0, 16),
 	}
 
 	cover_path := filepath.join({dir_path, "cover.qoi"})
 
-	if os.exists(cover_path) {
+	if os2.exists(cover_path) {
 		playlist.cover_path = cover_path
 	} else {
 		delete(cover_path)
 		cover_path = filepath.join({dir_path, "cover.png"})
-		if os.exists(cover_path) {
+		if os2.exists(cover_path) {
 			playlist.cover_path = cover_path
 		} else {
 			delete(cover_path)
 			cover_path = filepath.join({dir_path, "cover.jpg"})
-			if os.exists(cover_path) {
+			if os2.exists(cover_path) {
 				playlist.cover_path = cover_path
 			}
 		}
@@ -160,7 +202,7 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
 
 sort_playlists :: proc() {
 	slice.sort_by(playlists[:], proc(a, b: Playlist) -> bool {
-		return strings.compare(a.name, b.name) < 0
+		return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
 	})
 }
 
@@ -181,7 +223,7 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 		path     = file.fullpath,
 		name     = name,
 		playlist = dir_name,
-		lyrics   = load_lyrics_for_track(file.fullpath)
+		lyrics   = load_lyrics_for_track(file.fullpath),
 	}
 
 	tags, tags_ok := load_id3_tags(music.path)
@@ -198,7 +240,6 @@ process_music_file :: proc(file: os2.File_Info, queue := false) {
 		append(&playlist.tracks, music)
 	}
 }
-
 
 Cover_Load_Result :: struct {
 	playlist_index: int,
@@ -294,15 +335,13 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 		if playlist != nil {
 			for &track in playlist.tracks {
 				if !track.thumbnail_loaded {
-					buffer := os.read_entire_file_from_filename(track.path, context.allocator) or_continue
+					buffer := os2.read_entire_file(track.path, context.allocator) or_continue
 
 					load_small_cover(&track, buffer)
 					track.thumbnail_loaded = true
 
 					delete(buffer)
 
-					// Don't stress cpu too much
-					time.sleep(10 * time.Millisecond)
 					continue out
 				}
 			}
@@ -311,4 +350,3 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 		time.sleep(300 * time.Millisecond)
 	}
 }
-

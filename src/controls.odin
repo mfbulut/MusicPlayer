@@ -265,21 +265,13 @@ handle_progress_bar_drag :: proc(window_w: f32, player_y: f32) {
 		ui_state.is_dragging_progress = false
 	}
 
-	drag_ratio := mouse_x / window_w
-	drag_ratio = clamp(drag_ratio, 0, 1)
-
-	new_position := drag_ratio * player.duration
-
 	if ui_state.is_dragging_progress {
-		player.position = new_position
-		ui_state.was_dragging = true
+		drag_ratio := mouse_x / window_w
+		drag_ratio = clamp(drag_ratio, 0, 1)
+
+		new_position := drag_ratio * player.duration
+		seek_to_position(new_position)
 	} else if is_over_progress {
-
-		if (ui_state.was_dragging) {
-			seek_to_position(new_position)
-		}
-
-		ui_state.was_dragging = false
 		fx.set_cursor(.CLICK)
 	}
 }
