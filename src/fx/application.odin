@@ -78,7 +78,7 @@ update_frame :: proc(frame_proc: proc(), vsync := true) {
 
 	if !ctx.is_minimized {
 		set_scissor(0, 0, f32(ctx.window.w), f32(ctx.window.h))
-		clear_background()
+		clear_background(chroma_key)
 		begin_render()
 		update_constant_buffer()
 		frame_proc()
