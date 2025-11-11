@@ -149,12 +149,12 @@ draw_sidebar :: proc(x_offset: f32) {
 			break
 		}
 
-		if scroll_y + 35 > y_offset {
+		if scroll_y + 40 > y_offset {
 			playlist_btn := Button {
 				x           = 20 + x_offset,
 				y           = scroll_y,
 				w           = SIDEBAR_WIDTH - 40,
-				h           = 35,
+				h           = 40,
 				text        = playlist.name,
 				color       = ui_state.selected_playlist == playlist.name ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
 				hover_color = ui_state.selected_playlist == playlist.name ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
@@ -162,15 +162,27 @@ draw_sidebar :: proc(x_offset: f32) {
 				expand      = true,
 			}
 
-			if draw_button(playlist_btn, 15) {
+			if draw_button(playlist_btn, playlist.loaded ? 42 : 15) {
 				ui_state.selected_playlist = playlist.name
 				ui_state.current_view = .PLAYLIST_DETAIL
 				ui_state.playlist_scrollbar.scroll = 0
 				ui_state.playlist_scrollbar.target = 0
 			}
+
+			if playlist.loaded {
+				fx.draw_texture_rounded(
+					playlist.cover,
+					x_offset + 25,
+					scroll_y + 5,
+					30,
+					30,
+					4,
+					UI_TEXT_COLOR,
+				)
+			}
 		}
 
-		scroll_y += 41
+		scroll_y += 46
 	}
 
 	fx.disable_scissor()

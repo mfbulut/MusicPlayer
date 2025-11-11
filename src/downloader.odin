@@ -97,7 +97,7 @@ download_lyrics :: proc() {
 	title    := player.current_track.tags.title
 	artist   := player.current_track.tags.artist
 	album    := player.current_track.tags.album
-	duration := int(player.duration)
+	duration := i64(player.duration)
 
 	has_required_metadata := len(title) > 0 && len(artist) > 0 && len(album) > 0 && duration > 0
 
@@ -110,7 +110,7 @@ download_lyrics :: proc() {
 				{"title", player.current_track.tags.title},
 				{"artist_name", player.current_track.tags.artist},
 				{"album", player.current_track.tags.album},
-				{"duration", strconv.itoa(duration_mem[:], duration)},
+				{"duration", strconv.write_int(duration_mem[:], duration, 10)},
 			},
 		)
 
@@ -139,7 +139,6 @@ download_lyrics :: proc() {
 
 	opts, opts_count := guess_search_opts(player.current_track.name)
 	res, ok := fx.get("https://lrclib.net/api/search", opts[:opts_count])
-
 
 	if !ok {
 		show_alert({}, "Network Error", "Check your internet connection and try again", 2)

@@ -99,12 +99,10 @@ loader_query : [dynamic]string
 load_files :: proc(dir_path: string, load_from_cache := true) {
 	cache_path := fmt.tprintf("%s\\fxMusic\\cache.json", os2.get_env("LOCALAPPDATA", context.temp_allocator))
 
-	if load_from_cache {
-		load_cache(cache_path)
+	if load_from_cache && load_cache(cache_path) {
 		return
 	}
 
-	clear(&playlists)
 	append(&loader_query, dir_path)
 
 	for {
@@ -340,7 +338,6 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 
 					load_small_cover(&track, buffer)
 					track.thumbnail_loaded = true
-
 					delete(buffer)
 
 					continue out

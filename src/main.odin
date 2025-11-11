@@ -9,7 +9,7 @@ import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
 
-SIDEBAR_WIDTH      : f32 : 220
+SIDEBAR_WIDTH      : f32 : 240
 TITLE_HEIGHT       : f32 : 40
 PLAYER_HEIGHT      : f32 : 80
 SIDEBAR_ANIM_SPEED : f32 : 4
@@ -256,7 +256,7 @@ drop_callback :: proc(files: []string) {
 	for filepath in files {
 		file := os2.stat(filepath, context.allocator) or_continue
 		if file.type == .Directory {
-			load_files(filepath)
+			load_files(filepath, false)
 			ui_state.selected_playlist = file.name
 			ui_state.current_view = .PLAYLIST_DETAIL
 

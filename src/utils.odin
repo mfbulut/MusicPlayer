@@ -71,7 +71,7 @@ hash_button :: proc(x, y, w, h: u32) -> u32 {
 	return hash % ANIM_ARRAY_SIZE
 }
 
-draw_button :: proc(btn: Button, text_offset := 0, cursor := true) -> bool {
+draw_button :: proc(btn: Button, text_offset : f32 = 0, cursor := true) -> bool {
 	mouse_x, mouse_y := fx.get_mouse()
 	is_hovered := is_hovering(btn.x, btn.y, btn.w, btn.h)
 	is_valid := is_valid(mouse_x, mouse_y)
@@ -120,7 +120,7 @@ draw_button :: proc(btn: Button, text_offset := 0, cursor := true) -> bool {
 		fx.set_cursor(.CLICK)
 	}
 
-	text := truncate_text(btn.text, btn.w - 15, 16)
+	text := truncate_text(btn.text, btn.w - 15 - text_offset, 16)
 	text_x := btn.x
 	text_y := btn.y + btn.h / 2 - 10
 
