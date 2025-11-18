@@ -103,6 +103,7 @@ load_files :: proc(dir_path: string, load_from_cache := true) {
 		return
 	}
 
+	clear(&playlists)
 	append(&loader_query, dir_path)
 
 	for {
