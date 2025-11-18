@@ -2,30 +2,56 @@ package main
 
 import "fx"
 
-UI_PRIMARY_COLOR := fx.Color{24, 14, 44, 255}
-UI_SECONDARY_COLOR := fx.Color{95, 58, 137, 255}
+UI_PRIMARY_COLOR := fx.Color{15, 15, 20, 255}
+UI_SECONDARY_COLOR := fx.Color{40, 50, 70, 255}
 
-UI_ACCENT_COLOR := fx.Color{118, 67, 175, 255}
-UI_HOVER_COLOR := fx.Color{105, 68, 147, 255}
+UI_ACCENT_COLOR := fx.Color{3, 102, 97, 255}
+UI_HOVER_COLOR := fx.Color{50, 65, 90, 255}
 
-UI_TEXT_COLOR := fx.Color{235, 237, 240, 255}
-UI_TEXT_SECONDARY := fx.Color{175, 180, 195, 255}
+UI_TEXT_COLOR := fx.Color{240, 240, 240, 255}
+UI_TEXT_SECONDARY := fx.Color{120, 220, 255, 255}
 
-UI_TRACK_COLOR := fx.Color{54, 35, 85, 255}
+UI_TRACK_COLOR := fx.Color{25, 30, 45, 255}
 
-CONTROLS_GRADIENT_BRIGHT := fx.Color{44, 27, 71, 255}
-CONTROLS_GRADIENT_DARK := fx.Color{24, 15, 39, 255}
+CONTROLS_GRADIENT_BRIGHT := fx.Color{30, 35, 50, 255}
+CONTROLS_GRADIENT_DARK := fx.Color{18, 18, 25, 255}
 
-BACKGROUND_GRADIENT_BRIGHT := fx.Color{44, 27, 71, 255}
-BACKGROUND_GRADIENT_DARK := fx.Color{24, 15, 39, 255}
+BACKGROUND_GRADIENT_BRIGHT := fx.Color{15, 15, 25, 255}
+BACKGROUND_GRADIENT_DARK := fx.Color{8, 8, 12, 255}
 
 NOW_PLAYING_BACKDROP_BRIGHT :: fx.Color{0, 0, 0, 108}
 NOW_PLAYING_BACKDROP_DARK :: fx.Color{0, 0, 0, 196}
 
-THEME_COUNT :: 8
+THEME_COUNT :: 6
 
 switch_theme :: proc(theme: int) {
 	if theme == 0 {
+		// Night Blue
+		UI_PRIMARY_COLOR = fx.Color{0, 32, 53, 255}
+		UI_SECONDARY_COLOR = fx.Color{39, 57, 72, 255}
+		UI_ACCENT_COLOR = fx.Color{79, 147, 248, 255}
+		UI_HOVER_COLOR = fx.Color{50, 70, 90, 255}
+		UI_TEXT_COLOR = fx.Color{255, 255, 255, 255}
+		UI_TEXT_SECONDARY = fx.Color{150, 170, 190, 255}
+		UI_TRACK_COLOR = fx.Color{25, 45, 60, 255}
+		CONTROLS_GRADIENT_BRIGHT = fx.Color{30, 50, 70, 255}
+		CONTROLS_GRADIENT_DARK = fx.Color{10, 30, 45, 255}
+		BACKGROUND_GRADIENT_BRIGHT = fx.Color{10, 25, 40, 255}
+		BACKGROUND_GRADIENT_DARK = fx.Color{5, 15, 30, 255}
+	} else if theme == 1 {
+		// Blue / Black
+		UI_PRIMARY_COLOR = fx.Color{15, 15, 20, 255}
+		UI_SECONDARY_COLOR = fx.Color{40, 50, 70, 255}
+		UI_ACCENT_COLOR = fx.Color{3, 102, 97, 255}
+		UI_HOVER_COLOR = fx.Color{50, 65, 90, 255}
+		UI_TEXT_COLOR = fx.Color{240, 240, 240, 255}
+		UI_TEXT_SECONDARY = fx.Color{120, 220, 255, 255}
+		UI_TRACK_COLOR = fx.Color{25, 30, 45, 255}
+		CONTROLS_GRADIENT_BRIGHT = fx.Color{30, 35, 50, 255}
+		CONTROLS_GRADIENT_DARK = fx.Color{18, 18, 25, 255}
+		BACKGROUND_GRADIENT_BRIGHT = fx.Color{15, 15, 25, 255}
+		BACKGROUND_GRADIENT_DARK = fx.Color{8, 8, 12, 255}
+	} else 	if theme == 2 {
 		// Purple theme
 		UI_PRIMARY_COLOR = fx.Color{24, 14, 44, 255}
 		UI_SECONDARY_COLOR = fx.Color{95, 58, 137, 255}
@@ -36,9 +62,9 @@ switch_theme :: proc(theme: int) {
 		UI_TRACK_COLOR = fx.Color{54, 35, 85, 255}
 		CONTROLS_GRADIENT_BRIGHT = fx.Color{44, 27, 71, 255}
 		CONTROLS_GRADIENT_DARK = fx.Color{24, 15, 39, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{44, 27, 71, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{24, 15, 39, 255}
-	} else if theme == 1 {
+		BACKGROUND_GRADIENT_BRIGHT = fx.Color{36, 22, 60, 255}
+		BACKGROUND_GRADIENT_DARK = fx.Color{18, 10, 30, 255}
+	} else if theme == 3 {
 		// Teal theme
 		UI_PRIMARY_COLOR = fx.Color{10, 42, 51, 255}
 		UI_SECONDARY_COLOR = fx.Color{25, 110, 123, 255}
@@ -49,22 +75,9 @@ switch_theme :: proc(theme: int) {
 		UI_TRACK_COLOR = fx.Color{22, 60, 72, 255}
 		CONTROLS_GRADIENT_BRIGHT = fx.Color{15, 48, 59, 255}
 		CONTROLS_GRADIENT_DARK = fx.Color{10, 30, 35, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{15, 46, 55, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{8, 25, 32, 255}
-	} else if theme == 2 {
-		// Azure theme
-		UI_PRIMARY_COLOR = fx.Color{8, 35, 65, 255}
-		UI_SECONDARY_COLOR = fx.Color{30, 120, 180, 255}
-		UI_ACCENT_COLOR = fx.Color{70, 150, 220, 255}
-		UI_HOVER_COLOR = fx.Color{50, 130, 190, 255}
-		UI_TEXT_COLOR = fx.Color{240, 248, 255, 255}
-		UI_TEXT_SECONDARY = fx.Color{180, 200, 220, 255}
-		UI_TRACK_COLOR = fx.Color{20, 55, 90, 255}
-		CONTROLS_GRADIENT_BRIGHT = fx.Color{25, 65, 110, 255}
-		CONTROLS_GRADIENT_DARK = fx.Color{8, 30, 55, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{20, 55, 95, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{5, 25, 45, 255}
-	} else if theme == 3 {
+		BACKGROUND_GRADIENT_BRIGHT = fx.Color{12, 38, 48, 255}
+		BACKGROUND_GRADIENT_DARK = fx.Color{4, 18, 24, 255}
+	} else if theme == 4 {
 		// Blue theme
 		UI_PRIMARY_COLOR = fx.Color{18, 28, 78, 255}
 		UI_SECONDARY_COLOR = fx.Color{55, 60, 155, 255}
@@ -75,21 +88,8 @@ switch_theme :: proc(theme: int) {
 		UI_TRACK_COLOR = fx.Color{35, 40, 95, 255}
 		CONTROLS_GRADIENT_BRIGHT = fx.Color{30, 35, 100, 255}
 		CONTROLS_GRADIENT_DARK = fx.Color{15, 20, 60, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{30, 35, 85, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{18, 22, 40, 255}
-	} else if theme == 4 {
-		// Orange theme
-		UI_PRIMARY_COLOR = fx.Color{45, 22, 8, 255}
-		UI_SECONDARY_COLOR = fx.Color{120, 65, 25, 255}
-		UI_ACCENT_COLOR = fx.Color{180, 120, 50, 255}
-		UI_HOVER_COLOR = fx.Color{140, 80, 35, 255}
-		UI_TEXT_COLOR = fx.Color{255, 248, 240, 255}
-		UI_TEXT_SECONDARY = fx.Color{220, 200, 180, 255}
-		UI_TRACK_COLOR = fx.Color{67, 35, 20, 255}
-		CONTROLS_GRADIENT_BRIGHT = fx.Color{70, 40, 18, 255}
-		CONTROLS_GRADIENT_DARK = fx.Color{35, 18, 6, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{60, 35, 15, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{25, 12, 4, 255}
+		BACKGROUND_GRADIENT_BRIGHT = fx.Color{25, 30, 75, 255}
+		BACKGROUND_GRADIENT_DARK = fx.Color{12, 15, 30, 255}
 	} else if theme == 5 {
 		// Brown theme
 		UI_PRIMARY_COLOR = fx.Color{30, 12, 10, 255}
@@ -101,33 +101,7 @@ switch_theme :: proc(theme: int) {
 		UI_TRACK_COLOR = fx.Color{65, 25, 15, 255}
 		CONTROLS_GRADIENT_BRIGHT = fx.Color{50, 20, 15, 255}
 		CONTROLS_GRADIENT_DARK = fx.Color{30, 12, 10, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{50, 20, 15, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{30, 12, 10, 255}
-	} else if theme == 6 {
-		// Green theme
-		UI_PRIMARY_COLOR = fx.Color{12, 35, 18, 255}
-		UI_SECONDARY_COLOR = fx.Color{34, 85, 52, 255}
-		UI_ACCENT_COLOR = fx.Color{45, 160, 75, 255}
-		UI_HOVER_COLOR = fx.Color{28, 120, 45, 255}
-		UI_TEXT_COLOR = fx.Color{240, 250, 245, 255}
-		UI_TEXT_SECONDARY = fx.Color{180, 210, 190, 255}
-		UI_TRACK_COLOR = fx.Color{20, 60, 30, 255}
-		CONTROLS_GRADIENT_BRIGHT = fx.Color{20, 55, 30, 255}
-		CONTROLS_GRADIENT_DARK = fx.Color{8, 25, 12, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{18, 45, 25, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{6, 20, 10, 255}
-	} else if theme == 7 {
-		// Dark theme
-		UI_PRIMARY_COLOR = fx.Color{18, 18, 20, 255}
-		UI_SECONDARY_COLOR = fx.Color{48, 48, 53, 255}
-		UI_ACCENT_COLOR = fx.Color{12, 110, 180, 255}
-		UI_HOVER_COLOR = fx.Color{48, 48, 52, 255}
-		UI_TEXT_COLOR = fx.Color{245, 245, 247, 255}
-		UI_TEXT_SECONDARY = fx.Color{174, 174, 178, 255}
-		UI_TRACK_COLOR = fx.Color{38, 38, 42, 255}
-		CONTROLS_GRADIENT_BRIGHT = fx.Color{34, 34, 36, 255}
-		CONTROLS_GRADIENT_DARK = fx.Color{16, 16, 18, 255}
-		BACKGROUND_GRADIENT_BRIGHT = fx.Color{25, 25, 27, 255}
-		BACKGROUND_GRADIENT_DARK = fx.Color{12, 12, 14, 255}
+		BACKGROUND_GRADIENT_BRIGHT = fx.Color{40, 16, 12, 255}
+		BACKGROUND_GRADIENT_DARK = fx.Color{20, 8, 6, 255}
 	}
 }

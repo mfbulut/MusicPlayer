@@ -156,8 +156,8 @@ draw_sidebar :: proc(x_offset: f32) {
 				w           = SIDEBAR_WIDTH - 40,
 				h           = 40,
 				text        = playlist.name,
-				color       = ui_state.selected_playlist == playlist.name ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
-				hover_color = ui_state.selected_playlist == playlist.name ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
+				color       = ui_state.selected_playlist == playlist.name && ui_state.current_view == .PLAYLIST_DETAIL ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
+				hover_color = ui_state.selected_playlist == playlist.name && ui_state.current_view == .PLAYLIST_DETAIL ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
 				text_color  = UI_TEXT_COLOR,
 				expand      = true,
 			}
