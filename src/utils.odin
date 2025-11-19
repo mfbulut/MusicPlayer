@@ -555,6 +555,7 @@ exit_icon_qoi :: #load("assets/exit.qoi")
 maximize_icon_qoi :: #load("assets/maximize.qoi")
 minimize_icon_qoi :: #load("assets/minimize.qoi")
 music_icon_qoi :: #load("assets/music.qoi")
+sidebar_icon_qoi :: #load("assets/sidebar.qoi")
 
 previous_icon: fx.Texture
 forward_icon: fx.Texture
@@ -570,6 +571,8 @@ exit_icon: fx.Texture
 maximize_icon: fx.Texture
 minimize_icon: fx.Texture
 music_icon: fx.Texture
+sidebar_icon: fx.Texture
+
 
 load_icons :: proc() {
 	previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
@@ -586,4 +589,5 @@ load_icons :: proc() {
 	minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
 	queue_icon = fx.load_texture_from_bytes(queue_icon_qoi)
 	music_icon = fx.load_texture_from_bytes(music_icon_qoi)
+	sidebar_icon = fx.load_texture_from_bytes(sidebar_icon_qoi)
 }

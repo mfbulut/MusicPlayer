@@ -11,6 +11,7 @@ import "core:strings"
 import "core:sync"
 import "core:thread"
 import "core:time"
+import "core:strconv"
 
 Lyrics :: struct {
 	text: string `json:"text"`,
@@ -103,7 +104,6 @@ load_files :: proc(dir_path: string, load_from_cache := true) {
 		return
 	}
 
-	clear(&playlists)
 	append(&loader_query, dir_path)
 
 	for {
@@ -129,6 +129,10 @@ load_files :: proc(dir_path: string, load_from_cache := true) {
 		} else {
 			break
 		}
+	}
+
+	for &playlist in playlists {
+		sort_playlist_tracks(&playlist)
 	}
 
 	save_cache(playlists[:], cache_path)
@@ -204,6 +208,55 @@ sort_playlists :: proc() {
 	slice.sort_by(playlists[:], proc(a, b: Playlist) -> bool {
 		return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
 	})
+}
+
+sort_playlist_tracks :: proc(playlist: ^Playlist) {
+	if playlist == nil || len(playlist.tracks) == 0 {
+		return
+	}
+
+	same_album := true
+	first_album := playlist.tracks[0].tags.album
+
+	for track in playlist.tracks {
+		if track.tags.album != first_album {
+			same_album = false
+			break
+		}
+	}
+
+	if same_album && len(first_album) > 0 {
+		slice.sort_by(playlist.tracks[:], proc(a, b: Track) -> bool {
+			a_track := parse_track_number(a.tags.track)
+			b_track := parse_track_number(b.tags.track)
+
+			if a_track != b_track {
+				return a_track < b_track
+			}
+
+			return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
+		})
+	} else {
+		slice.sort_by(playlist.tracks[:], proc(a, b: Track) -> bool {
+			return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
+		})
+	}
+}
+
+parse_track_number :: proc(track_str: string) -> int {
+	if len(track_str) == 0 {
+		return -1
+	}
+
+	parts := strings.split(track_str, "/", context.temp_allocator)
+	number_str := parts[0] if len(parts) > 0 else track_str
+
+	track_num, ok := strconv.parse_int(strings.trim_space(number_str))
+	if ok {
+		return track_num
+	}
+
+	return -1
 }
 
 process_music_file :: proc(file: os2.File_Info, queue := false) {

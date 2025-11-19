@@ -84,9 +84,11 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 		if fx.key_held(.LEFT_CONTROL) {
 			insert_as_next_track(track)
 			show_alert(cover, track.name, "Added to the start of the queue", 1)
+			ui_state.show_queue_sidebar = true
 		} else {
 			insert_as_last_track(track)
 			show_alert(cover, track.name, "Added to the end of the queue", 1)
+			ui_state.show_queue_sidebar = true
 		}
 	}
 

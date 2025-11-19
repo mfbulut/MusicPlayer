@@ -9,18 +9,18 @@ import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
 
-SIDEBAR_WIDTH      : f32 : 240
-TITLE_HEIGHT       : f32 : 40
-PLAYER_HEIGHT      : f32 : 80
-SIDEBAR_ANIM_SPEED : f32 : 4
-UI_SCROLL_SPEED    : f32 : 20
+SIDEBAR_WIDTH       : f32 : 240
+QUEUE_SIDEBAR_MAX   : f32 : 400
+TITLE_HEIGHT        : f32 : 40
+PLAYER_HEIGHT       : f32 : 80
+SIDEBAR_ANIM_SPEED  : f32 : 4
+UI_SCROLL_SPEED     : f32 : 20
 
 View :: enum {
 	SEARCH,
 	PLAYLIST_DETAIL,
 	NOW_PLAYING,
 	LIKED,
-	QUEUE,
 }
 
 Scrollbar :: struct {
@@ -46,6 +46,10 @@ UIState :: struct {
 	sidebar_width:             f32,
 	sidebar_anim:              f32,
 
+	show_queue_sidebar:        bool,
+	queue_sidebar_width:       f32,
+	queue_sidebar_anim:        f32,
+
 	lyrics_animation_progress: f32,
 	drag_start_mouse_y:        f32,
 	drag_start_scroll:         f32,
@@ -59,6 +63,7 @@ UIState :: struct {
 	playlist_scrollbar:        Scrollbar,
 	lyrics_scrollbar:          Scrollbar,
 	search_scrollbar:          Scrollbar,
+	queue_scrollbar:           Scrollbar,
 }
 
 ui_state := UIState {
@@ -67,6 +72,8 @@ ui_state := UIState {
 	follow_lyrics  = true,
 	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
+	queue_sidebar_width = 0,
+	queue_sidebar_anim = 0,
 }
 
 init_ui_state :: proc() {
@@ -83,11 +90,11 @@ init_ui_state :: proc() {
 	}
 }
 
-draw_main_content :: proc(sidebar_width: f32) {
+draw_main_content :: proc(sidebar_width: f32, queue_sidebar_width: f32) {
 	window_w, window_h := fx.window_size()
 
 	content_x := sidebar_width
-	content_w := window_w - sidebar_width
+	content_w := window_w - sidebar_width - queue_sidebar_width
 	content_h := window_h - PLAYER_HEIGHT
 
 	switch ui_state.current_view {
@@ -99,8 +106,6 @@ draw_main_content :: proc(sidebar_width: f32) {
 		draw_now_playing_view(content_x, 0, content_w, content_h)
 	case .LIKED:
 		draw_playlist_view(content_x, 0, content_w, content_h, liked_playlist)
-	case .QUEUE:
-		draw_playlist_view(content_x, 0, content_w, content_h, player.queue, true)
 	}
 }
 
@@ -130,7 +135,9 @@ frame :: proc() {
 	}
 
 	if fx.key_pressed(.F5) {
+		clear(&playlists)
 		load_files(music_dir, false)
+		init_cover_loading()
 	}
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.C) {
@@ -164,8 +171,19 @@ frame :: proc() {
 		ui_state.sidebar_anim = clamp(ui_state.sidebar_anim + dt * SIDEBAR_ANIM_SPEED, 0, 1)
 	}
 
+	if ui_state.show_queue_sidebar {
+		ui_state.queue_sidebar_anim = clamp(ui_state.queue_sidebar_anim + dt * SIDEBAR_ANIM_SPEED, 0, 1)
+	} else {
+		ui_state.queue_sidebar_anim = clamp(ui_state.queue_sidebar_anim - dt * SIDEBAR_ANIM_SPEED, 0, 1)
+	}
+
 	eased_progress := ease_in_out_cubic(ui_state.sidebar_anim)
 	ui_state.sidebar_width = eased_progress * SIDEBAR_WIDTH
+
+	queue_sidebar_width := min(QUEUE_SIDEBAR_MAX, (window_w - ui_state.queue_sidebar_width) / 2)
+	queue_eased_progress := ease_in_out_cubic(ui_state.queue_sidebar_anim)
+	ui_state.queue_sidebar_width = queue_eased_progress * queue_sidebar_width
+
 	update_alert(dt)
 
 	if ui_state.compact_mode {
@@ -175,7 +193,8 @@ frame :: proc() {
 		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
 		draw_player_controls()
-		draw_main_content(ui_state.sidebar_width)
+		draw_main_content(ui_state.sidebar_width, ui_state.queue_sidebar_width)
+		draw_queue_sidebar(window_w - ui_state.queue_sidebar_width, queue_sidebar_width)
 		draw_alert()
 
 		if draw_icon_button_rect(window_w - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
@@ -188,6 +207,21 @@ frame :: proc() {
 
 		if draw_icon_button_rect(window_w - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
 			fx.minimize_window()
+		}
+
+		if len(player.queue.tracks) > 0 {
+			queue_open_btn := IconButton {
+				x           = window_w - 50,
+				y           = 45,
+				size        = 40,
+				icon        = sidebar_icon,
+				color       = fx.BLANK,
+				hover_color = UI_SECONDARY_COLOR,
+			}
+
+			if draw_icon_button(queue_open_btn) {
+				ui_state.show_queue_sidebar = !ui_state.show_queue_sidebar
+			}
 		}
 	}
 

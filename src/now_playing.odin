@@ -308,7 +308,7 @@ draw_lyrics :: proc(x, y, w, h: f32, track: ^Track, alpha: f32) {
 		lyrics_max_scroll,
 	)
 
-	if lyrics_max_scroll > 0 {
+	if lyrics_max_scroll > 0 && ui_state.show_lyrics {
 		scrollbar_x := x + w - 15
 		scrollbar_y := content_y
 		scrollbar_h := content_h

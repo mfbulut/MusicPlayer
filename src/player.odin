@@ -106,6 +106,9 @@ next_track :: proc() {
 	if len(player.queue.tracks) > 0 {
 		track := pop(&player.queue.tracks)
 		play_track(track, player.current_playlist, true)
+
+		if len(player.queue.tracks) == 0 do ui_state.show_queue_sidebar = false
+
 		return
 	}
 

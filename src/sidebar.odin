@@ -89,33 +89,6 @@ draw_sidebar :: proc(x_offset: f32) {
 		UI_TEXT_COLOR,
 	)
 
-	y_offset += 50
-
-	queue_btn := Button {
-		x           = 20 + x_offset,
-		y           = y_offset,
-		w           = SIDEBAR_WIDTH - 40,
-		h           = 40,
-		text        = "  Queue",
-		color       = ui_state.current_view == .QUEUE ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
-		hover_color = ui_state.current_view == .QUEUE ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
-		text_color  = UI_TEXT_COLOR,
-		expand      = true,
-	}
-
-	if draw_button(queue_btn, 40) {
-		ui_state.current_view = .QUEUE
-	}
-
-	fx.draw_texture(
-		queue_icon,
-		queue_btn.x + 20,
-		queue_btn.y + queue_btn.h / 2 - 8,
-		16,
-		16,
-		UI_TEXT_COLOR,
-	)
-
 	y_offset += 60
 
 	fx.draw_text_aligned(
@@ -131,7 +104,7 @@ draw_sidebar :: proc(x_offset: f32) {
 
 	playlist_count := len(playlists)
 	sidebar_visible_height := window_h - y_offset - PLAYER_HEIGHT
-	max_scroll := calculate_max_scroll(playlist_count, 41, sidebar_visible_height)
+	max_scroll := calculate_max_scroll(playlist_count, 46, sidebar_visible_height)
 
 	sidebar_sc.target = clamp(sidebar_sc.target, 0, max_scroll)
 	sidebar_sc.scroll = clamp(sidebar_sc.scroll, 0, max_scroll)
