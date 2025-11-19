@@ -137,6 +137,7 @@ frame :: proc() {
 	if fx.key_pressed(.F5) {
 		clear(&playlists)
 		load_files(music_dir, false)
+		sort_playlists()
 		init_cover_loading()
 	}
 
