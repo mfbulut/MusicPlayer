@@ -308,6 +308,7 @@ should_stop_loading: bool
 
 init_cover_loading :: proc() {
 	loading_covers = true
+	should_stop_loading = false
 
 	clear(&cover_load_queue)
 
