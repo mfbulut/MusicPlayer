@@ -385,7 +385,7 @@ win_proc :: proc "stdcall" (
 				}
 
 				buf_utf8: [4]u8
-				win.wstring_to_utf8(buf_utf8[:], transmute(cstring16)raw_data(&buf_w))
+				_ = win.wstring_to_utf8(buf_utf8[:], transmute(cstring16)raw_data(&buf_w))
 
 				if r, len := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
 					callback(r)

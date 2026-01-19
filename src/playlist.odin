@@ -98,6 +98,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 				ordered_remove(&player.queue.tracks, i)
 				playlist := find_playlist_by_name(track.playlist)
 				show_alert(playlist.cover, track.name, "Removed from the queue", 1)
+				if len(player.queue.tracks) == 0 do ui_state.show_queue_sidebar = false
 			}
 		}
 	}
