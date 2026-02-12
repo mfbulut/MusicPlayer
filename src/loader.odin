@@ -3,7 +3,7 @@ package main
 import "fx"
 import "core:encoding/json"
 import "core:fmt"
-import "core:os/os2"
+import "core:os"
 import "core:hash"
 import "core:path/filepath"
 import "core:slice"
@@ -65,7 +65,7 @@ save_cache :: proc(playlists: []Playlist, path: string) -> bool {
 	}
 	defer delete(json_data)
 
-	write_err := os2.write_entire_file(path, json_data)
+	write_err := os.write_entire_file(path, json_data)
 	if write_err != nil {
 		fmt.eprintln("Error writing cache file:", write_err)
 		return false
@@ -75,11 +75,11 @@ save_cache :: proc(playlists: []Playlist, path: string) -> bool {
 }
 
 load_cache :: proc(path: string) -> (bool) {
-	if !os2.exists(path) {
+	if !os.exists(path) {
 		return false
 	}
 
-	json_data, read_err := os2.read_entire_file(path, context.allocator)
+	json_data, read_err := os.read_entire_file(path, context.allocator)
 	if read_err != nil {
 		fmt.eprintln("Error reading cache file:", read_err)
 		return false
@@ -98,7 +98,7 @@ load_cache :: proc(path: string) -> (bool) {
 loader_query : [dynamic]string
 
 load_files :: proc(dir_path: string, load_from_cache := true) {
-	cache_path := fmt.tprintf("%s\\fxMusic\\cache.json", os2.get_env("LOCALAPPDATA", context.temp_allocator))
+	cache_path := fmt.tprintf("%s\\fxMusic\\cache.json", os.get_env("LOCALAPPDATA", context.temp_allocator))
 
 	if load_from_cache && load_cache(cache_path) {
 		return
@@ -110,7 +110,7 @@ load_files :: proc(dir_path: string, load_from_cache := true) {
 		path, ok := pop_safe(&loader_query)
 
 		if ok {
-			files, err := os2.read_all_directory_by_path(path, context.allocator)
+			files, err := os.read_all_directory_by_path(path, context.allocator)
 			if err != nil {
 				fmt.eprintln("Error reading directory:", path, "->", err)
 				return
@@ -182,19 +182,19 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
 		name   = dir_name,
 	}
 
-	cover_path := filepath.join({dir_path, "cover.qoi"})
+	cover_path, _ := filepath.join({dir_path, "cover.qoi"}, context.allocator)
 
-	if os2.exists(cover_path) {
+	if os.exists(cover_path) {
 		playlist.cover_path = cover_path
 	} else {
 		delete(cover_path)
-		cover_path = filepath.join({dir_path, "cover.png"})
-		if os2.exists(cover_path) {
+		cover_path, _ = filepath.join({dir_path, "cover.png"}, context.allocator)
+		if os.exists(cover_path) {
 			playlist.cover_path = cover_path
 		} else {
 			delete(cover_path)
-			cover_path = filepath.join({dir_path, "cover.jpg"})
-			if os2.exists(cover_path) {
+			cover_path, _ = filepath.join({dir_path, "cover.jpg"}, context.allocator)
+			if os.exists(cover_path) {
 				playlist.cover_path = cover_path
 			}
 		}
@@ -259,9 +259,9 @@ parse_track_number :: proc(track_str: string) -> int {
 	return -1
 }
 
-process_music_file :: proc(file: os2.File_Info, queue := false) {
-	dir_path, filename := os2.split_path(file.fullpath)
-	name, ext := os2.split_filename(filename)
+process_music_file :: proc(file: os.File_Info, queue := false) {
+	dir_path, filename := os.split_path(file.fullpath)
+	name, ext := os.split_filename(filename)
 
 	if ext != "mp3" && ext != "wav" && ext != "flac" && ext != "opus" && ext != "ogg" do return
 
@@ -389,7 +389,7 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 		if playlist != nil {
 			for &track in playlist.tracks {
 				if !track.thumbnail_loaded {
-					buffer := os2.read_entire_file(track.path, context.allocator) or_continue
+					buffer := os.read_entire_file(track.path, context.allocator) or_continue
 
 					load_small_cover(&track, buffer)
 					track.thumbnail_loaded = true

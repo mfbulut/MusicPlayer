@@ -8,7 +8,7 @@ import "core:image/png"
 import "core:image/qoi"
 import "core:image/jpeg"
 import "core:math"
-import "core:os/os2"
+import "core:os"
 import "core:mem"
 
 import stb "vendor:stb/image"
@@ -21,7 +21,7 @@ Texture :: struct {
 }
 
 load_texture :: proc(filepath: string, generate_mipmaps := true) -> (Texture, bool) {
-	image_data, err := os2.read_entire_file(filepath, context.allocator)
+	image_data, err := os.read_entire_file(filepath, context.allocator)
 
 	if err != nil {
 		return Texture{}, false

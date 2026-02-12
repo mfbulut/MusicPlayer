@@ -2,7 +2,7 @@ package main
 
 import "fx"
 
-import "core:os/os2"
+import "core:os"
 import "core:strings"
 import "core:strconv"
 import "core:slice"
@@ -50,7 +50,7 @@ load_cover :: proc(track : ^Track, buffer : []u8) {
 		dir := fp.dir(track.path)
 		path := strings.join({dir, "/", stem, ".qoi"}, "")
 
-		if os2.exists(path) {
+		if os.exists(path) {
 			cover, ok := fx.load_texture(path)
 			if ok {
 				track.cover = cover
@@ -59,7 +59,7 @@ load_cover :: proc(track : ^Track, buffer : []u8) {
 		} else {
 			delete(path)
 			path = strings.join({dir, "/", stem, ".png"}, "")
-			if os2.exists(path) {
+			if os.exists(path) {
 				cover, ok := fx.load_texture(path)
 				if ok {
 					track.cover = cover
@@ -68,7 +68,7 @@ load_cover :: proc(track : ^Track, buffer : []u8) {
 			} else {
 				delete(path)
 				path = strings.join({dir, "/", stem, ".jpg"}, "")
-				if os2.exists(path) {
+				if os.exists(path) {
 					cover, ok := fx.load_texture(path)
 					if ok {
 						track.cover = cover
@@ -188,7 +188,7 @@ load_lyrics_from_string :: proc(lrc_content: string) -> [dynamic]Lyrics {
 load_lyrics_for_track :: proc(music_path: string) -> [dynamic]Lyrics {
 	lrc_path := get_lrc_path(music_path)
 
-	lrc_data, err:= os2.read_entire_file(lrc_path, context.temp_allocator)
+	lrc_data, err:= os.read_entire_file(lrc_path, context.temp_allocator)
 
 	if err != nil {
 		return {}
@@ -240,16 +240,16 @@ bytes_to_string :: proc(data: []u8) -> (string, bool) {
 }
 
 load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
-	file, err := os2.open(filepath)
-	if err != os2.ERROR_NONE {
+	file, err := os.open(filepath)
+	if err != os.ERROR_NONE {
 		return
 	}
-	defer os2.close(file)
+	defer os.close(file)
 
 	header_buffer : [10]u8
 
-	bytes_read, read_err := os2.read(file, header_buffer[:10])
-	if read_err != os2.ERROR_NONE || bytes_read < 10 {
+	bytes_read, read_err := os.read(file, header_buffer[:10])
+	if read_err != os.ERROR_NONE || bytes_read < 10 {
 		return
 	}
 
@@ -270,8 +270,8 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 	if header_buffer[5] & 0x40 != 0 {
 		ext_header_size_buf : [4]u8
 
-		bytes_read, read_err = os2.read(file, ext_header_size_buf[:4])
-		if read_err != os2.ERROR_NONE || bytes_read < 4 {
+		bytes_read, read_err = os.read(file, ext_header_size_buf[:4])
+		if read_err != os.ERROR_NONE || bytes_read < 4 {
 			return
 		}
 
@@ -281,14 +281,14 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 			int(ext_header_size_buf[2]) << 8 |
 			int(ext_header_size_buf[3])
 
-		os2.seek(file, i64(extended_size), .Current)
+		os.seek(file, i64(extended_size), .Current)
 		pos += 4 + extended_size
 	}
 
 	frame_header_buf : [10]u8
 
 	for pos < size {
-		bytes_read, read_err = os2.read(file, frame_header_buf[:10])
+		bytes_read, read_err = os.read(file, frame_header_buf[:10])
 		if read_err != nil || bytes_read < 10 {
 			break
 		}
@@ -327,8 +327,8 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 			frame_data := make([]u8, frame.size)
 			defer delete(frame_data)
 
-			bytes_read, read_err = os2.read(file, frame_data)
-			if read_err != os2.ERROR_NONE || bytes_read < frame.size {
+			bytes_read, read_err = os.read(file, frame_data)
+			if read_err != os.ERROR_NONE || bytes_read < frame.size {
 				break
 			}
 
@@ -363,7 +363,7 @@ load_id3_tags :: proc(filepath: string) -> (tags: Tags, success: bool) {
 				tags.album_artist = bytes_to_string(frame_data) or_return
 			}
 		case:
-			os2.seek(file, i64(frame.size), .Current)
+			os.seek(file, i64(frame.size), .Current)
 		}
 
 		pos += 10 + frame.size

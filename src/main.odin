@@ -4,7 +4,7 @@ import "fx"
 
 import "core:fmt"
 import "core:time"
-import "core:os/os2"
+import "core:os"
 import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
@@ -246,9 +246,9 @@ main :: proc() {
 	fx.init("Music Player", 1280, 720)
 	init_ui_state()
 
-	blur_shader = fx.load_shader(blur_shader_hlsl)
-	background  = fx.create_render_texture(2048, 2048)
-	music_dir   = fp.join({os2.get_env("USERPROFILE", context.allocator), "Music"})
+	blur_shader  = fx.load_shader(blur_shader_hlsl)
+	background   = fx.create_render_texture(2048, 2048)
+	music_dir, _ = os.user_music_dir(context.allocator)
 
 	load_icons()
 	load_state()
@@ -289,7 +289,7 @@ main :: proc() {
 
 drop_callback :: proc(files: []string) {
 	for filepath in files {
-		file := os2.stat(filepath, context.allocator) or_continue
+		file := os.stat(filepath, context.allocator) or_continue
 		if file.type == .Directory {
 			load_files(filepath, false)
 			ui_state.selected_playlist = file.name
