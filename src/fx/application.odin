@@ -28,17 +28,12 @@ Context :: struct {
 	},
 	key_state:           [256]u8,
 	mouse_state:         [8]u8,
-	mouse_scroll:        int,
+	mouse_scroll:        f32,
 	last_high_surrogate: Maybe(win.WCHAR),
 	last_click_time:     time.Time,
 	last_click_pos:      struct {
 		x, y: int,
 	},
-	resize_state:        ResizeState,
-	resize_mouse_offset: struct {
-		x, y: i32,
-	},
-	is_resizing:         bool,
 	compact_mode:        bool,
 }
 
@@ -74,11 +69,9 @@ update_frame :: proc(frame_proc: proc(), vsync := true) {
 	ctx.timer += ctx.delta_time
 	ctx.prev_time = current_time
 
-	handle_resize()
-
 	if !ctx.is_minimized {
 		set_scissor(0, 0, f32(ctx.window.w), f32(ctx.window.h))
-		clear_background(chroma_key)
+		clear_background({0, 0, 0, 0})
 		begin_render()
 		update_constant_buffer()
 		frame_proc()
@@ -180,10 +173,6 @@ set_char_callback :: proc(callback: proc(char: rune)) {
 
 window_size :: proc() -> (f32, f32) {
 	return f32(ctx.window.w), f32(ctx.window.h)
-}
-
-is_resizing :: proc() -> bool {
-	return ctx.is_resizing
 }
 
 is_hovering_files :: proc() -> bool {

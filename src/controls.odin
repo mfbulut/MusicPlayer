@@ -190,8 +190,7 @@ draw_player_controls :: proc() {
 	   !ui_state.is_dragging_progress &&
 	   !ui_state.playlist_scrollbar.is_dragging &&
 	   !ui_state.search_scrollbar.is_dragging &&
-	   !ui_state.is_dragging_progress &&
-	   !fx.is_resizing() {
+	   !ui_state.is_dragging_progress {
 		player.volume = new_volume
 		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 	}

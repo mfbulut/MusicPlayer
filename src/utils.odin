@@ -515,47 +515,21 @@ is_audio_file :: proc(filepath: string) -> bool {
 	}
 }
 
-is_image_file :: proc(filepath: string) -> bool {
-	ext := strings.to_lower(fp.ext(filepath), context.temp_allocator)
-	switch ext {
-	case ".qoi", ".png", ".jpg":
-		return true
-	case:
-		return false
-	}
-}
-
-copy_file :: proc(src, dest: string) {
-    data, err := os.read_entire_file(src, context.allocator)
-    if err != nil {
-		fmt.printf("Error copying file", err)
-        return
-    }
-
-    err2 := os.write_entire_file(dest, data)
-
-	if err != nil {
-		fmt.printf("Error copying file", err)
-	}
-
-    delete(data)
-}
-
-previous_icon_qoi :: #load("assets/previous.qoi")
-forward_icon_qoi :: #load("assets/forward.qoi")
-pause_icon_qoi :: #load("assets/pause.qoi")
-play_icon_qoi :: #load("assets/play.qoi")
-volume_icon_qoi :: #load("assets/volume.qoi")
-shuffle_icon_qoi :: #load("assets/shuffle.qoi")
-search_icon_qoi :: #load("assets/search.qoi")
-liked_icon_qoi :: #load("assets/liked.qoi")
-empty_icon_qoi :: #load("assets/liked_empty.qoi")
-queue_icon_qoi :: #load("assets/queue.qoi")
-exit_icon_qoi :: #load("assets/exit.qoi")
-maximize_icon_qoi :: #load("assets/maximize.qoi")
-minimize_icon_qoi :: #load("assets/minimize.qoi")
-music_icon_qoi :: #load("assets/music.qoi")
-sidebar_icon_qoi :: #load("assets/sidebar.qoi")
+previous_icon_qoi := #load("assets/previous.qoi")
+forward_icon_qoi  := #load("assets/forward.qoi")
+pause_icon_qoi    := #load("assets/pause.qoi")
+play_icon_qoi     := #load("assets/play.qoi")
+volume_icon_qoi   := #load("assets/volume.qoi")
+shuffle_icon_qoi  := #load("assets/shuffle.qoi")
+search_icon_qoi   := #load("assets/search.qoi")
+liked_icon_qoi    := #load("assets/liked.qoi")
+empty_icon_qoi    := #load("assets/liked_empty.qoi")
+queue_icon_qoi    := #load("assets/queue.qoi")
+exit_icon_qoi     := #load("assets/exit.qoi")
+maximize_icon_qoi := #load("assets/maximize.qoi")
+minimize_icon_qoi := #load("assets/minimize.qoi")
+music_icon_qoi    := #load("assets/music.qoi")
+sidebar_icon_qoi  := #load("assets/sidebar.qoi")
 
 previous_icon: fx.Texture
 forward_icon: fx.Texture
@@ -573,21 +547,20 @@ minimize_icon: fx.Texture
 music_icon: fx.Texture
 sidebar_icon: fx.Texture
 
-
 load_icons :: proc() {
 	previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)
-	forward_icon = fx.load_texture_from_bytes(forward_icon_qoi)
-	pause_icon = fx.load_texture_from_bytes(pause_icon_qoi)
-	play_icon = fx.load_texture_from_bytes(play_icon_qoi)
-	volume_icon = fx.load_texture_from_bytes(volume_icon_qoi)
-	shuffle_icon = fx.load_texture_from_bytes(shuffle_icon_qoi)
-	liked_icon = fx.load_texture_from_bytes(liked_icon_qoi)
-	search_icon = fx.load_texture_from_bytes(search_icon_qoi)
-	liked_empty = fx.load_texture_from_bytes(empty_icon_qoi)
-	exit_icon = fx.load_texture_from_bytes(exit_icon_qoi)
+	forward_icon  = fx.load_texture_from_bytes(forward_icon_qoi)
+	pause_icon    = fx.load_texture_from_bytes(pause_icon_qoi)
+	play_icon     = fx.load_texture_from_bytes(play_icon_qoi)
+	volume_icon   = fx.load_texture_from_bytes(volume_icon_qoi)
+	shuffle_icon  = fx.load_texture_from_bytes(shuffle_icon_qoi)
+	liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
+	search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
+	liked_empty   = fx.load_texture_from_bytes(empty_icon_qoi)
+	exit_icon     = fx.load_texture_from_bytes(exit_icon_qoi)
 	maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
 	minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
-	queue_icon = fx.load_texture_from_bytes(queue_icon_qoi)
-	music_icon = fx.load_texture_from_bytes(music_icon_qoi)
-	sidebar_icon = fx.load_texture_from_bytes(sidebar_icon_qoi)
+	queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
+	music_icon    = fx.load_texture_from_bytes(music_icon_qoi)
+	sidebar_icon  = fx.load_texture_from_bytes(sidebar_icon_qoi)
 }

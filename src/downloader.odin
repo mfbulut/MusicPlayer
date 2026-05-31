@@ -46,7 +46,7 @@ guess_search_opts :: proc(title: string) -> (opts: [2]fx.Request_Query_Param, op
 
 	attempt: for v in DASHES {
 		title := title
-		pieces: sa.Small_Array(2, string)
+		pieces: [dynamic; 2]string
 
 		for title != "" {
 			off := strings.index_rune(title, v)
@@ -65,19 +65,19 @@ guess_search_opts :: proc(title: string) -> (opts: [2]fx.Request_Query_Param, op
 			// Filter pieces that are all unsigned ints.
 			// We'll assume they're track numbers, which aren't used for searches.
 			if _, is_uint := strconv.parse_uint(piece); !is_uint {
-				sa.append(&pieces, piece) or_break
+				append(&pieces, piece)
 			}
 		}
 
-		switch sa.len(pieces) {
+		switch len(pieces) {
 		case 0:
 			continue attempt
 		case 1:
-			opts[0] = {"track_name", sa.get(pieces, 0)}
+			opts[0] = {"track_name", pieces[0]}
 			return opts, 1
 		case:
-			opts[0] = {"artist_name", sa.get(pieces, 0)}
-			opts[1] = {"track_name", sa.get(pieces, 1)}
+			opts[0] = {"artist_name", pieces[0]}
+			opts[1] = {"track_name", pieces[1]}
 			return opts, 2
 		}
 	}
@@ -138,6 +138,7 @@ download_lyrics :: proc() {
 	}
 
 	opts, opts_count := guess_search_opts(player.current_track.name)
+	fmt.println(opts)
 	res, ok := fx.get("https://lrclib.net/api/search", opts[:opts_count])
 
 	if !ok {
@@ -222,10 +223,10 @@ save_lyrics_as_lrc :: proc(track: ^Track, lyrics_content: string) {
 		return
 	}
 
-	dir := filepath.dir(track.path, context.temp_allocator)
-	base_name := filepath.stem(track.path)
+	dir := os.dir(track.path)
+	base_name := os.stem(track.path)
 	lrc_filename := strings.concatenate({base_name, ".lrc"}, context.temp_allocator)
-	lrc_path, _ := filepath.join({dir, lrc_filename}, context.temp_allocator)
+	lrc_path, _ := os.join_path({dir, lrc_filename}, context.temp_allocator)
 
 	err := os.write_entire_file(lrc_path, transmute([]u8)lyrics_content)
 

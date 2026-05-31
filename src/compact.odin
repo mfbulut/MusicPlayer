@@ -9,7 +9,7 @@ import "core:math"
 compact_mode_frame :: proc() {
 	window_w, window_h := fx.window_size()
 
-    fx.draw_gradient_rect_rounded_vertical(0, 0, window_w, window_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
+    fx.draw_gradient_rect_vertical(0, 0, window_w, window_h, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 
 	if fx.key_pressed_global(.MEDIA_PREV_TRACK) || fx.key_pressed(.LEFT) {
 		previous_track()
@@ -89,11 +89,4 @@ compact_mode_frame :: proc() {
 		}
 	}
 
-	if draw_icon_button_rect(window_w - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
-		fx.close_window()
-	}
-
-	if draw_icon_button_rect(window_w - 100, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
-		fx.minimize_window()
-	}
 }

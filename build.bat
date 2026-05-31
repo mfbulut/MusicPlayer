@@ -1,1 +1,1 @@
-odin build src -out:build\music.exe -o:speed -resource:src/assets/resource.rc -subsystem:windows
+odin build src -out:music.exe -o:speed -resource:src/assets/resource.rc -subsystem:windows

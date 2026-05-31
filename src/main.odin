@@ -127,7 +127,7 @@ frame :: proc() {
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
 		ui_state.hide_sidebar = !ui_state.hide_sidebar
-		fx.set_sidebar_size(ui_state.hide_sidebar ? 0 : 200)
+		// fx.set_sidebar_size(ui_state.hide_sidebar ? 0 : 200)
 	}
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.L) {
@@ -136,7 +136,7 @@ frame :: proc() {
 
 	if fx.key_pressed(.F5) {
 		clear(&playlists)
-		load_files(music_dir, false)
+		load_files(music_dir)
 		sort_playlists()
 		init_cover_loading()
 	}
@@ -190,25 +190,13 @@ frame :: proc() {
 	if ui_state.compact_mode {
 		compact_mode_frame()
 	} else {
-		fx.draw_gradient_rect_rounded_vertical(0, 0, window_w, window_h, 8, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
+		fx.draw_gradient_rect_vertical(0, 0, window_w, window_h, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
 		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
 
 		draw_player_controls()
 		draw_main_content(ui_state.sidebar_width, ui_state.queue_sidebar_width)
 		draw_queue_sidebar(window_w - ui_state.queue_sidebar_width, queue_sidebar_width)
 		draw_alert()
-
-		if draw_icon_button_rect(window_w - 50, 0, 50, 25, exit_icon, fx.BLANK, fx.Color{150, 48, 64, 255}, true) {
-			fx.close_window()
-		}
-
-		if draw_icon_button_rect(window_w - 100, 0, 50, 25, maximize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7), false, 6) {
-			fx.maximize_or_restore_window()
-		}
-
-		if draw_icon_button_rect(window_w - 150, 0, 50, 25, minimize_icon, fx.BLANK, set_alpha(UI_SECONDARY_COLOR, 0.7)) {
-			fx.minimize_window()
-		}
 
 		if len(player.queue.tracks) > 0 {
 			queue_open_btn := IconButton {
@@ -232,7 +220,7 @@ frame :: proc() {
 	}
 }
 
-blur_shader_hlsl :: #load("assets/shaders/gaussian_blur.hlsl")
+blur_shader_hlsl := #load("assets/shaders/gaussian_blur.hlsl")
 blur_shader: fx.Shader
 background: fx.RenderTexture
 
@@ -291,7 +279,7 @@ drop_callback :: proc(files: []string) {
 	for filepath in files {
 		file := os.stat(filepath, context.allocator) or_continue
 		if file.type == .Directory {
-			load_files(filepath, false)
+			load_files(filepath)
 			ui_state.selected_playlist = file.name
 			ui_state.current_view = .PLAYLIST_DETAIL
 
@@ -307,21 +295,6 @@ drop_callback :: proc(files: []string) {
 		} else {
 			if is_audio_file(file.name) {
 				process_music_file(file, true)
-			} else if is_image_file(file.name) {
-				track := find_track_by_name(player.current_track.name, player.current_track.playlist)
-
-				ok : bool
-				track.cover, ok = fx.load_texture(file.fullpath)
-				player.current_track.cover = track.cover
-				update_background = ok
-
-				dest_dir  := fp.dir(track.path)
-				dest_stem := fp.stem(track.path)
-				dest_ext  := fp.ext(file.fullpath)
-
-				dest_path := strings.join({dest_dir, "\\", dest_stem, dest_ext}, "")
-
-				copy_file(file.fullpath, dest_path)
 			}
 		}
 	}

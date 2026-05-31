@@ -1,11 +1,9 @@
 package main
 
 import "fx"
-import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:hash"
-import "core:path/filepath"
 import "core:slice"
 import "core:strings"
 import "core:sync"
@@ -14,128 +12,66 @@ import "core:time"
 import "core:strconv"
 
 Lyrics :: struct {
-	text: string `json:"text"`,
-	time: f32    `json:"time"`,
+	text: string,
+	time: f32,
 }
 
 Tags :: struct {
-	title:        string `json:"title"`,
-	artist:       string `json:"artist"`,
-	album:        string `json:"album"`,
-	year:         string `json:"year"`,
-	genre:        string `json:"genre"`,
-	track:        string `json:"track"`,
-	comment:      string `json:"comment"`,
-	album_artist: string `json:"album_artist"`,
+	title:        string,
+	artist:       string,
+	album:        string,
+	year:         string,
+	genre:        string,
+	track:        string,
+	comment:      string,
+	album_artist: string,
 }
 
 Track :: struct {
-	hash:       u64                `json:"hash"`,
-	path:       string             `json:"path"`,
-	name:       string             `json:"name"`,
-	playlist:   string             `json:"playlist"`,
+	hash:             u64,
+	path:             string,
+	name:             string,
+	playlist:         string,
 
-	audio: fx.Audio                `json:"-"`,
-	lyrics:       [dynamic]Lyrics  `json:"lyrics"`,
+	audio:            fx.Audio,
+	lyrics:           [dynamic]Lyrics,
 
-	cover:        fx.Texture       `json:"-"`,
-	has_cover:    bool             `json:"has_cover"`,
+	cover:            fx.Texture,
+	has_cover:        bool,
 
-	tags:         Tags             `json:"tags"`,
-	has_tags:     bool             `json:"has_tags"`,
+	tags:             Tags,
+	has_tags:         bool,
 
-	small_cover:     fx.Texture    `json:"-"`,
-	thumbnail_loaded: bool         `json:"-"`,
+	small_cover:      fx.Texture,
+	thumbnail_loaded: bool,
 }
 
 Playlist :: struct {
-	path:       string         `json:"path"`,
-	name:       string         `json:"name"`,
-	tracks:     [dynamic]Track `json:"tracks"`,
-	cover:      fx.Texture     `json:"-"`,
-	cover_path: string         `json:"cover_path"`,
-	loaded:     bool           `json:"-"`,
+	path:       string,
+	name:       string,
+	tracks:     [dynamic]Track,
+	cover:      fx.Texture,
+	cover_path: string,
+	loaded:     bool,
 }
 
-save_cache :: proc(playlists: []Playlist, path: string) -> bool {
-	json_data, marshal_err := json.marshal(playlists)
-	if marshal_err != nil {
-		fmt.eprintln("Error marshaling cache data:", marshal_err)
-		return false
-	}
-	defer delete(json_data)
+load_files :: proc(dir_path: string) {
+	w := os.walker_create(dir_path)
+	defer os.walker_destroy(&w)
 
-	write_err := os.write_entire_file(path, json_data)
-	if write_err != nil {
-		fmt.eprintln("Error writing cache file:", write_err)
-		return false
-	}
-
-	return true
-}
-
-load_cache :: proc(path: string) -> (bool) {
-	if !os.exists(path) {
-		return false
-	}
-
-	json_data, read_err := os.read_entire_file(path, context.allocator)
-	if read_err != nil {
-		fmt.eprintln("Error reading cache file:", read_err)
-		return false
-	}
-	defer delete(json_data)
-
-	unmarshal_err := json.unmarshal(json_data, &playlists)
-	if unmarshal_err != nil {
-		fmt.eprintln("Error unmarshaling cache data:", unmarshal_err)
-		return false
-	}
-
-	return true
-}
-
-loader_query : [dynamic]string
-
-load_files :: proc(dir_path: string, load_from_cache := true) {
-	cache_path := fmt.tprintf("%s\\fxMusic\\cache.json", os.get_env("LOCALAPPDATA", context.temp_allocator))
-
-	if load_from_cache && load_cache(cache_path) {
-		return
-	}
-
-	append(&loader_query, dir_path)
-
-	for {
-		path, ok := pop_safe(&loader_query)
-
-		if ok {
-			files, err := os.read_all_directory_by_path(path, context.allocator)
-			if err != nil {
-				fmt.eprintln("Error reading directory:", path, "->", err)
-				return
-			}
-
-			for file in files {
-				if file.type == .Directory {
-					if strings.starts_with(file.name, "_") || strings.starts_with(file.name, ".") {
-						continue
-					}
-					append(&loader_query, file.fullpath)
-				} else {
-					process_music_file(file)
-				}
+	for info in os.walker_walk(&w) {
+		if info.type == .Directory {
+			if strings.starts_with(info.name, "_") || strings.starts_with(info.name, ".") {
+				os.walker_skip_dir(&w)
 			}
 		} else {
-			break
+			process_music_file(info)
 		}
 	}
 
 	for &playlist in playlists {
 		sort_playlist_tracks(&playlist)
 	}
-
-	save_cache(playlists[:], cache_path)
 }
 
 find_playlist_by_name :: proc(name: string) -> ^Playlist {
@@ -171,6 +107,8 @@ find_track_by_name :: proc(track_name: string, playlist_name: string) -> ^Track 
 }
 
 find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist {
+	dir_name := strings.clone(dir_name)
+
 	for &playlist in playlists {
 		if playlist.name == dir_name {
 			return &playlist
@@ -182,18 +120,18 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
 		name   = dir_name,
 	}
 
-	cover_path, _ := filepath.join({dir_path, "cover.qoi"}, context.allocator)
+	cover_path, _ := os.join_path({dir_path, "cover.qoi"}, context.allocator)
 
 	if os.exists(cover_path) {
 		playlist.cover_path = cover_path
 	} else {
 		delete(cover_path)
-		cover_path, _ = filepath.join({dir_path, "cover.png"}, context.allocator)
+		cover_path, _ = os.join_path({dir_path, "cover.png"}, context.allocator)
 		if os.exists(cover_path) {
 			playlist.cover_path = cover_path
 		} else {
 			delete(cover_path)
-			cover_path, _ = filepath.join({dir_path, "cover.jpg"}, context.allocator)
+			cover_path, _ = os.join_path({dir_path, "cover.jpg"}, context.allocator)
 			if os.exists(cover_path) {
 				playlist.cover_path = cover_path
 			}
@@ -265,17 +203,13 @@ process_music_file :: proc(file: os.File_Info, queue := false) {
 
 	if ext != "mp3" && ext != "wav" && ext != "flac" && ext != "opus" && ext != "ogg" do return
 
-	name, _ = strings.replace_all(name, "[", "(")
-	name, _ = strings.replace_all(name, "]", ")")
-	name, _ = strings.replace_all(name, "=", "-")
-
-	dir_name := filepath.base(dir_path)
+	dir_name := os.base(dir_path)
 
 	music := Track {
 		hash     = hash.fnv64a(transmute([]u8)file.fullpath),
-		path     = file.fullpath,
-		name     = name,
-		playlist = dir_name,
+		path     = strings.clone(file.fullpath),
+		name     = strings.clone(name),
+		playlist = strings.clone(dir_name),
 		lyrics   = load_lyrics_for_track(file.fullpath),
 	}
 
