@@ -7,12 +7,12 @@ import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
 
-SIDEBAR_WIDTH       : f32 : 240
-QUEUE_SIDEBAR_MAX   : f32 : 400
-TITLE_HEIGHT        : f32 : 40
-PLAYER_HEIGHT       : f32 : 80
-SIDEBAR_ANIM_SPEED  : f32 : 4
-UI_SCROLL_SPEED     : f32 : 20
+SIDEBAR_WIDTH       :: f32(240)
+QUEUE_SIDEBAR_MAX   :: f32(400)
+TITLE_HEIGHT        :: f32(40)
+PLAYER_HEIGHT       :: f32(80)
+SIDEBAR_ANIM_SPEED  :: f32(4)
+UI_SCROLL_SPEED     :: f32(20)
 
 View :: enum {
 	SEARCH,

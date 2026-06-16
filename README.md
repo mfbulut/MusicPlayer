@@ -10,9 +10,7 @@ A **minimalist**, **modern**, and **native** music player
   - By default, scans `C:\Users\{username}\Music\` for music files.
   - Each subfolder treated as a playlist
   - Uses `cover{.png .jpg .qoi}` as album cover
-- **Cover Art Support**:
-  - Uses embedded cover art from track
-  - Fallbacks to `songname{.png .jpg .qoi}`
+- **Cover Art Support**: Uses embedded cover art from track
 - **Lyrics**: Supports **synced** lyrics via **lrcget** or local **.lrc** files
 - **Fuzzy Search**, **Queue**, **Likes** etc.
 

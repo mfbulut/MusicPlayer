@@ -55,7 +55,7 @@ init_windows :: proc(title: string, width, height: int) {
 
 	ctx.hwnd = win.CreateWindowExW(0, class_name, win_title, window_styles, x, y, adjusted_width, adjusted_height, nil, nil, instance, nil,)
 
-	ctx.dpi_scale = get_dpi_scale()
+	ctx.dpi_scale = cast(f32)win.GetDpiForWindow(ctx.hwnd) / 96.0
 
 	if ctx.dpi_scale > 1.0 {
 		scaled_width := int(f32(width) * ctx.dpi_scale)
@@ -89,11 +89,6 @@ init_windows :: proc(title: string, width, height: int) {
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PLAY_PAUSE, 0, u32(Key.MEDIA_PLAY_PAUSE))
-}
-
-get_dpi_scale :: proc() -> f32 {
-	dpi := win.GetDpiForWindow(ctx.hwnd)
-	return cast(f32)dpi / 96.
 }
 
 load_icon_by_size :: proc(size: i32) -> win.HICON {

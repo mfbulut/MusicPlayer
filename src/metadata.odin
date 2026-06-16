@@ -24,8 +24,6 @@ load_small_cover :: proc(track : ^Track, buffer : []u8) {
 			track.small_cover = cover
 		}
 	}
-
-	// TODO add loading from file
 }
 
 load_cover :: proc(track : ^Track, buffer : []u8) {
@@ -42,40 +40,6 @@ load_cover :: proc(track : ^Track, buffer : []u8) {
 		if ok {
 			track.cover = cover
 			track.has_cover = true
-		}
-	}
-
-	if !track.has_cover {
-		stem := fp.stem(track.path)
-		dir := fp.dir(track.path)
-		path := strings.join({dir, "/", stem, ".qoi"}, "")
-
-		if os.exists(path) {
-			cover, ok := fx.load_texture(path)
-			if ok {
-				track.cover = cover
-				track.has_cover = true
-			}
-		} else {
-			delete(path)
-			path = strings.join({dir, "/", stem, ".png"}, "")
-			if os.exists(path) {
-				cover, ok := fx.load_texture(path)
-				if ok {
-					track.cover = cover
-					track.has_cover = true
-				}
-			} else {
-				delete(path)
-				path = strings.join({dir, "/", stem, ".jpg"}, "")
-				if os.exists(path) {
-					cover, ok := fx.load_texture(path)
-					if ok {
-						track.cover = cover
-						track.has_cover = true
-					}
-				}
-			}
 		}
 	}
 }

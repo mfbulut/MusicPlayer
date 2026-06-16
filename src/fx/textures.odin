@@ -97,7 +97,7 @@ load_texture_from_image :: proc(img: ^image.Image, generate_mipmaps := true) -> 
 	return tex
 }
 
-SMALL_SIZE :: 64
+SMALL_SIZE :: 128
 
 load_texture_from_bytes :: proc(data: []u8, generate_mipmaps := true, downsample := false) -> Texture {
 	img, err := image.load_from_bytes(data, {.alpha_add_if_missing})
