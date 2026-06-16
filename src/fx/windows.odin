@@ -16,7 +16,7 @@ HOTKEY_PLAY_PAUSE :: 1003
 init_windows :: proc(title: string, width, height: int) {
 	win_title := win.utf8_to_wstring(title)
 
-	// win.SetProcessDPIAware() // TODO(furkan) add dpi aware scaling
+	win.SetProcessDPIAware()
 
 	instance := win.HINSTANCE(win.GetModuleHandleW(nil))
 	class_name : cstring16 = "Window Class"
@@ -37,9 +37,7 @@ init_windows :: proc(title: string, width, height: int) {
 	screen_width := win.GetSystemMetrics(win.SM_CXSCREEN)
 	screen_height := win.GetSystemMetrics(win.SM_CYSCREEN)
 
-	x := (screen_width - i32(width)) / 2
-	y := (screen_height - i32(height)) / 2
-
+	// Create window at nominal size first to query DPI
 	rect: win.RECT = {
 		left   = 0,
 		top    = 0,
@@ -52,16 +50,50 @@ init_windows :: proc(title: string, width, height: int) {
 	adjusted_width := rect.right - rect.left
 	adjusted_height := rect.bottom - rect.top
 
-	ctx.window.w = int(adjusted_width)
-	ctx.window.h = int(adjusted_height)
+	x := (screen_width - adjusted_width) / 2
+	y := (screen_height - adjusted_height) / 2
 
 	ctx.hwnd = win.CreateWindowExW(0, class_name, win_title, window_styles, x, y, adjusted_width, adjusted_height, nil, nil, instance, nil,)
+
+	ctx.dpi_scale = get_dpi_scale()
+
+	if ctx.dpi_scale > 1.0 {
+		scaled_width := int(f32(width) * ctx.dpi_scale)
+		scaled_height := int(f32(height) * ctx.dpi_scale)
+
+		scaled_rect: win.RECT = {
+			left   = 0,
+			top    = 0,
+			right  = i32(scaled_width),
+			bottom = i32(scaled_height),
+		}
+
+		win.AdjustWindowRectEx(&scaled_rect, window_styles, win.FALSE, 0)
+
+		adjusted_width = scaled_rect.right - scaled_rect.left
+		adjusted_height = scaled_rect.bottom - scaled_rect.top
+
+		x = (screen_width - adjusted_width) / 2
+		y = (screen_height - adjusted_height) / 2
+
+		win.SetWindowPos(ctx.hwnd, nil, x, y, adjusted_width, adjusted_height, win.SWP_NOZORDER | win.SWP_NOACTIVATE)
+	}
+
+	client_rect: win.RECT
+	win.GetClientRect(ctx.hwnd, &client_rect)
+	ctx.window.w = int(client_rect.right)
+	ctx.window.h = int(client_rect.bottom)
 
 	value: win.BOOL = true
 	win.DwmSetWindowAttribute(ctx.hwnd, u32(win.DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE), &value, size_of(value))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_NEXT, 0, u32(Key.MEDIA_NEXT_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PREV, 0, u32(Key.MEDIA_PREV_TRACK))
 	win.RegisterHotKey(ctx.hwnd, HOTKEY_PLAY_PAUSE, 0, u32(Key.MEDIA_PLAY_PAUSE))
+}
+
+get_dpi_scale :: proc() -> f32 {
+	dpi := win.GetDpiForWindow(ctx.hwnd)
+	return cast(f32)dpi / 96.
 }
 
 load_icon_by_size :: proc(size: i32) -> win.HICON {
@@ -96,14 +128,6 @@ switch_keys :: #force_inline proc(virtual_code: u32, lparam: int) -> u32 {
 		return (lparam & 0x01000000) != 0 ? win.VK_RMENU : win.VK_LMENU
 	}
 	return virtual_code
-}
-
-drop_callback :: proc(callback: proc(files: []string)) {
-	ctx.file_drop_callback = callback
-
-	if ctx.hwnd != nil {
-		win.DragAcceptFiles(ctx.hwnd, win.TRUE)
-	}
 }
 
 get_clipboard :: proc(allocator := context.temp_allocator) -> (text: string, ok: bool) {
@@ -268,41 +292,7 @@ win_proc :: proc "stdcall" (
 	    if ctx.compact_mode {
 	        return win.HTCAPTION
 	    }
-	case win.WM_DROPFILES:
-		hdrop := win.HDROP(wparam)
-		defer win.DragFinish(hdrop)
 
-		file_count := win.DragQueryFileW(hdrop, 0xFFFFFFFF, nil, 0)
-
-		if file_count > 0 && ctx.file_drop_callback != nil {
-			files := make([]string, file_count)
-			defer delete(files)
-
-			for i in 0 ..< file_count {
-				length := win.DragQueryFileW(hdrop, u32(i), nil, 0)
-
-				if length > 0 {
-					buffer := make([]u16, length + 1)
-					defer delete(buffer)
-
-					win.DragQueryFileW(hdrop, u32(i), raw_data(buffer), u32(len(buffer)))
-
-					if utf8_str, err := win.wstring_to_utf8(transmute(cstring16)raw_data(buffer), len(buffer));
-					   err == nil {
-						files[i] = strings.clone(utf8_str)
-					}
-				}
-			}
-
-			ctx.file_drop_callback(files)
-
-			for file in files {
-				delete(file)
-			}
-		}
-
-		ctx.is_hovering_files = false
-		return 0
 	}
 
 	return win.DefWindowProcW(hwnd, message, wparam, lparam)
@@ -311,14 +301,17 @@ win_proc :: proc "stdcall" (
 set_window_size :: proc(width, height: int) {
 	if ctx.hwnd == nil do return
 
+	scaled_width := int(f32(width) * ctx.dpi_scale)
+	scaled_height := int(f32(height) * ctx.dpi_scale)
+
 	rect: win.RECT
 	win.GetWindowRect(ctx.hwnd, &rect)
 
 	temp_rect := win.RECT {
 		left   = 0,
 		top    = 0,
-		right  = i32(width),
-		bottom = i32(height),
+		right  = i32(scaled_width),
+		bottom = i32(scaled_height),
 	}
 
 	win.AdjustWindowRectEx(&temp_rect, window_styles, win.FALSE, 0)
@@ -336,8 +329,10 @@ set_window_size :: proc(width, height: int) {
 		win.SWP_NOZORDER | win.SWP_NOACTIVATE,
 	)
 
-	ctx.window.w = int(adjusted_width)
-	ctx.window.h = int(adjusted_height)
+	client_rect: win.RECT
+	win.GetClientRect(ctx.hwnd, &client_rect)
+	ctx.window.w = int(client_rect.right)
+	ctx.window.h = int(client_rect.bottom)
 }
 
 center_window :: proc() {

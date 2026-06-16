@@ -35,6 +35,8 @@ Context :: struct {
 		x, y: int,
 	},
 	compact_mode:        bool,
+	dpi_scale:           f32,
+	rendering_to_texture: bool,
 }
 
 ctx: Context
@@ -50,19 +52,11 @@ init :: proc(title: string, width, height: int) {
 	ctx.is_running = true
 }
 
-update_frame :: proc(frame_proc: proc(), vsync := true) {
+update_frame :: proc(frame_proc: proc()) {
 	ci := win.CURSORINFO {
 		cbSize = size_of(win.CURSORINFO),
 	}
 	win.GetCursorInfo(&ci)
-
-	// Probably only works on my machine
-	CURSOR_ID :: 0x705F3
-	if (ci.hCursor == transmute(win.HCURSOR)uintptr(CURSOR_ID)) {
-		ctx.is_hovering_files = true
-	} else {
-		ctx.is_hovering_files = false
-	}
 
 	current_time := time.now()
 	ctx.delta_time = f32(time.duration_seconds(time.diff(ctx.prev_time, current_time)))
@@ -70,13 +64,13 @@ update_frame :: proc(frame_proc: proc(), vsync := true) {
 	ctx.prev_time = current_time
 
 	if !ctx.is_minimized {
-		set_scissor(0, 0, f32(ctx.window.w), f32(ctx.window.h))
+		set_scissor(0, 0, f32(ctx.window.w) / ctx.dpi_scale, f32(ctx.window.h) / ctx.dpi_scale)
 		clear_background({0, 0, 0, 0})
 		begin_render()
 		update_constant_buffer()
 		frame_proc()
 		end_render()
-		swap_buffers(vsync)
+		swap_buffers()
 	} else {
 		frame_proc()
 		win.Sleep(16)
@@ -100,21 +94,9 @@ update_frame :: proc(frame_proc: proc(), vsync := true) {
 	ctx.mouse_scroll = 0
 }
 
-run_once :: proc(frame: proc()) {
-	msg: win.MSG
-	for win.PeekMessageW(&msg, ctx.hwnd, 0, 0, win.PM_REMOVE) {
-		win.TranslateMessage(&msg)
-		win.DispatchMessageW(&msg)
-	}
-
-	update_frame(frame, false)
-}
-
 run :: proc(frame: proc()) {
 	ctx.frame_proc = frame
-
-	current_time := time.now()
-	ctx.prev_time = current_time
+	ctx.prev_time = time.now()
 
 	msg: win.MSG
 	for ctx.is_running {
@@ -152,7 +134,7 @@ mouse_released :: #force_inline proc(button: Mouse) -> bool {
 }
 
 get_mouse :: proc() -> (f32, f32) {
-	return f32(ctx.mouse_pos.x), f32(ctx.mouse_pos.y)
+	return f32(ctx.mouse_pos.x) / ctx.dpi_scale, f32(ctx.mouse_pos.y) / ctx.dpi_scale
 }
 
 get_mouse_scroll :: proc() -> f32 {
@@ -172,11 +154,11 @@ set_char_callback :: proc(callback: proc(char: rune)) {
 }
 
 window_size :: proc() -> (f32, f32) {
-	return f32(ctx.window.w), f32(ctx.window.h)
+	return f32(ctx.window.w) / ctx.dpi_scale, f32(ctx.window.h) / ctx.dpi_scale
 }
 
-is_hovering_files :: proc() -> bool {
-	return ctx.is_hovering_files
+dpi_scale :: proc() -> f32 {
+	return ctx.dpi_scale
 }
 
 Cursor :: enum u8 {

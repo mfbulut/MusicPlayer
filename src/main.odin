@@ -3,8 +3,6 @@ package main
 import "fx"
 
 import "core:fmt"
-import "core:time"
-import "core:os"
 import "core:strings"
 import fp "core:path/filepath"
 import textedit "core:text/edit"
@@ -127,7 +125,6 @@ frame :: proc() {
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.B) {
 		ui_state.hide_sidebar = !ui_state.hide_sidebar
-		// fx.set_sidebar_size(ui_state.hide_sidebar ? 0 : 200)
 	}
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.L) {
@@ -136,7 +133,7 @@ frame :: proc() {
 
 	if fx.key_pressed(.F5) {
 		clear(&playlists)
-		load_files(music_dir)
+		load_music()
 		sort_playlists()
 		init_cover_loading()
 	}
@@ -213,22 +210,15 @@ frame :: proc() {
 			}
 		}
 	}
-
-	if fx.is_hovering_files() {
-		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 180})
-		fx.draw_text_aligned("Drop files to add to the queue", window_w / 2, window_h / 2, 32, fx.WHITE, .CENTER)
-	}
 }
 
 blur_shader_hlsl := #load("assets/shaders/gaussian_blur.hlsl")
 blur_shader: fx.Shader
 background: fx.RenderTexture
+update_background: bool
+loading_covers: bool
 
 playlists: [dynamic]Playlist
-
-loading_covers: bool
-update_background: bool
-music_dir: string
 
 main :: proc() {
 	fx.init("Music Player", 1280, 720)
@@ -236,66 +226,15 @@ main :: proc() {
 
 	blur_shader  = fx.load_shader(blur_shader_hlsl)
 	background   = fx.create_render_texture(2048, 2048)
-	music_dir, _ = os.user_music_dir(context.allocator)
 
 	load_icons()
 	load_state()
-
-	fx.run_once(proc() {
-		frame()
-		window_w, window_h := fx.window_size()
-		fx.draw_rect(0, 0, window_w, window_h, fx.Color{0, 0, 0, 180})
-		fx.draw_text_aligned("Loading...", window_w / 2, window_h / 2 - 16, 32, fx.WHITE, .CENTER)
-
-		compile_time :: time.Time{ODIN_COMPILE_TIMESTAMP}
-		date_buf : [time.MIN_YYYY_DATE_LEN]u8
-		time_buf : [time.MIN_HMS_LEN]u8
-
-		fx.draw_text_aligned(
-			fmt.tprintf(
-				"%s %s",
-				time.to_string_yyyy_mm_dd(compile_time, date_buf[:]),
-				time.to_string_hms(compile_time, time_buf[:]),
-			), window_w / 2, window_h / 2 + 64, 24, fx.Color{64, 64, 64, 64}, .CENTER)
-	})
-
-	load_files(music_dir)
-
+	load_music()
 	load_liked_songs()
-
 	sort_playlists()
 	search_tracks("")
-
 	init_cover_loading()
 	init_thumbnail_loading()
-
-	fx.drop_callback(drop_callback)
 	fx.run(frame)
-
 	save_state()
-}
-
-drop_callback :: proc(files: []string) {
-	for filepath in files {
-		file := os.stat(filepath, context.allocator) or_continue
-		if file.type == .Directory {
-			load_files(filepath)
-			ui_state.selected_playlist = file.name
-			ui_state.current_view = .PLAYLIST_DETAIL
-
-			playlist_id := playlist_id(file.name)
-
-			if playlist_id >= 0 {
-				ok: bool
-				playlists[playlist_id].cover, ok = fx.load_texture(playlists[playlist_id].cover_path)
-				playlists[playlist_id].loaded = ok
-			}
-
-			sort_playlists()
-		} else {
-			if is_audio_file(file.name) {
-				process_music_file(file, true)
-			}
-		}
-	}
 }

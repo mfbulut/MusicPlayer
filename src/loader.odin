@@ -55,8 +55,11 @@ Playlist :: struct {
 	loaded:     bool,
 }
 
-load_files :: proc(dir_path: string) {
-	w := os.walker_create(dir_path)
+load_music :: proc() {
+	music_dir := os.user_music_dir(context.allocator) or_else panic("Couldn't find music dir")
+	defer delete(music_dir)
+
+	w := os.walker_create(music_dir)
 	defer os.walker_destroy(&w)
 
 	for info in os.walker_walk(&w) {

@@ -55,10 +55,6 @@ load_state :: proc() {
 		clear(&liked_songs)
 
 		if settings_data, settings_ok := ini_map["settings"]; settings_ok {
-			if path_str, path_ok := settings_data["path"]; path_ok {
-				music_dir = strings.clone(path_str)
-			}
-
 			if volume_str, volume_ok := settings_data["volume"]; volume_ok {
 				if volume, parse_ok := strconv.parse_f32(volume_str); parse_ok {
 					player.volume = volume
@@ -109,7 +105,6 @@ save_state :: proc() {
 	stream := strings.to_stream(&builder)
 
 	ini.write_section(stream, "settings")
-	ini.write_pair(stream, "path", music_dir)
 	ini.write_pair(stream, "volume", fmt.aprintf("%.6f", player.volume))
 	ini.write_pair(stream, "shuffle", "true" if player.shuffle else "false")
 	ini.write_pair(stream, "theme", fmt.aprintf("%d", ui_state.theme))

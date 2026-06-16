@@ -13,7 +13,6 @@ device_context: ^D3D11.IDeviceContext
 swapchain: ^DXGI.ISwapChain1
 framebuffer_view: ^D3D11.IRenderTargetView
 
-// MSAA resources
 msaa_render_target: ^D3D11.ITexture2D
 msaa_render_target_view: ^D3D11.IRenderTargetView
 msaa_depth_stencil: ^D3D11.ITexture2D
@@ -38,7 +37,6 @@ vertex_buffer_offset: u32 = 0
 MSAA_SAMPLE_COUNT :: 4
 msaa_quality: u32
 
-@(private)
 init_dx :: proc() {
 	feature_levels := [?]D3D11.FEATURE_LEVEL{._11_0}
 
@@ -259,7 +257,6 @@ init_dx :: proc() {
 	device->CreateBuffer(&constant_buffer_desc, nil, &constant_buffer)
 }
 
-@(private)
 create_framebuffer :: proc() {
 	if framebuffer_view != nil {
 		framebuffer_view->Release()
@@ -326,12 +323,11 @@ create_framebuffer :: proc() {
 	framebuffer->Release()
 }
 
-@(private)
 update_constant_buffer :: proc(data: []f32 = {}) {
 	width, height := window_size()
 	constants: [16]f32
-	constants[0] = 2.0 / f32(width)
-	constants[1] = -2.0 / f32(height)
+	constants[0] = 2.0 / width
+	constants[1] = -2.0 / height
 	constants[2] = ctx.timer
 
 	copy(constants[3:3 + len(data)], data[:len(data)])
@@ -345,7 +341,6 @@ update_constant_buffer :: proc(data: []f32 = {}) {
 	device_context->Unmap(constant_buffer, 0)
 }
 
-@(private)
 resize_swapchain :: proc(width, height: int) {
 	if swapchain == nil do return
 	if width <= 0 || height <= 0 do return
@@ -444,13 +439,9 @@ resolve_msaa :: proc() {
 	back_buffer->Release()
 }
 
-swap_buffers :: proc(vsync: bool) {
+swap_buffers :: proc() {
 	resolve_msaa()
-	if vsync {
-		swapchain->Present(1, {})
-	} else {
-		swapchain->Present(0, {})
-	}
+	swapchain->Present(1, {})
 }
 
 set_scissor :: proc(x, y, width, height: f32) {
@@ -458,11 +449,12 @@ set_scissor :: proc(x, y, width, height: f32) {
 		end_render()
 	}
 
+	scale : f32 = ctx.rendering_to_texture ? 1.0 : ctx.dpi_scale
 	rect := D3D11.RECT {
-		left   = i32(x),
-		top    = i32(y),
-		right  = i32(x) + i32(width),
-		bottom = i32(y) + i32(height),
+		left   = i32(x * scale),
+		top    = i32(y * scale),
+		right  = i32((x + width) * scale),
+		bottom = i32((y + height) * scale),
 	}
 	device_context->RSSetScissorRects(1, &rect)
 }

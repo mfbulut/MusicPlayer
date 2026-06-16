@@ -95,12 +95,15 @@ begin_render_to_texture :: proc(rt: ^RenderTexture, clear_color: Color = {0, 0, 
 	}
 
 	update_constant_buffer_for_rt(rt.width, rt.height)
+	ctx.rendering_to_texture = true
 }
 
 end_render_to_texture :: proc() {
 	if verticies_count > 0 {
 		end_render()
 	}
+
+	ctx.rendering_to_texture = false
 
 	device_context->RSSetViewports(1, &viewport)
 	device_context->OMSetRenderTargets(1, &msaa_render_target_view, msaa_depth_stencil_view)
