@@ -20,6 +20,26 @@ OpusFileCallbacks :: struct {
     close : proc "c" (stream: rawptr) -> c.int,
 }
 
+OpusTags :: struct {
+    user_comments   : [^]cstring,
+    comment_lengths : [^]c.int,
+    comments        : c.int,
+    vendor          : cstring,
+}
+
+OpusPictureTag :: struct {
+    type        : i32,
+    mime_type   : cstring,
+    description : cstring,
+    width       : u32,
+    height      : u32,
+    depth       : u32,
+    colors      : u32,
+    data_length : u32,
+    data        : [^]u8,
+    format      : c.int,
+}
+
 @(default_calling_convention = "c")
 foreign opusfile_lib {
     op_open_callbacks :: proc(stream: rawptr, cb: ^OpusFileCallbacks, initial_data: [^]u8, initial_bytes: c.size_t, error: ^c.int) -> ^OggOpusFile ---
@@ -31,12 +51,22 @@ foreign opusfile_lib {
     op_pcm_tell       :: proc(of: ^OggOpusFile) -> i64 ---
     op_pcm_total      :: proc(of: ^OggOpusFile, li: c.int) -> i64 ---
     op_channel_count  :: proc(of: ^OggOpusFile, li: c.int) -> c.int ---
+
+    // Tag / metadata functions
+    op_tags              :: proc(of: ^OggOpusFile, li: c.int) -> ^OpusTags ---
+    opus_tags_query       :: proc(tags: ^OpusTags, tag: cstring, count: c.int) -> cstring ---
+    opus_tags_query_count :: proc(tags: ^OpusTags, tag: cstring) -> c.int ---
+
+    // Picture tag functions
+    opus_picture_tag_parse :: proc(pic: ^OpusPictureTag, tag: cstring) -> c.int ---
+    opus_picture_tag_init  :: proc(pic: ^OpusPictureTag) ---
+    opus_picture_tag_clear :: proc(pic: ^OpusPictureTag) ---
 }
 
 OP_ENOSEEK :: -133
 OP_EINVAL  :: -131
 
-OggVorbis_File :: struct { _pad: [728]u8 }
+OggVorbis_File :: struct { _pad: [840]u8 }
 
 VorbisInfo :: struct {
     version         : c.int,
@@ -56,6 +86,13 @@ OvCallbacks :: struct {
     tell_func  : proc "c" (stream: rawptr) -> c.long,
 }
 
+VorbisComment :: struct {
+    user_comments   : [^]cstring,
+    comment_lengths : [^]c.int,
+    comments        : c.int,
+    vendor          : cstring,
+}
+
 @(default_calling_convention = "c")
 foreign vorbisfile_lib {
     ov_open_callbacks :: proc(datasource: rawptr, vf: ^OggVorbis_File, initial: rawptr, ibytes: c.long, callbacks: OvCallbacks) -> c.int ---
@@ -66,14 +103,15 @@ foreign vorbisfile_lib {
     ov_read_float     :: proc(vf: ^OggVorbis_File, pcm_channels: ^[^][^]f32, samples: c.int, bitstream: ^c.int) -> c.long ---
     ov_pcm_seek       :: proc(vf: ^OggVorbis_File, pos: i64) -> c.int ---
     ov_pcm_tell       :: proc(vf: ^OggVorbis_File) -> i64 ---
+
+    // Comment / metadata functions
+    ov_comment             :: proc(vf: ^OggVorbis_File, link: c.int) -> ^VorbisComment ---
+    vorbis_comment_query   :: proc(vc: ^VorbisComment, tag: cstring, count: c.int) -> cstring ---
+    vorbis_comment_query_count :: proc(vc: ^VorbisComment, tag: cstring) -> c.int ---
 }
 
 OV_ENOSEEK :: -150
 OV_EINVAL  :: -131
-
-// ---------------------------------------------------------------------------
-// Seek origin constants (matching SEEK_SET / SEEK_CUR / SEEK_END)
-// ---------------------------------------------------------------------------
 
 SEEK_SET :: 0
 SEEK_CUR :: 1
@@ -94,7 +132,6 @@ ma_libopus :: struct {
 }
 
 // data-source vtable callbacks
-@(private)
 g_ma_libopus_ds_vtable := ma.data_source_vtable{
     onRead          = ma_libopus_read_pcm_frames,
     onSeek          = ma_libopus_seek_to_pcm_frame,
@@ -105,8 +142,6 @@ g_ma_libopus_ds_vtable := ma.data_source_vtable{
     flags           = {},
 }
 
-// opusfile I/O callbacks
-@(private)
 _opus_cb_read :: proc "c" (pUserData: rawptr, pBufferOut: [^]u8, bytesToRead: c.int) -> c.int {
     pOpus := (^ma_libopus)(pUserData)
     bytesRead: c.size_t
@@ -115,7 +150,6 @@ _opus_cb_read :: proc "c" (pUserData: rawptr, pBufferOut: [^]u8, bytesToRead: c.
     return c.int(bytesRead)
 }
 
-@(private)
 _opus_cb_seek :: proc "c" (pUserData: rawptr, offset: i64, whence: c.int) -> c.int {
     pOpus := (^ma_libopus)(pUserData)
     origin: ma.seek_origin
@@ -128,7 +162,6 @@ _opus_cb_seek :: proc "c" (pUserData: rawptr, offset: i64, whence: c.int) -> c.i
     return 0
 }
 
-@(private)
 _opus_cb_tell :: proc "c" (pUserData: rawptr) -> i64 {
     pOpus := (^ma_libopus)(pUserData)
     if pOpus.onTell == nil { return -1 }
@@ -137,7 +170,6 @@ _opus_cb_tell :: proc "c" (pUserData: rawptr) -> i64 {
     return cursor
 }
 
-@(private)
 ma_libopus_init_internal :: proc "c" (pConfig: ^ma.decoding_backend_config, pOpus: ^ma_libopus) -> ma.result {
     if pOpus == nil { return .INVALID_ARGS }
     pOpus^ = {}
@@ -287,8 +319,6 @@ ma_libvorbis :: struct {
     vf                   : ^OggVorbis_File,
 }
 
-// data-source vtable callbacks
-@(private)
 g_ma_libvorbis_ds_vtable := ma.data_source_vtable{
     onRead          = ma_libvorbis_read_pcm_frames,
     onSeek          = ma_libvorbis_seek_to_pcm_frame,
@@ -299,8 +329,6 @@ g_ma_libvorbis_ds_vtable := ma.data_source_vtable{
     flags           = {},
 }
 
-// vorbisfile I/O callbacks
-@(private)
 _vorbis_cb_read :: proc "c" (ptr: rawptr, size: c.size_t, nmemb: c.size_t, stream: rawptr) -> c.size_t {
     pVorbis := (^ma_libvorbis)(stream)
     if size == 0 || nmemb == 0 { return 0 }
@@ -311,7 +339,6 @@ _vorbis_cb_read :: proc "c" (ptr: rawptr, size: c.size_t, nmemb: c.size_t, strea
     return bytesRead / size
 }
 
-@(private)
 _vorbis_cb_seek :: proc "c" (stream: rawptr, offset: i64, whence: c.int) -> c.int {
     pVorbis := (^ma_libvorbis)(stream)
     origin: ma.seek_origin
@@ -324,7 +351,6 @@ _vorbis_cb_seek :: proc "c" (stream: rawptr, offset: i64, whence: c.int) -> c.in
     return 0
 }
 
-@(private)
 _vorbis_cb_tell :: proc "c" (stream: rawptr) -> c.long {
     pVorbis := (^ma_libvorbis)(stream)
     cursor: i64
@@ -332,7 +358,6 @@ _vorbis_cb_tell :: proc "c" (stream: rawptr) -> c.long {
     return c.long(cursor)
 }
 
-@(private)
 ma_libvorbis_init_internal :: proc "c" (pConfig: ^ma.decoding_backend_config, pAllocationCallbacks: ^ma.allocation_callbacks, pVorbis: ^ma_libvorbis) -> ma.result {
     if pVorbis == nil { return .INVALID_ARGS }
     pVorbis^ = {}
@@ -487,13 +512,8 @@ ma_libvorbis_get_length_in_pcm_frames :: proc "c" (pDataSource: ^ma.data_source,
     pVorbis := (^ma_libvorbis)(pDataSource)
     if pLength == nil { return .INVALID_ARGS }
     pLength^ = 0
-    // libvorbis cannot reliably report length; return 0 like the C original.
     return .SUCCESS
 }
-
-// ---------------------------------------------------------------------------
-// Backend vtable entry-points (called by miniaudio through the vtable)
-// ---------------------------------------------------------------------------
 
 ma_decoding_backend_init__libopus :: proc "c" (pUserData: rawptr, onRead: ma.decoder_read_proc, onSeek: ma.decoder_seek_proc, onTell: ma.decoder_tell_proc, pReadSeekTellUserData: rawptr, pConfig: ^ma.decoding_backend_config, pAllocationCallbacks: ^ma.allocation_callbacks, ppBackend: ^^ma.data_source) -> ma.result {
     pOpus := (^ma_libopus)(ma.malloc(size_of(ma_libopus), pAllocationCallbacks))
@@ -542,6 +562,9 @@ ma_decoding_backend_uninit__libvorbis :: proc "c" (pUserData: rawptr, pBackend: 
     ma_libvorbis_uninit(pVorbis, pAllocationCallbacks)
     ma.free(pVorbis, pAllocationCallbacks)
 }
+
+
+// Miniaudio vorbis and opus backends
 
 _libopus_vtable := ma.decoding_backend_vtable{
     onInit      = ma_decoding_backend_init__libopus,

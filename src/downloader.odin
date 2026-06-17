@@ -2,23 +2,21 @@ package main
 
 import "fx"
 
-import sa "core:container/small_array"
-import "core:encoding/json"
 import "core:fmt"
 import "core:os"
-import "core:path/filepath"
 import "core:strconv"
 import "core:strings"
 import "core:unicode/utf8"
+import "core:encoding/json"
 
 LyricsResponse :: struct {
-	id:           int `json:"id"`,
-	trackName:    string `json:"trackName"`,
-	artistName:   string `json:"artistName"`,
-	albumName:    string `json:"albumName"`,
-	duration:     f32 `json:"duration"`,
-	instrumental: bool `json:"instrumental"`,
-	plainLyrics:  string `json:"plainLyrics"`,
+	id:           int           `json:"id"`,
+	trackName:    string        `json:"trackName"`,
+	artistName:   string        `json:"artistName"`,
+	albumName:    string        `json:"albumName"`,
+	duration:     f32           `json:"duration"`,
+	instrumental: bool          `json:"instrumental"`,
+	plainLyrics:  string        `json:"plainLyrics"`,
 	syncedLyrics: Maybe(string) `json:"syncedLyrics"`,
 }
 
@@ -138,7 +136,6 @@ download_lyrics :: proc() {
 	}
 
 	opts, opts_count := guess_search_opts(player.current_track.name)
-	fmt.println(opts)
 	res, ok := fx.get("https://lrclib.net/api/search", opts[:opts_count])
 
 	if !ok {

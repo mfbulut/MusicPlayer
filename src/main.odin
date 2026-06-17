@@ -2,17 +2,15 @@ package main
 
 import "fx"
 
-import "core:fmt"
 import "core:strings"
-import fp "core:path/filepath"
 import textedit "core:text/edit"
 
-SIDEBAR_WIDTH       :: f32(240)
-QUEUE_SIDEBAR_MAX   :: f32(400)
-TITLE_HEIGHT        :: f32(40)
-PLAYER_HEIGHT       :: f32(80)
-SIDEBAR_ANIM_SPEED  :: f32(4)
-UI_SCROLL_SPEED     :: f32(20)
+SIDEBAR_WIDTH      :: f32(240)
+QUEUE_SIDEBAR_MAX  :: f32(400)
+TITLE_HEIGHT       :: f32(40)
+PLAYER_HEIGHT      :: f32(80)
+SIDEBAR_ANIM_SPEED :: f32(4)
+UI_SCROLL_SPEED    :: f32(20)
 
 View :: enum {
 	SEARCH,
@@ -143,7 +141,7 @@ frame :: proc() {
 			ui_state.compact_mode = false
 			fx.set_window_size(1280, 720)
 			fx.center_window()
-			fx.disable_compact_mode()
+			fx.compact_mode(false)
 		} else {
  			if player.current_track.path == "" {
 				show_alert({}, "No track is playing", "Open a track before opening compact mode", 2)
@@ -151,7 +149,7 @@ frame :: proc() {
 				ui_state.compact_mode = true
 				fx.set_window_size(600, 80)
 				fx.set_window_pos(0, 0)
-				fx.enable_compact_mode()
+				fx.compact_mode(true)
 			}
 		}
 	}
@@ -217,16 +215,13 @@ blur_shader: fx.Shader
 background: fx.RenderTexture
 update_background: bool
 loading_covers: bool
-
 playlists: [dynamic]Playlist
 
 main :: proc() {
 	fx.init("Music Player", 1280, 720)
 	init_ui_state()
-
 	blur_shader  = fx.load_shader(blur_shader_hlsl)
 	background   = fx.create_render_texture(2048, 2048)
-
 	load_icons()
 	load_state()
 	load_music()

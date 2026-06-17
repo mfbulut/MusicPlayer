@@ -1,7 +1,6 @@
 package main
 
 import "fx"
-import "core:fmt"
 
 draw_queue_sidebar :: proc(x_offset: f32, size: f32) {
 	if ui_state.queue_sidebar_anim <= 0 {
@@ -9,7 +8,7 @@ draw_queue_sidebar :: proc(x_offset: f32, size: f32) {
 	}
 
 	queue_sc := &ui_state.queue_scrollbar
-	window_w, window_h := fx.window_size()
+	_, window_h := fx.window_size()
 
 	y_offset: f32 = 50
 
@@ -35,7 +34,7 @@ draw_queue_sidebar :: proc(x_offset: f32, size: f32) {
 	}
 
 	track_y := list_y - queue_sc.scroll
-	mouse_x, mouse_y := fx.get_mouse()
+	mouse_x, _ := fx.get_mouse()
 
 	for i in 0 ..< track_count {
 		track := player.queue.tracks[track_count - 1 - i]

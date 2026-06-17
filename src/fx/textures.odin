@@ -9,7 +9,10 @@ import "core:image/qoi"
 import "core:image/jpeg"
 import "core:math"
 import "core:os"
-import "core:mem"
+
+_ :: png
+_ :: qoi
+_ :: jpeg
 
 import stb "vendor:stb/image"
 

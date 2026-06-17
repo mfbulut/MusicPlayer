@@ -1,7 +1,6 @@
 package main
 
 import "fx"
-import "core:fmt"
 import "core:os"
 import "core:hash"
 import "core:slice"
@@ -84,15 +83,6 @@ find_playlist_by_name :: proc(name: string) -> ^Playlist {
 		}
 	}
 	return nil
-}
-
-playlist_id :: proc(name: string) -> int {
-	for playlist, i in playlists {
-		if playlist.name == name {
-			return i
-		}
-	}
-	return -1
 }
 
 find_track_by_name :: proc(track_name: string, playlist_name: string) -> ^Track {
@@ -200,7 +190,7 @@ parse_track_number :: proc(track_str: string) -> int {
 	return -1
 }
 
-process_music_file :: proc(file: os.File_Info, queue := false) {
+process_music_file :: proc(file: os.File_Info) {
 	dir_path, filename := os.split_path(file.fullpath)
 	name, ext := os.split_filename(filename)
 
@@ -216,19 +206,27 @@ process_music_file :: proc(file: os.File_Info, queue := false) {
 		lyrics   = load_lyrics_for_track(file.fullpath),
 	}
 
-	tags, tags_ok := load_id3_tags(music.path)
+	tags: Tags
+	tags_ok: bool
+
+	switch ext {
+	case "mp3":
+		tags, tags_ok = load_id3_tags(music.path)
+	case "flac":
+		tags, tags_ok = load_flac_vorbis_comment_tags(music.path)
+	case "opus":
+		tags, tags_ok = load_opus_tags(music.path)
+	case "ogg":
+		tags, tags_ok = load_ogg_vorbis_tags(music.path)
+	}
 
 	if tags_ok {
 		music.tags = tags
 		music.has_tags = true
 	}
 
-	if queue {
-		append(&player.queue.tracks, music)
-	} else {
-		playlist := find_or_create_playlist(dir_path, dir_name)
-		append(&playlist.tracks, music)
-	}
+	playlist := find_or_create_playlist(dir_path, dir_name)
+	append(&playlist.tracks, music)
 }
 
 Cover_Load_Result :: struct {
@@ -329,7 +327,6 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 					buffer := os.read_entire_file(track.path, context.allocator) or_continue
 
 					load_small_cover(&track, buffer)
-					track.thumbnail_loaded = true
 					delete(buffer)
 
 					continue out

@@ -2,13 +2,12 @@ package main
 
 import "fx"
 
-import "core:os"
 import "core:fmt"
 import "core:math"
 import "core:strings"
 import fp "core:path/filepath"
 
-truncated_text_buffer: [256]u8
+truncated_text_buffer: [512]u8
 
 truncate_text :: proc(text: string, max_width: f32, font_size: f32) -> string {
 	text_width := fx.measure_text(text, font_size)
@@ -532,20 +531,20 @@ music_icon_qoi    := #load("assets/music.qoi")
 sidebar_icon_qoi  := #load("assets/sidebar.qoi")
 
 previous_icon: fx.Texture
-forward_icon: fx.Texture
-pause_icon: fx.Texture
-play_icon: fx.Texture
-volume_icon: fx.Texture
-shuffle_icon: fx.Texture
-liked_icon: fx.Texture
-liked_empty: fx.Texture
-search_icon: fx.Texture
-queue_icon: fx.Texture
-exit_icon: fx.Texture
+forward_icon:  fx.Texture
+pause_icon:    fx.Texture
+play_icon:     fx.Texture
+volume_icon:   fx.Texture
+shuffle_icon:  fx.Texture
+liked_icon:    fx.Texture
+liked_empty:   fx.Texture
+search_icon:   fx.Texture
+queue_icon:    fx.Texture
+exit_icon:     fx.Texture
 maximize_icon: fx.Texture
 minimize_icon: fx.Texture
-music_icon: fx.Texture
-sidebar_icon: fx.Texture
+music_icon:    fx.Texture
+sidebar_icon:  fx.Texture
 
 load_icons :: proc() {
 	previous_icon = fx.load_texture_from_bytes(previous_icon_qoi)

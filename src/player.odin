@@ -5,7 +5,6 @@ import "fx"
 import "core:os"
 import "core:math"
 import "core:math/rand"
-import "core:sync"
 
 PlayerState :: enum {
 	STOPPED,

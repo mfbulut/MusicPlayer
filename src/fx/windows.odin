@@ -2,7 +2,6 @@ package fx
 
 import "base:runtime"
 import "core:mem"
-import "core:strings"
 import "core:unicode/utf8"
 
 import win "core:sys/windows"
@@ -276,7 +275,7 @@ win_proc :: proc "stdcall" (
 				buf_utf8: [4]u8
 				_ = win.wstring_to_utf8(buf_utf8[:], transmute(cstring16)raw_data(&buf_w))
 
-				if r, len := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
+				if r, _ := utf8.decode_rune_in_bytes(buf_utf8[:]); r != utf8.RUNE_ERROR {
 					callback(r)
 				}
 			}
@@ -294,8 +293,6 @@ win_proc :: proc "stdcall" (
 }
 
 set_window_size :: proc(width, height: int) {
-	if ctx.hwnd == nil do return
-
 	scaled_width := int(f32(width) * ctx.dpi_scale)
 	scaled_height := int(f32(height) * ctx.dpi_scale)
 
@@ -345,15 +342,7 @@ center_window :: proc() {
 	x := (screen_width - window_width) / 2
 	y := (screen_height - window_height) / 2
 
-	win.SetWindowPos(
-		ctx.hwnd,
-		nil,
-		x,
-		y,
-		window_width,
-		window_height,
-		win.SWP_NOZORDER | win.SWP_NOACTIVATE,
-	)
+	win.SetWindowPos(ctx.hwnd, nil, x, y, window_width, window_height, win.SWP_NOZORDER | win.SWP_NOACTIVATE)
 }
 
 set_window_pos :: proc(x, y: int) {
@@ -454,7 +443,7 @@ constrain_window_to_screen :: proc() {
 	}
 }
 
-update_window_style :: proc(enabled: bool) {
+compact_mode :: proc(enabled: bool) {
 	if ctx.hwnd == nil do return
 	current_style := u32(win.GetWindowLongW(ctx.hwnd, win.GWL_STYLE))
 	current_ex_style := u32(win.GetWindowLongW(ctx.hwnd, win.GWL_EXSTYLE))
@@ -495,14 +484,4 @@ update_window_style :: proc(enabled: bool) {
 		0, 0, 0, 0,
 		win.SWP_NOMOVE | win.SWP_NOSIZE | win.SWP_FRAMECHANGED,
 	)
-}
-
-enable_compact_mode :: proc() {
-	ctx.compact_mode = true
-	update_window_style(true)
-}
-
-disable_compact_mode :: proc() {
-	ctx.compact_mode = false
-	update_window_style(false)
 }
