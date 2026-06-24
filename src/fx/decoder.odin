@@ -5,10 +5,10 @@ import "core:c"
 import ma "vendor:miniaudio"
 
 @(extra_linker_flags = "/nodefaultlib:libcmt")
-foreign import opusfile_lib  "deps/opusfile/lib/opusfile.lib"
+foreign import opusfile_lib  "deps/opusfile.lib"
 foreign import vorbisfile_lib {
-    "deps/vorbisfile/lib/vorbis.lib",
-    "deps/vorbisfile/lib/vorbisfile.lib",
+    "deps/vorbis.lib",
+    "deps/vorbisfile.lib",
 }
 
 OggOpusFile :: struct{}
@@ -52,7 +52,7 @@ foreign opusfile_lib {
     op_pcm_total      :: proc(of: ^OggOpusFile, li: c.int) -> i64 ---
     op_channel_count  :: proc(of: ^OggOpusFile, li: c.int) -> c.int ---
 
-    // Tag / metadata functions
+    // Metadata functions
     op_tags              :: proc(of: ^OggOpusFile, li: c.int) -> ^OpusTags ---
     opus_tags_query       :: proc(tags: ^OpusTags, tag: cstring, count: c.int) -> cstring ---
     opus_tags_query_count :: proc(tags: ^OpusTags, tag: cstring) -> c.int ---
