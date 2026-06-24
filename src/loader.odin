@@ -325,10 +325,8 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 			for &track in playlist.tracks {
 				if !track.thumbnail_loaded {
 					buffer := os.read_entire_file(track.path, context.allocator) or_continue
-
 					load_small_cover(&track, buffer)
 					delete(buffer)
-
 					continue out
 				}
 			}

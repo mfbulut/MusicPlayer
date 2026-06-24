@@ -3,6 +3,7 @@ package main
 import "fx"
 
 import "core:fmt"
+import "core:strings"
 
 draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue := false) {
 	hover := is_hovering(x, y, w, h)
@@ -32,7 +33,19 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
 
 	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
-	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
+	selected_detail := track.playlist
+	if track.has_tags {
+		if len(track.tags.artist) > 0 {
+			real_artist := strings.split(track.tags.artist, ",", context.temp_allocator)[0]
+			if len(track.tags.album) > 0 {
+				selected_detail = fmt.tprintf("%s - %s", real_artist, track.tags.album)
+			} else {
+				selected_detail = fmt.tprintf("%s", real_artist)
+			}
+		} else if len(track.tags.album) > 0 {
+			selected_detail = fmt.tprintf("%s", track.tags.album)
+		}
+	}
 
 	offset : f32 = 0
 
@@ -55,7 +68,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	track_title := truncate_text(selected_title, w - 75 - offset, 20)
 	fx.draw_text(track_title, x + 20 + offset, y + 9, 20, text_color)
 
-	track_playlist := truncate_text(selected_album, w - 75 - offset, 15)
+	track_playlist := truncate_text(selected_detail, w - 75 - offset, 15)
 	fx.draw_text(track_playlist, x + 21 + offset, y + 35, 15, secondary_color)
 
 	is_liked := is_song_liked(track.name, track.playlist)

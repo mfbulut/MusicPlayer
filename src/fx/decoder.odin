@@ -6,10 +6,7 @@ import ma "vendor:miniaudio"
 
 @(extra_linker_flags = "/nodefaultlib:libcmt")
 foreign import opusfile_lib  "deps/opusfile.lib"
-foreign import vorbisfile_lib {
-    "deps/vorbis.lib",
-    "deps/vorbisfile.lib",
-}
+foreign import vorbisfile_lib { "deps/vorbis.lib", "deps/vorbisfile.lib"}
 
 OggOpusFile :: struct{}
 
@@ -563,21 +560,16 @@ ma_decoding_backend_uninit__libvorbis :: proc "c" (pUserData: rawptr, pBackend: 
     ma.free(pVorbis, pAllocationCallbacks)
 }
 
-
 // Miniaudio vorbis and opus backends
 
-_libopus_vtable := ma.decoding_backend_vtable{
-    onInit      = ma_decoding_backend_init__libopus,
-    onInitFile  = ma_decoding_backend_init_file__libopus,
-    onInitFileW = nil,
-    onInitMemory= nil,
-    onUninit    = ma_decoding_backend_uninit__libopus,
+opus_decoder := ma.decoding_backend_vtable {
+	onInit       = ma_decoding_backend_init__libopus,
+	onInitFile   = ma_decoding_backend_init_file__libopus,
+	onUninit     = ma_decoding_backend_uninit__libopus,
 }
 
-_libvorbis_vtable := ma.decoding_backend_vtable{
-    onInit      = ma_decoding_backend_init__libvorbis,
-    onInitFile  = ma_decoding_backend_init_file__libvorbis,
-    onInitFileW = nil,
-    onInitMemory= nil,
-    onUninit    = ma_decoding_backend_uninit__libvorbis,
+vorbis_decoder := ma.decoding_backend_vtable {
+	onInit       = ma_decoding_backend_init__libvorbis,
+	onInitFile   = ma_decoding_backend_init_file__libvorbis,
+	onUninit     = ma_decoding_backend_uninit__libvorbis,
 }

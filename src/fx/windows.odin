@@ -93,7 +93,7 @@ init_windows :: proc(title: string, width, height: int) {
 load_icon_by_size :: proc(size: i32) -> win.HICON {
     icon := win.LoadImageW(
         win.HANDLE(win.GetModuleHandleW(nil)),
-        transmute(cstring16)win.MAKEINTRESOURCEW(1),
+        cstring16(win.MAKEINTRESOURCEW(1)),
         win.IMAGE_ICON,
         size,
         size,

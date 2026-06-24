@@ -111,7 +111,6 @@ end_render_to_texture :: proc() {
 	update_constant_buffer()
 }
 
-@(private)
 update_constant_buffer_for_rt :: proc(width, height: int, data: []f32 = {}) {
 	constants: [3]f32
 	constants[0] = 2.0 / f32(width)

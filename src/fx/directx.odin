@@ -75,17 +75,12 @@ init_dx :: proc() {
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	swapchain_desc := DXGI.SWAP_CHAIN_DESC1 {
-		Width = 0,
-		Height = 0,
 		Format = .B8G8R8A8_UNORM,
-		Stereo = false,
 		SampleDesc = {Count = 1, Quality = 0},
 		BufferUsage = {.RENDER_TARGET_OUTPUT},
 		BufferCount = 2,
-		Scaling = .STRETCH,
-		SwapEffect = .DISCARD,
-		AlphaMode = .UNSPECIFIED,
-		Flags = {},
+		Scaling = .NONE,
+		SwapEffect = .FLIP_DISCARD,
 	}
 
 	dxgi_factory->CreateSwapChainForHwnd(device, ctx.hwnd, &swapchain_desc, nil, nil, &swapchain)
@@ -214,14 +209,7 @@ init_dx :: proc() {
 				DestBlendAlpha = D3D11.BLEND.INV_SRC_ALPHA,
 				BlendOpAlpha = D3D11.BLEND_OP.ADD,
 				RenderTargetWriteMask = 15,
-			},
-			{},
-			{},
-			{},
-			{},
-			{},
-			{},
-			{},
+			},{},{},{},{},{},{},{},
 		},
 	}
 
@@ -389,13 +377,7 @@ clear_background :: proc(color: Color) {
 begin_render :: proc() {
 	device_context->IASetPrimitiveTopology(.TRIANGLELIST)
 	device_context->IASetInputLayout(input_layout)
-	device_context->IASetVertexBuffers(
-		0,
-		1,
-		&vertex_buffer,
-		&vertex_buffer_stride,
-		&vertex_buffer_offset,
-	)
+	device_context->IASetVertexBuffers(0, 1, &vertex_buffer, &vertex_buffer_stride, &vertex_buffer_offset,)
 
 	device_context->VSSetShader(vertex_shader, nil, 0)
 	device_context->VSSetConstantBuffers(0, 1, &constant_buffer)
@@ -429,7 +411,6 @@ end_render :: proc() {
 	verticies_count = 0
 }
 
-@(private)
 resolve_msaa :: proc() {
 	back_buffer: ^D3D11.ITexture2D
 	swapchain->GetBuffer(0, D3D11.ITexture2D_UUID, (^rawptr)(&back_buffer))

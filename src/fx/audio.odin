@@ -1,6 +1,6 @@
 package fx
 
-import "vendor:miniaudio"
+import ma "vendor:miniaudio"
 
 import "core:fmt"
 import "core:os"
@@ -9,8 +9,8 @@ import fp "core:path/filepath"
 
 Audio :: struct {
 	file_data:    []byte,
-	sound:        ^miniaudio.sound,
-	decoder:      ^miniaudio.decoder,
+	sound:        ^ma.sound,
+	decoder:      ^ma.decoder,
 
 	total_frames: u64,
 	sample_rate:  u32,
@@ -19,29 +19,12 @@ Audio :: struct {
 	loaded:       bool,
 }
 
-@(private)
-audio_engine: miniaudio.engine
+audio_engine: ma.engine
 
-pCustomBackendVTables: [2][^]miniaudio.decoding_backend_vtable
-
-opus_decoder := miniaudio.decoding_backend_vtable {
-	onInit       = ma_decoding_backend_init__libopus,
-	onInitFile   = ma_decoding_backend_init_file__libopus,
-	onInitFileW  = nil,
-	onInitMemory = nil,
-	onUninit     = ma_decoding_backend_uninit__libopus,
-}
-
-vorbis_decoder := miniaudio.decoding_backend_vtable {
-	onInit       = ma_decoding_backend_init__libvorbis,
-	onInitFile   = ma_decoding_backend_init_file__libvorbis,
-	onInitFileW  = nil,
-	onInitMemory = nil,
-	onUninit     = ma_decoding_backend_uninit__libvorbis,
-}
+pCustomBackendVTables: [2][^]ma.decoding_backend_vtable
 
 init_audio :: proc() -> bool {
-	result := miniaudio.engine_init(nil, &audio_engine)
+	result := ma.engine_init(nil, &audio_engine)
 
 	if result != .SUCCESS {
 		fmt.eprintf("Failed to initialize audio engine: %v\n", result)
@@ -65,10 +48,10 @@ load_audio :: proc(filepath: string) -> Audio {
 
 	clip.file_data = file_data
 
-	clip.decoder = new(miniaudio.decoder)
+	clip.decoder = new(ma.decoder)
 
 	extension := fp.ext(filepath)
-	decoder_config := miniaudio.decoder_config_init(
+	decoder_config := ma.decoder_config_init(
 		outputFormat = .f32,
 		outputChannels = 0,
 		outputSampleRate = 0,
@@ -89,7 +72,7 @@ load_audio :: proc(filepath: string) -> Audio {
 		decoder_config.encodingFormat = .unknown
 	}
 
-	decoder_result := miniaudio.decoder_init_memory(
+	decoder_result := ma.decoder_init_memory(
 		pData = raw_data(clip.file_data),
 		dataSize = len(clip.file_data),
 		pConfig = &decoder_config,
@@ -104,9 +87,9 @@ load_audio :: proc(filepath: string) -> Audio {
 		return {}
 	}
 
-	clip.sound = new(miniaudio.sound)
+	clip.sound = new(ma.sound)
 
-	result := miniaudio.sound_init_from_data_source(
+	result := ma.sound_init_from_data_source(
 		pEngine = &audio_engine,
 		pDataSource = clip.decoder.ds.pCurrent,
 		flags = {},
@@ -116,18 +99,18 @@ load_audio :: proc(filepath: string) -> Audio {
 
 	if result != .SUCCESS {
 		fmt.printf("Failed to load audio file '%s': %v\n", filepath, result)
-		miniaudio.decoder_uninit(clip.decoder)
+		ma.decoder_uninit(clip.decoder)
 		free(clip.decoder)
 		free(clip.sound)
 		delete(clip.file_data)
 		return {}
 	}
 
-	miniaudio.decoder_get_length_in_pcm_frames(clip.decoder, &clip.total_frames)
+	ma.decoder_get_length_in_pcm_frames(clip.decoder, &clip.total_frames)
 
-	format: miniaudio.format
+	format: ma.format
 	channels: u32
-	miniaudio.decoder_get_data_format(clip.decoder, &format, &channels, &clip.sample_rate, nil, 0)
+	ma.decoder_get_data_format(clip.decoder, &format, &channels, &clip.sample_rate, nil, 0)
 
 	clip.duration = f32(clip.total_frames) / f32(clip.sample_rate)
 	clip.loaded = true
@@ -141,13 +124,13 @@ unload_audio :: proc(clip: ^Audio) {
 	}
 
 	if clip.sound != nil {
-		miniaudio.sound_uninit(clip.sound)
+		ma.sound_uninit(clip.sound)
 		free(clip.sound)
 		clip.sound = nil
 	}
 
 	if clip.decoder != nil {
-		miniaudio.decoder_uninit(clip.decoder)
+		ma.decoder_uninit(clip.decoder)
 		free(clip.decoder)
 		clip.decoder = nil
 	}
@@ -166,7 +149,7 @@ play_audio :: proc(clip: ^Audio) -> bool {
 		return false
 	}
 
-	result := miniaudio.sound_start(clip.sound)
+	result := ma.sound_start(clip.sound)
 	if result != .SUCCESS {
 		fmt.eprintf("Failed to play audio: %v\n", result)
 		return false
@@ -180,7 +163,7 @@ stop_audio :: proc(clip: ^Audio) -> bool {
 		return false
 	}
 
-	result := miniaudio.sound_stop(clip.sound)
+	result := ma.sound_stop(clip.sound)
 	return result == .SUCCESS
 }
 
@@ -189,7 +172,7 @@ pause_audio :: proc(clip: ^Audio) -> bool {
 		return false
 	}
 
-	result := miniaudio.sound_stop(clip.sound)
+	result := ma.sound_stop(clip.sound)
 	return result == .SUCCESS
 }
 
@@ -199,7 +182,7 @@ set_volume :: proc(clip: ^Audio, volume: f32) -> bool {
 	}
 
 	clamped_volume := clamp(volume, 0.0, 1.0)
-	miniaudio.sound_set_volume(clip.sound, clamped_volume)
+	ma.sound_set_volume(clip.sound, clamped_volume)
 	return true
 }
 
@@ -214,7 +197,7 @@ set_time :: proc(clip: ^Audio, time_seconds: f32) -> bool {
 		frame_position = clip.total_frames
 	}
 
-	result := miniaudio.sound_seek_to_pcm_frame(clip.sound, frame_position)
+	result := ma.sound_seek_to_pcm_frame(clip.sound, frame_position)
 	return result == .SUCCESS
 }
 
@@ -224,7 +207,7 @@ get_time :: proc(clip: ^Audio) -> f32 {
 	}
 
 	cursor: u64
-	result := miniaudio.sound_get_cursor_in_pcm_frames(clip.sound, &cursor)
+	result := ma.sound_get_cursor_in_pcm_frames(clip.sound, &cursor)
 
 	if result != .SUCCESS {
 		return 0.0
@@ -250,5 +233,5 @@ is_playing :: proc(clip: ^Audio) -> bool {
 		return false
 	}
 
-	return bool(miniaudio.sound_is_playing(clip.sound))
+	return bool(ma.sound_is_playing(clip.sound))
 }

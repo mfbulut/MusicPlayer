@@ -331,11 +331,9 @@ draw_search_view :: proc(x, y, w, h: f32) {
 	select_r := fx.measure_text(search_query[:ui_state.search_box.selection[1]], TEXT_SIZE)
 
 	if textedit.has_selection(&ui_state.search_box) {
-		// Selection background.
 		color := darken(UI_SECONDARY_COLOR, 30)
 		fx.draw_rect_rounded(text_x + select_l - 1, text_y - 4, select_r - select_l + 2, TEXT_SIZE + 7.5, 4, color)
 	} else if ui_state.search_focus {
-		// Focus blip.
 		off := time.tick_since(last_selection_tick)
 		alpha := math.sin(time.duration_seconds(off) * 5) * 0.5 + 0.5
 		color := lerp_color(UI_TEXT_COLOR, input_color, f32(alpha))

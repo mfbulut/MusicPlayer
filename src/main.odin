@@ -63,13 +63,11 @@ UIState :: struct {
 }
 
 ui_state := UIState {
-	current_view   = .LIKED,
+	current_view   = .SEARCH,
 	show_lyrics    = true,
 	follow_lyrics  = true,
 	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
-	queue_sidebar_width = 0,
-	queue_sidebar_anim = 0,
 }
 
 init_ui_state :: proc() {
@@ -220,8 +218,8 @@ playlists: [dynamic]Playlist
 main :: proc() {
 	fx.init("Music Player", 1280, 720)
 	init_ui_state()
-	blur_shader  = fx.load_shader(blur_shader_hlsl)
-	background   = fx.create_render_texture(2048, 2048)
+	blur_shader = fx.load_shader(blur_shader_hlsl)
+	background  = fx.create_render_texture(2048, 2048)
 	load_icons()
 	load_state()
 	load_music()
