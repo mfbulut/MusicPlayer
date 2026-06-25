@@ -90,7 +90,15 @@ download_lyrics :: proc() {
 		return
 	}
 
-	track := find_track_by_name(player.current_track.name, player.current_track.playlist)
+	track: ^Track = nil
+	if player.current_track.playlist != nil {
+		for &t in player.current_track.playlist.tracks {
+			if t.name == player.current_track.name {
+				track = &t
+				break
+			}
+		}
+	}
 
 	title    := player.current_track.tags.title
 	artist   := player.current_track.tags.artist

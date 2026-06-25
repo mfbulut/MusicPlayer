@@ -11,18 +11,19 @@ import textedit "core:text/edit"
 import "core:time"
 
 SearchResult :: struct {
-	track: Track,
+	track: ^Track,
 	score: f32,
 }
 
 search_tracks :: proc(query: string) {
 	clear(&ui_state.search_results)
 	if len(query) == 0 {
-		for playlist in playlists {
-			for track in playlist.tracks {
-				append(&ui_state.search_results, track)
+		for &playlist in playlists {
+			for &track in playlist.tracks {
+				append(&ui_state.search_results, &track)
 			}
 		}
+		build_search_playlist()
 		return
 	}
 
@@ -32,10 +33,11 @@ search_tracks :: proc(query: string) {
 	scored_results := make([dynamic]SearchResult)
 	defer delete(scored_results)
 
-	for playlist in playlists {
-		for track in playlist.tracks {
+	for &playlist in playlists {
+		for &track in playlist.tracks {
 			selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
-			selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
+			playlist_name := track.playlist.name if track.playlist != nil else ""
+			selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else playlist_name
 
 			track_name_lower    := strings.to_lower(selected_title, context.temp_allocator)
 			playlist_name_lower := strings.to_lower(selected_album, context.temp_allocator)
@@ -45,7 +47,7 @@ search_tracks :: proc(query: string) {
 			final_score    := track_score + playlist_score
 
 			if final_score > 0.1 {
-				append(&scored_results, SearchResult{track = track, score = final_score})
+				append(&scored_results, SearchResult{track = &track, score = final_score})
 			}
 		}
 	}
@@ -56,6 +58,16 @@ search_tracks :: proc(query: string) {
 
 	for result in scored_results {
 		append(&ui_state.search_results, result.track)
+	}
+
+	build_search_playlist()
+}
+
+build_search_playlist :: proc() {
+	clear(&ui_state.search_playlist.tracks)
+	ui_state.search_playlist.name = "Search Results"
+	for track_ptr in ui_state.search_results {
+		append(&ui_state.search_playlist.tracks, track_ptr^)
 	}
 }
 
@@ -349,7 +361,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 	results_y := search_input_y + 80
 	results_h := h - (results_y - y)
 
-	result_count := len(ui_state.search_results)
+	result_count := len(ui_state.search_playlist.tracks)
 	track_height : f32 = 65
 	max_scroll := calculate_max_scroll(result_count, track_height, results_h)
 
@@ -374,7 +386,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 
 		track_y := results_y - search_sc.scroll
 
-		for track, _ in ui_state.search_results {
+		for track, i in ui_state.search_playlist.tracks {
 			if track_y > y + h {
 				break
 			}
@@ -382,7 +394,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			if track_y + 60 > results_y {
 				draw_track_item(
 					track,
-					find_playlist_by_name(track.playlist)^,
+					&ui_state.search_playlist,
 					x + 30,
 					track_y,
 					w - 70,

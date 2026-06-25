@@ -22,6 +22,7 @@ draw_sidebar :: proc(x_offset: f32) {
 	}
 
 	if draw_button(search_btn, 40) {
+		ui_state.selected_playlist = &ui_state.search_playlist
 		ui_state.current_view = .SEARCH
 	}
 
@@ -77,6 +78,7 @@ draw_sidebar :: proc(x_offset: f32) {
 
 	if draw_button(liked_btn, 40) {
 		load_liked_songs()
+		ui_state.selected_playlist = &liked_playlist
 		ui_state.current_view = .LIKED
 	}
 
@@ -117,7 +119,7 @@ draw_sidebar :: proc(x_offset: f32) {
 
 	scroll_y := y_offset - sidebar_sc.scroll
 
-	for playlist in playlists {
+	for &playlist in playlists {
 		if scroll_y > window_h {
 			break
 		}
@@ -129,14 +131,14 @@ draw_sidebar :: proc(x_offset: f32) {
 				w           = SIDEBAR_WIDTH - 40,
 				h           = 40,
 				text        = playlist.name,
-				color       = ui_state.selected_playlist == playlist.name && ui_state.current_view == .PLAYLIST_DETAIL ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
-				hover_color = ui_state.selected_playlist == playlist.name && ui_state.current_view == .PLAYLIST_DETAIL ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
+				color       = ui_state.selected_playlist == playlist && ui_state.current_view == .PLAYLIST_DETAIL ? UI_ACCENT_COLOR : UI_SECONDARY_COLOR,
+				hover_color = ui_state.selected_playlist == playlist && ui_state.current_view == .PLAYLIST_DETAIL ? brighten(UI_ACCENT_COLOR) : UI_HOVER_COLOR,
 				text_color  = UI_TEXT_COLOR,
 				expand      = true,
 			}
 
 			if draw_button(playlist_btn, playlist.loaded ? 42 : 15) {
-				ui_state.selected_playlist = playlist.name
+				ui_state.selected_playlist = playlist
 				ui_state.current_view = .PLAYLIST_DETAIL
 				ui_state.playlist_scrollbar.scroll = 0
 				ui_state.playlist_scrollbar.target = 0

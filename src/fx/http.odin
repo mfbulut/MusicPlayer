@@ -1,6 +1,5 @@
 package fx
 
-import "base:runtime"
 import "core:net"
 import "core:slice"
 import "core:strings"
@@ -77,8 +76,6 @@ get :: proc(
 	result: Response,
 	ok: bool,
 ) {
-	runtime.DEFAULT_TEMP_ALLOCATOR_TEMP_GUARD()
-
 	urlComp := URL_COMPONENTS{}
 	hostName := make([]u16, 256, context.temp_allocator)
 	urlPath := make([]u16, 1024, context.temp_allocator)
@@ -126,15 +123,7 @@ get :: proc(
 	flags := urlComp.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0
 	verb := win.L("GET")
 
-	hRequest := WinHttpOpenRequest(
-		hConnect,
-		verb,
-		raw_data(lpszUrlPathWithParams),
-		nil,
-		nil,
-		nil,
-		win.DWORD(flags),
-	)
+	hRequest := WinHttpOpenRequest( hConnect, verb, raw_data(lpszUrlPathWithParams), nil, nil, nil, win.DWORD(flags))
 	(hRequest != nil) or_return
 	defer WinHttpCloseHandle(hRequest)
 

@@ -52,9 +52,8 @@ compact_mode_frame :: proc() {
 
 	cover := player.current_track.cover
 
-	if !player.current_track.has_cover && len(player.current_track.playlist) > 0 {
-		playlist := find_playlist_by_name(player.current_track.playlist)
-		cover = playlist.cover
+	if !player.current_track.has_cover && player.current_track.playlist != nil {
+		cover = player.current_track.playlist.cover
 	}
 
 	startX: f32 = 20
@@ -65,7 +64,8 @@ compact_mode_frame :: proc() {
 
 	track := player.current_track
 	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
-	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
+	playlist_name := track.playlist.name if track.playlist != nil else ""
+	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else playlist_name
 
 	track_title := truncate_text(selected_title, window_w - startX - 50, 28)
 	fx.draw_text(track_title, startX, 10, 28, UI_TEXT_COLOR)

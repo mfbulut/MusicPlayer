@@ -30,7 +30,7 @@ Track :: struct {
 	hash:             u64,
 	path:             string,
 	name:             string,
-	playlist:         string,
+	playlist:         ^Playlist,
 
 	audio:            fx.Audio,
 	lyrics:           [dynamic]Lyrics,
@@ -72,31 +72,8 @@ load_music :: proc() {
 	}
 
 	for &playlist in playlists {
-		sort_playlist_tracks(&playlist)
+		sort_playlist_tracks(playlist)
 	}
-}
-
-find_playlist_by_name :: proc(name: string) -> ^Playlist {
-	for playlist, i in playlists {
-		if playlist.name == name {
-			return &playlists[i]
-		}
-	}
-	return nil
-}
-
-find_track_by_name :: proc(track_name: string, playlist_name: string) -> ^Track {
-	for &playlist in playlists {
-		if playlist.name == playlist_name {
-			for &track in playlist.tracks {
-				if track.name == track_name {
-					return &track
-				}
-			}
-			return nil
-		}
-	}
-	return nil
 }
 
 find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist {
@@ -104,14 +81,13 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
 
 	for &playlist in playlists {
 		if playlist.name == dir_name {
-			return &playlist
+			return playlist
 		}
 	}
 
-	playlist := Playlist {
-		path   = dir_path,
-		name   = dir_name,
-	}
+	playlist := new(Playlist)
+	playlist.path   = dir_path
+	playlist.name   = dir_name
 
 	cover_path, _ := os.join_path({dir_path, "cover.qoi"}, context.allocator)
 
@@ -132,11 +108,11 @@ find_or_create_playlist :: proc(dir_path: string, dir_name: string) -> ^Playlist
 	}
 
 	append(&playlists, playlist)
-	return &playlists[len(playlists) - 1]
+	return playlist
 }
 
 sort_playlists :: proc() {
-	slice.sort_by(playlists[:], proc(a, b: Playlist) -> bool {
+	slice.sort_by(playlists[:], proc(a, b: ^Playlist) -> bool {
 		return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
 	})
 }
@@ -197,13 +173,14 @@ process_music_file :: proc(file: os.File_Info) {
 	if ext != "mp3" && ext != "wav" && ext != "flac" && ext != "opus" && ext != "ogg" do return
 
 	dir_name := os.base(dir_path)
+	playlist := find_or_create_playlist(dir_path, dir_name)
 
 	music := Track {
 		hash     = hash.fnv64a(transmute([]u8)file.fullpath),
 		path     = strings.clone(file.fullpath),
 		name     = strings.clone(name),
-		playlist = strings.clone(dir_name),
 		lyrics   = load_lyrics_for_track(file.fullpath),
+		playlist = playlist
 	}
 
 	tags: Tags
@@ -225,7 +202,6 @@ process_music_file :: proc(file: os.File_Info) {
 		music.has_tags = true
 	}
 
-	playlist := find_or_create_playlist(dir_path, dir_name)
 	append(&playlist.tracks, music)
 }
 
@@ -315,11 +291,7 @@ init_thumbnail_loading :: proc() {
 
 thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 	out: for {
-		playlist := find_playlist_by_name(ui_state.selected_playlist)
-
-		if ui_state.current_view == .LIKED {
-			playlist = &liked_playlist
-		}
+		playlist := ui_state.selected_playlist
 
 		if playlist != nil {
 			for &track in playlist.tracks {

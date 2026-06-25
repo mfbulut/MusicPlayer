@@ -5,7 +5,7 @@ A **minimalist**, **modern**, and **native** music player
 ### [Download Here](https://github.com/mfbulut/MusicPlayer/releases/latest)
 
 ### Features
-- **Supported formats**: mp3, flac, wav and ogg
+- **Supported formats**: mp3, flac, ogg, opus and wav
 - **Music Folder**:
   - By default, scans `C:\Users\{username}\Music\` for music files.
   - Each subfolder treated as a playlist
@@ -24,7 +24,6 @@ A **minimalist**, **modern**, and **native** music player
 | Add to Start of Queue | `Ctrl + Right-Click` |
 | Remove from Queue     | `Ctrl + Left-Click`  |
 | Cycle Themes          | `F4`                 |
-| Reload Files          | `F5`                 |
 
 ## Screenshots
 

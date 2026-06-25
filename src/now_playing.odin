@@ -27,9 +27,8 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 
 	cover := track.cover
 
-	if !track.has_cover && len(track.playlist) > 0 {
-		playlist := find_playlist_by_name(track.playlist)
-		cover = playlist.cover
+	if !track.has_cover && track.playlist != nil {
+		cover = track.playlist.cover
 	}
 
 	if cover.width > 0 {
@@ -59,7 +58,8 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 	}
 
 	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
-	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
+	track_playlist_name := track.playlist.name if track.playlist != nil else ""
+	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track_playlist_name
 
 	info_y := art_y + art_size + 30
 	track_name := truncate_text(selected_title, content_split - 50, 24)

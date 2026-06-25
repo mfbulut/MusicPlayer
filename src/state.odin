@@ -3,7 +3,6 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:time"
-import "core:hash"
 
 import "core:io"
 import "core:slice"
@@ -179,25 +178,14 @@ load_liked_songs :: proc() {
 	})
 
 	for liked_song in liked_songs {
-		source_playlist := find_playlist_by_name(liked_song.playlist)
-		for track in source_playlist.tracks {
-			if track.name == liked_song.name {
-
-				track_copy := Track {
-					hash 	 = hash.fnv64a(transmute([]u8)track.path),
-					path     = track.path,
-					name     = track.name,
-					playlist = track.playlist,
-					lyrics   = track.lyrics,
-					audio    = track.audio,
-
-					cover     = track.cover,
-					has_cover = track.has_cover,
-					tags      = track.tags,
-					has_tags  = track.has_tags,
+		for &playlist in playlists {
+			if playlist.name == liked_song.playlist {
+				for &track in playlist.tracks {
+					if track.name == liked_song.name {
+						append(&liked_playlist.tracks, track)
+						break
+					}
 				}
-
-				append(&liked_playlist.tracks, track_copy)
 				break
 			}
 		}

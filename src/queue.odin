@@ -44,7 +44,7 @@ draw_queue_sidebar :: proc(x_offset: f32, size: f32) {
 		}
 
 		if track_y + 60 > list_y {
-			draw_track_item(track, player.queue, x_offset + 15, track_y, size - 45, 60, true)
+			draw_track_item(track, &player.queue, x_offset + 15, track_y, size - 45, 60, true)
 		}
 
 		track_y += track_height

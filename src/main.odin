@@ -27,7 +27,8 @@ Scrollbar :: struct {
 
 UIState :: struct {
 	current_view:              View,
-	selected_playlist:         string,
+	selected_playlist:         ^Playlist,
+	playing_playlist:          ^Playlist,
 	theme:                     int,
 	show_lyrics:               bool,
 	follow_lyrics:             bool,
@@ -35,15 +36,13 @@ UIState :: struct {
 
 	search_box:                textedit.State,
 	search_builder:            strings.Builder,
-	search_results:            [dynamic]Track,
+	search_results:            [dynamic]^Track,
+	search_playlist:           Playlist,
 	search_focus:              bool,
 
 	hide_sidebar:              bool,
-	sidebar_width:             f32,
 	sidebar_anim:              f32,
-
 	show_queue_sidebar:        bool,
-	queue_sidebar_width:       f32,
 	queue_sidebar_anim:        f32,
 
 	lyrics_animation_progress: f32,
@@ -66,7 +65,6 @@ ui_state := UIState {
 	current_view   = .SEARCH,
 	show_lyrics    = true,
 	follow_lyrics  = true,
-	sidebar_width  = SIDEBAR_WIDTH,
 	sidebar_anim   = 1.0,
 }
 
@@ -84,24 +82,7 @@ init_ui_state :: proc() {
 	}
 }
 
-draw_main_content :: proc(sidebar_width: f32, queue_sidebar_width: f32) {
-	window_w, window_h := fx.window_size()
 
-	content_x := sidebar_width
-	content_w := window_w - sidebar_width - queue_sidebar_width
-	content_h := window_h - PLAYER_HEIGHT
-
-	switch ui_state.current_view {
-	case .SEARCH:
-		draw_search_view(content_x, 10, content_w, content_h - 10)
-	case .PLAYLIST_DETAIL:
-		draw_playlist_view(content_x, 0, content_w, content_h, find_playlist_by_name(ui_state.selected_playlist)^)
-	case .NOW_PLAYING:
-		draw_now_playing_view(content_x, 0, content_w, content_h)
-	case .LIKED:
-		draw_playlist_view(content_x, 0, content_w, content_h, liked_playlist)
-	}
-}
 
 frame :: proc() {
 	if loading_covers {
@@ -125,13 +106,6 @@ frame :: proc() {
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.L) {
 		download_lyrics()
-	}
-
-	if fx.key_pressed(.F5) {
-		clear(&playlists)
-		load_music()
-		sort_playlists()
-		init_cover_loading()
 	}
 
 	if fx.key_held(.LEFT_CONTROL) && fx.key_pressed(.C) {
@@ -172,11 +146,10 @@ frame :: proc() {
 	}
 
 	eased_progress := ease_in_out_cubic(ui_state.sidebar_anim)
-	ui_state.sidebar_width = eased_progress * SIDEBAR_WIDTH
+	sidebar_width := eased_progress * SIDEBAR_WIDTH
 
-	queue_sidebar_width := min(QUEUE_SIDEBAR_MAX, (window_w - ui_state.queue_sidebar_width) / 2)
-	queue_eased_progress := ease_in_out_cubic(ui_state.queue_sidebar_anim)
-	ui_state.queue_sidebar_width = queue_eased_progress * queue_sidebar_width
+	eased_progress = ease_in_out_cubic(ui_state.queue_sidebar_anim)
+	queue_sidebar_width := eased_progress * QUEUE_SIDEBAR_MAX
 
 	update_alert(dt)
 
@@ -184,11 +157,25 @@ frame :: proc() {
 		compact_mode_frame()
 	} else {
 		fx.draw_gradient_rect_vertical(0, 0, window_w, window_h, BACKGROUND_GRADIENT_BRIGHT, BACKGROUND_GRADIENT_DARK)
-		draw_sidebar(ui_state.sidebar_width - SIDEBAR_WIDTH)
+		draw_sidebar(sidebar_width - SIDEBAR_WIDTH)
 
 		draw_player_controls()
-		draw_main_content(ui_state.sidebar_width, ui_state.queue_sidebar_width)
-		draw_queue_sidebar(window_w - ui_state.queue_sidebar_width, queue_sidebar_width)
+
+		content_w := window_w - sidebar_width - queue_sidebar_width
+		content_h := window_h - PLAYER_HEIGHT
+
+		switch ui_state.current_view {
+		case .SEARCH:
+			draw_search_view(sidebar_width, 10, content_w, content_h - 10)
+		case .PLAYLIST_DETAIL:
+			draw_playlist_view(sidebar_width, 0, content_w, content_h, ui_state.selected_playlist)
+		case .NOW_PLAYING:
+			draw_now_playing_view(sidebar_width, 0, content_w, content_h)
+		case .LIKED:
+			draw_playlist_view(sidebar_width, 0, content_w, content_h, &liked_playlist)
+		}
+
+		draw_queue_sidebar(window_w - queue_sidebar_width, queue_sidebar_width)
 		draw_alert()
 
 		if len(player.queue.tracks) > 0 {
@@ -213,7 +200,7 @@ blur_shader: fx.Shader
 background: fx.RenderTexture
 update_background: bool
 loading_covers: bool
-playlists: [dynamic]Playlist
+playlists: [dynamic]^Playlist
 
 main :: proc() {
 	fx.init("Music Player", 1280, 720)
@@ -226,6 +213,7 @@ main :: proc() {
 	load_liked_songs()
 	sort_playlists()
 	search_tracks("")
+	ui_state.selected_playlist = &ui_state.search_playlist
 	init_cover_loading()
 	init_thumbnail_loading()
 	fx.run(frame)

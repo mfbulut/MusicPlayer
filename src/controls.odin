@@ -33,9 +33,8 @@ draw_player_controls :: proc() {
 
 	cover := player.current_track.cover
 
-	if !player.current_track.has_cover && len(player.current_track.playlist) > 0 {
-		playlist := find_playlist_by_name(player.current_track.playlist)
-		cover = playlist.cover
+	if !player.current_track.has_cover && player.current_track.playlist != nil {
+		cover = player.current_track.playlist.cover
 	}
 
 	startX: f32 = 20
@@ -63,7 +62,8 @@ draw_player_controls :: proc() {
 
 	track := player.current_track
 	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
-	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else track.playlist
+	playlist_name := track.playlist.name if track.playlist != nil else ""
+	selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else playlist_name
 
 	max_size: f32 = 320
 	track_title := truncate_text(selected_title, max_size, 24)
@@ -138,7 +138,8 @@ draw_player_controls :: proc() {
 		toggle_shuffle()
 	}
 
-	is_liked := is_song_liked(player.current_track.name, player.current_track.playlist)
+	current_playlist_name := player.current_track.playlist.name if player.current_track.playlist != nil else ""
+	is_liked := is_song_liked(player.current_track.name, current_playlist_name)
 
 	heart_btn := IconButton {
 		x           = controls_x + 150,
@@ -150,7 +151,7 @@ draw_player_controls :: proc() {
 	}
 
 	if draw_icon_button(heart_btn) && player.current_track.audio.loaded {
-		toggle_song_like(player.current_track.name, player.current_track.playlist)
+		toggle_song_like(player.current_track.name, current_playlist_name)
 	}
 
 	volume_x : f32 = window_w - 150

@@ -5,7 +5,7 @@ import "fx"
 import "core:fmt"
 import "core:strings"
 
-draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue := false) {
+draw_track_item :: proc(track: Track, playlist: ^Playlist, x, y, w, h: f32, queue := false) {
 	hover := is_hovering(x, y, w, h)
 	bg_color := UI_TRACK_COLOR
 
@@ -33,7 +33,7 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	secondary_color := hover ? UI_TEXT_COLOR : UI_TEXT_SECONDARY
 
 	selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
-	selected_detail := track.playlist
+	selected_detail := track.playlist.name if track.playlist != nil else ""
 	if track.has_tags {
 		if len(track.tags.artist) > 0 {
 			real_artist := strings.split(track.tags.artist, ",", context.temp_allocator)[0]
@@ -71,7 +71,8 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 	track_playlist := truncate_text(selected_detail, w - 75 - offset, 15)
 	fx.draw_text(track_playlist, x + 21 + offset, y + 35, 15, secondary_color)
 
-	is_liked := is_song_liked(track.name, track.playlist)
+	playlist_name := track.playlist.name if track.playlist != nil else ""
+	is_liked := is_song_liked(track.name, playlist_name)
 
 	heart_btn := IconButton {
 		x           = x + w - 60,
@@ -82,17 +83,18 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 		hover_color = brighten(bg_color),
 	}
 
-	if len(track.playlist) > 0 && draw_icon_button(heart_btn) {
-		toggle_song_like(track.name, track.playlist)
+	if track.playlist != nil && draw_icon_button(heart_btn) {
+		toggle_song_like(track.name, track.playlist.name)
 	} else if hover && fx.mouse_pressed(.LEFT) && !fx.key_held(.LEFT_CONTROL) {
 		play_track(track, playlist)
 		song_shuffle()
 	}
 
 	if hover && fx.mouse_pressed(.RIGHT) {
-		playlist := find_playlist_by_name(track.playlist)
-
-		cover := track.small_cover if track.thumbnail_loaded else playlist.cover
+		cover := track.small_cover
+		if !track.thumbnail_loaded && track.playlist != nil {
+			cover = track.playlist.cover
+		}
 
 		if fx.key_held(.LEFT_CONTROL) {
 			insert_as_next_track(track)
@@ -107,15 +109,15 @@ draw_track_item :: proc(track: Track, playlist: Playlist, x, y, w, h: f32, queue
 		for q_track, i in player.queue.tracks {
 			if q_track.name == track.name {
 				ordered_remove(&player.queue.tracks, i)
-				playlist := find_playlist_by_name(track.playlist)
-				show_alert(playlist.cover, track.name, "Removed from the queue", 1)
+				alert_cover := track.playlist.cover if track.playlist != nil else fx.Texture{}
+				show_alert(alert_cover, track.name, "Removed from the queue", 1)
 				if len(player.queue.tracks) == 0 do ui_state.show_queue_sidebar = false
 			}
 		}
 	}
 }
 
-draw_playlist_view :: proc(x, y, w, h: f32, playlist: Playlist, queue := false) {
+draw_playlist_view :: proc(x, y, w, h: f32, playlist: ^Playlist, queue := false) {
 	playlist_sc := &ui_state.playlist_scrollbar
 
 	list_y := y + 120

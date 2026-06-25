@@ -6,14 +6,9 @@ import "core:os"
 import "core:math"
 import "core:math/rand"
 
-PlayerState :: enum {
-	STOPPED,
-	PLAYING,
-	PAUSED,
-}
 
 Player :: struct {
-	state:            PlayerState,
+	state: enum { STOPPED, PLAYING, PAUSED },
 	position:         f32,
 	duration:         f32,
 	volume:           f32,
@@ -22,7 +17,6 @@ Player :: struct {
 
 	current_index:    int,
 	current_track:    Track,
-	current_playlist: Playlist,
 
 	shuffle:          bool,
 	shuffle_position: int,
@@ -48,7 +42,7 @@ unload_track_audio :: proc(track: ^Track) {
 	fx.unload_audio(&track.audio)
 }
 
-play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
+play_track :: proc(track: Track, playlist: ^Playlist, queue: bool = false) {
 	if player.current_track.audio.loaded {
 		unload_cover(&player.current_track)
 		unload_track_audio(&player.current_track)
@@ -58,7 +52,7 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 	ui_state.lyrics_scrollbar.target = 0
 
 	if !os.exists(track.path) {
-		show_alert({}, "File not found", "Ensure file exist then refresh using F5", 2)
+		show_alert({}, "File not found", "Ensure file exist restart the application", 2)
 		return
 	}
 
@@ -76,12 +70,36 @@ play_track :: proc(track: Track, playlist: Playlist, queue: bool = false) {
 	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 
 	if queue do return
-	player.current_playlist = playlist
+
+	is_from_ui := true
+	if playlist == ui_state.playing_playlist {
+		is_from_ui = false
+	}
+
+	if is_from_ui {
+		if ui_state.playing_playlist != nil && (ui_state.playing_playlist.name == "Search Results" || ui_state.playing_playlist.name == "Liked Songs") {
+			delete(ui_state.playing_playlist.tracks)
+			free(ui_state.playing_playlist)
+		}
+
+		if playlist != nil && (playlist.name == "Search Results" || playlist.name == "Liked Songs") {
+			cloned_playlist := new(Playlist)
+			cloned_playlist^ = playlist^
+			cloned_tracks := make([dynamic]Track, len(playlist.tracks))
+			copy(cloned_tracks[:], playlist.tracks[:])
+			cloned_playlist.tracks = cloned_tracks
+			ui_state.playing_playlist = cloned_playlist
+		} else {
+			ui_state.playing_playlist = playlist
+		}
+	}
 
 	if !player.shuffle {
-		for t, i in playlist.tracks {
-			if track.name == t.name && track.path == t.path {
-				player.current_index = i
+		if ui_state.playing_playlist != nil {
+			for t, i in ui_state.playing_playlist.tracks {
+				if track.name == t.name && track.path == t.path {
+					player.current_index = i
+				}
 			}
 		}
 	}
@@ -104,14 +122,14 @@ toggle_playback :: proc() {
 next_track :: proc() {
 	if len(player.queue.tracks) > 0 {
 		track := pop(&player.queue.tracks)
-		play_track(track, player.current_playlist, true)
+		play_track(track, ui_state.playing_playlist, true)
 
 		if len(player.queue.tracks) == 0 do ui_state.show_queue_sidebar = false
 
 		return
 	}
 
-	if len(player.current_playlist.tracks) == 0 {
+	if ui_state.playing_playlist == nil || len(ui_state.playing_playlist.tracks) == 0 {
 		return
 	}
 
@@ -125,15 +143,15 @@ next_track :: proc() {
 
 		player.current_index = player.shuffled_indices[player.shuffle_position]
 	} else {
-		player.current_index = (player.current_index + 1) % len(player.current_playlist.tracks)
+		player.current_index = (player.current_index + 1) % len(ui_state.playing_playlist.tracks)
 	}
 
-	next_track := player.current_playlist.tracks[player.current_index]
-	play_track(next_track, player.current_playlist)
+	next_track := ui_state.playing_playlist.tracks[player.current_index]
+	play_track(next_track, ui_state.playing_playlist)
 }
 
 previous_track :: proc() {
-	if len(player.current_playlist.tracks) == 0 {
+	if ui_state.playing_playlist == nil || len(ui_state.playing_playlist.tracks) == 0 {
 		return
 	}
 
@@ -148,12 +166,12 @@ previous_track :: proc() {
 	} else {
 		player.current_index = player.current_index - 1
 		if player.current_index < 0 {
-			player.current_index = len(player.current_playlist.tracks) - 1
+			player.current_index = len(ui_state.playing_playlist.tracks) - 1
 		}
 	}
 
-	prev_track := player.current_playlist.tracks[player.current_index]
-	play_track(prev_track, player.current_playlist)
+	prev_track := ui_state.playing_playlist.tracks[player.current_index]
+	play_track(prev_track, ui_state.playing_playlist)
 }
 
 seek_to_position :: proc(position: f32) {
@@ -197,8 +215,8 @@ seek_to_lyric :: proc(lyric_index: int, lyrics: []Lyrics) {
 }
 
 song_shuffle :: proc() {
-	if player.shuffle {
-		player.shuffled_indices = make([]int, len(player.current_playlist.tracks))
+	if player.shuffle && ui_state.playing_playlist != nil {
+		player.shuffled_indices = make([]int, len(ui_state.playing_playlist.tracks))
 		for i in 0 ..< len(player.shuffled_indices) {
 			player.shuffled_indices[i] = i
 		}
