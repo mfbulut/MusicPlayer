@@ -5,7 +5,7 @@ import "fx"
 import "core:os"
 import "core:math"
 import "core:math/rand"
-
+import "core:sync"
 
 Player :: struct {
 	state: enum { STOPPED, PLAYING, PAUSED },
@@ -16,7 +16,8 @@ Player :: struct {
 	queue:            Playlist,
 
 	current_index:    int,
-	current_track:    Track,
+	current_track:    ^Track,
+	track_mutex:      sync.Mutex,
 
 	shuffle:          bool,
 	shuffle_position: int,
@@ -42,32 +43,27 @@ unload_track_audio :: proc(track: ^Track) {
 	fx.unload_audio(&track.audio)
 }
 
+queue_current_track: Track
+
 play_track :: proc(track: Track, playlist: ^Playlist, queue: bool = false) {
-	if player.current_track.audio.loaded {
-		unload_cover(&player.current_track)
-		unload_track_audio(&player.current_track)
+	if player.current_track != nil && player.current_track.audio.loaded {
+		unload_cover(player.current_track)
+		unload_track_audio(player.current_track)
 	}
 
 	ui_state.lyrics_scrollbar.scroll = 0
 	ui_state.lyrics_scrollbar.target = 0
 
 	if !os.exists(track.path) {
-		show_alert({}, "File not found", "Ensure file exist restart the application", 2)
+		show_alert({}, "File not found", "Ensure file exist then refresh using F5", 2)
 		return
 	}
 
 	new_track := track
+	new_track.playlist = playlist
 
 	load_track_audio(&new_track)
 	load_cover(&new_track, new_track.audio.file_data)
-
-	player.current_track = new_track
-	player.state = .PLAYING
-	player.position = 0
-	player.duration = fx.get_duration(&player.current_track.audio)
-
-	fx.play_audio(&player.current_track.audio)
-	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 
 	if queue do return
 
@@ -94,19 +90,32 @@ play_track :: proc(track: Track, playlist: ^Playlist, queue: bool = false) {
 		}
 	}
 
-	if !player.shuffle {
+	if queue {
+		queue_current_track = new_track
+		player.current_track = &queue_current_track
+	} else {
 		if ui_state.playing_playlist != nil {
-			for t, i in ui_state.playing_playlist.tracks {
+			for &t, i in ui_state.playing_playlist.tracks {
 				if track.name == t.name && track.path == t.path {
 					player.current_index = i
+					player.current_track = &t
+					player.current_track.audio = new_track.audio
+					player.current_track.cover = new_track.cover
+					player.current_track.has_cover = new_track.has_cover
+					player.current_track.playlist = playlist
 				}
 			}
 		}
 	}
+
+	player.duration = fx.get_duration(&player.current_track.audio)
+	player.position = 0
+	fx.play_audio(&player.current_track.audio)
+	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 }
 
 toggle_playback :: proc() {
-	if !player.current_track.audio.loaded {
+	if player.current_track == nil || !player.current_track.audio.loaded {
 		return
 	}
 	switch player.state {
@@ -175,7 +184,7 @@ previous_track :: proc() {
 }
 
 seek_to_position :: proc(position: f32) {
-	if !player.current_track.audio.loaded {
+	if player.current_track == nil || !player.current_track.audio.loaded {
 		return
 	}
 	clamped_pos := clamp(position, 0.0, player.duration)
@@ -184,7 +193,7 @@ seek_to_position :: proc(position: f32) {
 }
 
 update_player :: proc(dt: f32) {
-	if !player.current_track.audio.loaded || player.state != .PLAYING {
+	if player.current_track == nil || !player.current_track.audio.loaded || player.state != .PLAYING {
 		return
 	}
 	player.position = fx.get_time(&player.current_track.audio)

@@ -32,6 +32,10 @@ compact_mode_frame :: proc() {
 		next_track()
 	}
 
+	if player.current_track == nil {
+		return
+	}
+
 	if fx.key_pressed(.UP) {
 		player.volume = min(player.volume + 0.05, 1)
 		fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))

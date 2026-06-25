@@ -115,7 +115,7 @@ frame :: proc() {
 			fx.center_window()
 			fx.compact_mode(false)
 		} else {
- 			if player.current_track.path == "" {
+ 			if player.current_track == nil || player.current_track.path == "" {
 				show_alert({}, "No track is playing", "Open a track before opening compact mode", 2)
 			} else {
 				ui_state.compact_mode = true

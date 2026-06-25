@@ -3,6 +3,7 @@ package main
 import "fx"
 
 draw_now_playing_view :: proc(x, y, w, h: f32) {
+	if player.current_track == nil do return
 	track := player.current_track
 
 	has_lyrics := len(track.lyrics) > 0
@@ -162,7 +163,7 @@ draw_now_playing_view :: proc(x, y, w, h: f32) {
 				lyrics_panel_y,
 				lyrics_panel_w,
 				lyrics_panel_h,
-				&track,
+				track,
 				lyrics_alpha,
 			)
 		}

@@ -7,6 +7,8 @@ import "core:os"
 import "core:strconv"
 import "core:strings"
 import "core:unicode/utf8"
+import "core:thread"
+import "core:sync"
 import "core:encoding/json"
 
 LyricsResponse :: struct {
@@ -85,20 +87,20 @@ guess_search_opts :: proc(title: string) -> (opts: [2]fx.Request_Query_Param, op
 }
 
 download_lyrics :: proc() {
-	if player.current_track.path == "" {
+	if player.current_track == nil || player.current_track.path == "" {
 		show_alert({}, "No track is playing", "Open a track before downloading lyrics", 2)
 		return
 	}
 
-	track: ^Track = nil
-	if player.current_track.playlist != nil {
-		for &t in player.current_track.playlist.tracks {
-			if t.name == player.current_track.name {
-				track = &t
-				break
-			}
-		}
+	thread.create_and_start(_download_lyrics)
+}
+
+_download_lyrics :: proc() {
+	if player.current_track == nil || player.current_track.path == "" {
+		return
 	}
+
+	track := player.current_track
 
 	title    := player.current_track.tags.title
 	artist   := player.current_track.tags.artist
@@ -131,8 +133,9 @@ download_lyrics :: proc() {
 			if lyrics_response, ok := parse_single_lyrics_response(string(res.data)); ok {
 				if synced_lyrics, has_lyrics := lyrics_response.syncedLyrics.?;
 				   has_lyrics && len(synced_lyrics) > 0 {
+					sync.lock(&player.track_mutex)
 					track.lyrics = load_lyrics_from_string(synced_lyrics)
-					player.current_track.lyrics = track.lyrics
+					sync.unlock(&player.track_mutex)
 
 					save_lyrics_as_lrc(track, synced_lyrics)
 
@@ -178,8 +181,9 @@ download_lyrics :: proc() {
 			if best_match != nil {
 				if synced_lyrics, has_lyrics := best_match.syncedLyrics.?; has_lyrics {
 					if track != nil {
+						sync.lock(&player.track_mutex)
 						track.lyrics = load_lyrics_from_string(synced_lyrics)
-						player.current_track.lyrics = track.lyrics
+						sync.unlock(&player.track_mutex)
 						save_lyrics_as_lrc(track, synced_lyrics)
 					}
 

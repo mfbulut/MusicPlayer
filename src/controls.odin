@@ -31,6 +31,8 @@ draw_player_controls :: proc() {
 		{.BOTTOM_RIGHT},
 	)
 
+	if player.current_track == nil do return
+
 	cover := player.current_track.cover
 
 	if !player.current_track.has_cover && player.current_track.playlist != nil {
