@@ -29,10 +29,16 @@ player := Player {
 	queue = {name = "Queue"},
 }
 
-load_track_audio :: proc(track: ^Track) {
+load_track :: proc(track: ^Track) {
 	clip := fx.load_audio(track.path)
 	track.audio = clip
-	update_background = true
+	load_cover(track, track.audio.file_data)
+
+	fx.begin_render_to_texture(&background, {0, 128, 0, 0})
+	fx.set_scissor(0, 0, 2048, 2048)
+	fx.use_shader(blur_shader)
+	fx.draw_texture_cropped(track.cover, 0, 0, 2048, 2048, fx.WHITE)
+	fx.end_render_to_texture()
 	fx.use_shader({})
 }
 
@@ -43,9 +49,7 @@ unload_track_audio :: proc(track: ^Track) {
 	fx.unload_audio(&track.audio)
 }
 
-queue_current_track: Track
-
-play_track :: proc(track: Track, playlist: ^Playlist, queue: bool = false) {
+play_track :: proc(track: ^Track, playlist: ^Playlist, queue: bool = false) {
 	if player.current_track != nil && player.current_track.audio.loaded {
 		unload_cover(player.current_track)
 		unload_track_audio(player.current_track)
@@ -59,57 +63,60 @@ play_track :: proc(track: Track, playlist: ^Playlist, queue: bool = false) {
 		return
 	}
 
-	new_track := track
-	new_track.playlist = playlist
+	track := track
 
-	load_track_audio(&new_track)
-	load_cover(&new_track, new_track.audio.file_data)
-
-	if queue do return
-
-	is_from_ui := true
-	if playlist == ui_state.playing_playlist {
-		is_from_ui = false
-	}
-
-	if is_from_ui {
-		if ui_state.playing_playlist != nil && (ui_state.playing_playlist.name == "Search Results" || ui_state.playing_playlist.name == "Liked Songs") {
-			delete(ui_state.playing_playlist.tracks)
-			free(ui_state.playing_playlist)
+	if !queue {
+		is_from_ui := true
+		if playlist == ui_state.playing_playlist {
+			is_from_ui = false
 		}
 
-		if playlist != nil && (playlist.name == "Search Results" || playlist.name == "Liked Songs") {
-			cloned_playlist := new(Playlist)
-			cloned_playlist^ = playlist^
-			cloned_tracks := make([dynamic]Track, len(playlist.tracks))
-			copy(cloned_tracks[:], playlist.tracks[:])
-			cloned_playlist.tracks = cloned_tracks
-			ui_state.playing_playlist = cloned_playlist
-		} else {
-			ui_state.playing_playlist = playlist
-		}
-	}
+		if is_from_ui {
+			if ui_state.playing_playlist != nil && (ui_state.playing_playlist.name == "Search Results" || ui_state.playing_playlist.name == "Liked Songs") {
+				delete(ui_state.playing_playlist.tracks)
+				free(ui_state.playing_playlist)
+			}
 
-	if queue {
-		queue_current_track = new_track
-		player.current_track = &queue_current_track
-	} else {
+			if playlist != nil && (playlist.name == "Search Results" || playlist.name == "Liked Songs") {
+				cloned_playlist := new(Playlist)
+				cloned_playlist^ = playlist^
+				cloned_tracks := make([dynamic]^Track, len(playlist.tracks))
+				copy(cloned_tracks[:], playlist.tracks[:])
+				cloned_playlist.tracks = cloned_tracks
+				ui_state.playing_playlist = cloned_playlist
+
+				index := -1
+				for t, i in playlist.tracks {
+					if t == track {
+						index = i
+						break
+					}
+				}
+
+				if index != -1 {
+					track = cloned_playlist.tracks[index]
+				}
+			} else {
+				ui_state.playing_playlist = playlist
+			}
+		}
+
 		if ui_state.playing_playlist != nil {
-			for &t, i in ui_state.playing_playlist.tracks {
-				if track.name == t.name && track.path == t.path {
+			for t, i in ui_state.playing_playlist.tracks {
+				if track == t {
 					player.current_index = i
-					player.current_track = &t
-					player.current_track.audio = new_track.audio
-					player.current_track.cover = new_track.cover
-					player.current_track.has_cover = new_track.has_cover
-					player.current_track.playlist = playlist
+					break
 				}
 			}
 		}
 	}
 
+	track.playlist = ui_state.playing_playlist
+	load_track(track)
+
+	player.current_track = track
 	player.duration = fx.get_duration(&player.current_track.audio)
-	player.position = 0
+	player.state = .PLAYING
 	fx.play_audio(&player.current_track.audio)
 	fx.set_volume(&player.current_track.audio, math.pow(player.volume, 2.0))
 }
@@ -118,6 +125,7 @@ toggle_playback :: proc() {
 	if player.current_track == nil || !player.current_track.audio.loaded {
 		return
 	}
+
 	switch player.state {
 	case .PLAYING:
 		fx.pause_audio(&player.current_track.audio)
@@ -130,8 +138,8 @@ toggle_playback :: proc() {
 
 next_track :: proc() {
 	if len(player.queue.tracks) > 0 {
-		track := pop(&player.queue.tracks)
-		play_track(track, ui_state.playing_playlist, true)
+		popped_track := pop(&player.queue.tracks)
+		play_track(popped_track, ui_state.playing_playlist, true)
 
 		if len(player.queue.tracks) == 0 do ui_state.show_queue_sidebar = false
 
@@ -143,20 +151,22 @@ next_track :: proc() {
 	}
 
 	if player.shuffle {
-		player.shuffle_position += 1
+		player.shuffle_position = player.shuffle_position + 1
 
 		if player.shuffle_position >= len(player.shuffled_indices) {
-			rand.shuffle(player.shuffled_indices[:])
 			player.shuffle_position = 0
 		}
 
 		player.current_index = player.shuffled_indices[player.shuffle_position]
 	} else {
-		player.current_index = (player.current_index + 1) % len(ui_state.playing_playlist.tracks)
+		player.current_index = player.current_index + 1
+		if player.current_index >= len(ui_state.playing_playlist.tracks) {
+			player.current_index = 0
+		}
 	}
 
-	next_track := ui_state.playing_playlist.tracks[player.current_index]
-	play_track(next_track, ui_state.playing_playlist)
+	next_track_ptr := ui_state.playing_playlist.tracks[player.current_index]
+	play_track(next_track_ptr, ui_state.playing_playlist)
 }
 
 previous_track :: proc() {
@@ -165,7 +175,7 @@ previous_track :: proc() {
 	}
 
 	if player.shuffle {
-		player.shuffle_position -= 1
+		player.shuffle_position = player.shuffle_position - 1
 
 		if player.shuffle_position < 0 {
 			player.shuffle_position = len(player.shuffled_indices) - 1
@@ -179,8 +189,8 @@ previous_track :: proc() {
 		}
 	}
 
-	prev_track := ui_state.playing_playlist.tracks[player.current_index]
-	play_track(prev_track, ui_state.playing_playlist)
+	prev_track_ptr := ui_state.playing_playlist.tracks[player.current_index]
+	play_track(prev_track_ptr, ui_state.playing_playlist)
 }
 
 seek_to_position :: proc(position: f32) {
@@ -239,10 +249,10 @@ toggle_shuffle :: proc() {
 	song_shuffle()
 }
 
-insert_as_last_track :: proc(track: Track) {
+insert_as_last_track :: proc(track: ^Track) {
 	inject_at_elem(&player.queue.tracks, 0, track)
 }
 
-insert_as_next_track :: proc(track: Track) {
+insert_as_next_track :: proc(track: ^Track) {
 	append(&player.queue.tracks, track)
 }

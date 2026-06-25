@@ -48,7 +48,7 @@ Track :: struct {
 Playlist :: struct {
 	path:       string,
 	name:       string,
-	tracks:     [dynamic]Track,
+	tracks:     [dynamic]^Track,
 	cover:      fx.Texture,
 	cover_path: string,
 	loaded:     bool,
@@ -122,9 +122,8 @@ sort_playlist_tracks :: proc(playlist: ^Playlist) {
 		return
 	}
 
-	same_album := true
 	first_album := playlist.tracks[0].tags.album
-
+	same_album := len(first_album) > 0
 	for track in playlist.tracks {
 		if track.tags.album != first_album {
 			same_album = false
@@ -132,19 +131,22 @@ sort_playlist_tracks :: proc(playlist: ^Playlist) {
 		}
 	}
 
-	if same_album && len(first_album) > 0 {
-		slice.sort_by(playlist.tracks[:], proc(a, b: Track) -> bool {
+	if same_album {
+		slice.sort_by(playlist.tracks[:], proc(a, b: ^Track) -> bool {
 			a_track := parse_track_number(a.tags.track)
 			b_track := parse_track_number(b.tags.track)
 
-			if a_track != b_track {
+			if a_track != -1 && b_track != -1 {
 				return a_track < b_track
 			}
 
 			return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
 		})
 	} else {
-		slice.sort_by(playlist.tracks[:], proc(a, b: Track) -> bool {
+		slice.sort_by(playlist.tracks[:], proc(a, b: ^Track) -> bool {
+			if a.tags.album != b.tags.album {
+				return strings.compare(strings.to_lower(a.tags.album), strings.to_lower(b.tags.album)) < 0
+			}
 			return strings.compare(strings.to_lower(a.name), strings.to_lower(b.name)) < 0
 		})
 	}
@@ -175,34 +177,34 @@ process_music_file :: proc(file: os.File_Info) {
 	dir_name := os.base(dir_path)
 	playlist := find_or_create_playlist(dir_path, dir_name)
 
-	music := Track {
+	music_ptr := new_clone(Track {
 		hash     = hash.fnv64a(transmute([]u8)file.fullpath),
 		path     = strings.clone(file.fullpath),
 		name     = strings.clone(name),
 		lyrics   = load_lyrics_for_track(file.fullpath),
-		playlist = playlist
-	}
+		playlist = playlist,
+	})
 
 	tags: Tags
 	tags_ok: bool
 
 	switch ext {
 	case "mp3":
-		tags, tags_ok = load_id3_tags(music.path)
+		tags, tags_ok = load_id3_tags(music_ptr.path)
 	case "flac":
-		tags, tags_ok = load_flac_vorbis_comment_tags(music.path)
+		tags, tags_ok = load_flac_vorbis_comment_tags(music_ptr.path)
 	case "opus":
-		tags, tags_ok = load_opus_tags(music.path)
+		tags, tags_ok = load_opus_tags(music_ptr.path)
 	case "ogg":
-		tags, tags_ok = load_ogg_vorbis_tags(music.path)
+		tags, tags_ok = load_ogg_vorbis_tags(music_ptr.path)
 	}
 
 	if tags_ok {
-		music.tags = tags
-		music.has_tags = true
+		music_ptr.tags = tags
+		music_ptr.has_tags = true
 	}
 
-	append(&playlist.tracks, music)
+	append(&playlist.tracks, music_ptr)
 }
 
 Cover_Load_Result :: struct {
@@ -230,8 +232,6 @@ init_cover_loading :: proc() {
 				Cover_Load_Result {
 					playlist_index = i,
 					cover_path = playlist.cover_path,
-					texture = {},
-					success = false,
 				},
 			)
 		}
@@ -294,10 +294,10 @@ thumbnail_loading_worker :: proc(t: ^thread.Thread) {
 		playlist := ui_state.selected_playlist
 
 		if playlist != nil {
-			for &track in playlist.tracks {
+			for track in playlist.tracks {
 				if !track.thumbnail_loaded {
 					buffer := os.read_entire_file(track.path, context.allocator) or_continue
-					load_small_cover(&track, buffer)
+					load_small_cover(track, buffer)
 					delete(buffer)
 					continue out
 				}

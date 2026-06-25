@@ -224,6 +224,11 @@ win_proc :: proc "stdcall" (
 	case win.WM_QUIT, win.WM_CLOSE:
 		ctx.is_running = false
 
+	case win.WM_NCHITTEST:
+	    if ctx.compact_mode {
+	        return win.HTCAPTION
+	    }
+
 	case win.WM_SIZE:
 		if wparam == win.SIZE_MINIMIZED {
 			ctx.is_minimized = true
@@ -282,10 +287,7 @@ win_proc :: proc "stdcall" (
 		}
 		return 0
 
-	case win.WM_NCHITTEST:
-	    if ctx.compact_mode {
-	        return win.HTCAPTION
-	    }
+
 
 	}
 

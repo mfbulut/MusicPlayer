@@ -188,7 +188,7 @@ draw_sidebar :: proc(x_offset: f32) {
 		scroll_delta := fx.get_mouse_scroll()
 		if scroll_delta != 0 {
 			mouse_x, mouse_y := fx.get_mouse()
-			if mouse_x < SIDEBAR_WIDTH {
+			if mouse_x < SIDEBAR_WIDTH && mouse_y > y_offset && mouse_y < y_offset + sidebar_visible_height {
 				sidebar_sc.target -= scroll_delta * 80
 				sidebar_sc.target = clamp(sidebar_sc.target, 0, max_scroll)
 			}

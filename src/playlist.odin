@@ -5,7 +5,7 @@ import "fx"
 import "core:fmt"
 import "core:strings"
 
-draw_track_item :: proc(track: Track, playlist: ^Playlist, x, y, w, h: f32, queue := false) {
+draw_track_item :: proc(track: ^Track, playlist: ^Playlist, x, y, w, h: f32, queue := false) {
 	hover := is_hovering(x, y, w, h)
 	bg_color := UI_TRACK_COLOR
 
@@ -115,6 +115,14 @@ draw_track_item :: proc(track: Track, playlist: ^Playlist, x, y, w, h: f32, queu
 			}
 		}
 	}
+
+	if hover && fx.key_held(.LEFT_CONTROL) {
+		if queue {
+			ui_state.tooltip = "Remove from Queue   Ctrl + Left-Click"
+		} else {
+			ui_state.tooltip = "Add to End of Queue   Right-Click\nAdd to Start of Queue   Ctrl + Right-Click"
+		}
+	}
 }
 
 draw_playlist_view :: proc(x, y, w, h: f32, playlist: ^Playlist, queue := false) {
@@ -198,7 +206,7 @@ draw_playlist_view :: proc(x, y, w, h: f32, playlist: ^Playlist, queue := false)
 
 		scroll_delta := fx.get_mouse_scroll()
 		if scroll_delta != 0 {
-			if mouse_x > x && mouse_y < y + h {
+			if mouse_x > x && mouse_x < x + w && mouse_y > y && mouse_y < y + h {
 				playlist_sc.target -= scroll_delta * 80
 				playlist_sc.target = clamp(playlist_sc.target, 0, max_scroll)
 			}

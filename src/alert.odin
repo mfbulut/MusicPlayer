@@ -1,12 +1,14 @@
 package main
 
 import "fx"
+import "core:math"
 
 Alert :: struct {
 	image:              fx.Texture,
 	title:              string,
 	description:        string,
 	is_visible:         bool,
+	is_loading:         bool,
 	animation_progress: f32,
 	target_progress:    f32,
 	show_time:          f32,
@@ -27,9 +29,21 @@ show_alert :: proc(
 	g_alert.title = title
 	g_alert.description = description
 	g_alert.is_visible = true
+	g_alert.is_loading = false
 	g_alert.target_progress = 1.0
 	g_alert.show_time = 0.0
 	g_alert.duration = duration
+}
+
+show_loading_alert :: proc(title: string, description: string) {
+	g_alert.image = {}
+	g_alert.title = title
+	g_alert.description = description
+	g_alert.is_visible = true
+	g_alert.is_loading = true
+	g_alert.target_progress = 1.0
+	g_alert.show_time = 0.0
+	g_alert.duration = 0.0
 }
 
 update_alert :: proc(dt: f32) {
@@ -46,7 +60,7 @@ update_alert :: proc(dt: f32) {
 
 	if g_alert.is_visible {
 		g_alert.show_time += dt
-		if g_alert.show_time >= g_alert.duration {
+		if !g_alert.is_loading && g_alert.show_time >= g_alert.duration {
 			g_alert.is_visible = false
 			g_alert.target_progress = 0.0
 		}
@@ -117,6 +131,21 @@ draw_alert :: proc() {
 	if len(g_alert.description) > 0 {
 		desc_text := truncate_text(g_alert.description, text_area_w, 14)
 		fx.draw_text(desc_text, content_x, content_y, 14, desc_color)
+	}
+
+	if g_alert.is_loading {
+		bar_w : f32 = text_area_w
+		bar_x : f32 = content_x
+		bar_y : f32 = alert_y + alert_h - 10
+
+		time := g_alert.show_time * 4.0
+		offset := (math.sin(time) + 1.0) / 2.0
+
+		knob_w : f32 = bar_w * 0.3
+		knob_x := bar_x + offset * (bar_w - knob_w)
+
+		fx.draw_rect_rounded(bar_x, bar_y, bar_w, 3, 1.5, brighten(bg_color, 20))
+		fx.draw_rect_rounded(knob_x, bar_y, knob_w, 3, 1.5, set_alpha(UI_ACCENT_COLOR, g_alert.animation_progress))
 	}
 }
 

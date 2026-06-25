@@ -418,6 +418,7 @@ update_scrollbars :: proc(dt: f32) {
 	playlist_sc := &ui_state.playlist_scrollbar
 	lyrics_sc   := &ui_state.lyrics_scrollbar
 	search_sc   := &ui_state.search_scrollbar
+	queue_sc    := &ui_state.queue_scrollbar
 
 	if abs(sidebar_sc.target - sidebar_sc.scroll) > 0.5 {
 		sidebar_sc.scroll += (sidebar_sc.target - sidebar_sc.scroll) * UI_SCROLL_SPEED * dt
@@ -441,6 +442,12 @@ update_scrollbars :: proc(dt: f32) {
 		search_sc.scroll += (search_sc.target - search_sc.scroll) * UI_SCROLL_SPEED * dt
 	} else {
 		search_sc.scroll = search_sc.target
+	}
+
+	if abs(queue_sc.target - queue_sc.scroll) > 0.5 {
+		queue_sc.scroll += (queue_sc.target - queue_sc.scroll) * UI_SCROLL_SPEED * dt
+	} else {
+		queue_sc.scroll = queue_sc.target
 	}
 }
 
@@ -562,4 +569,35 @@ load_icons :: proc() {
 	queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
 	music_icon    = fx.load_texture_from_bytes(music_icon_qoi)
 	sidebar_icon  = fx.load_texture_from_bytes(sidebar_icon_qoi)
+}
+
+draw_tooltip :: proc(text: string) {
+	if text == "" do return
+
+	mouse_x, mouse_y := fx.get_mouse()
+
+	lines := strings.split(text, "\n", context.temp_allocator)
+
+	max_w: f32 = 0
+	for line in lines {
+		w := fx.measure_text(line, 14)
+		if w > max_w do max_w = w
+	}
+
+	padding: f32 = 8
+	h: f32 = f32(len(lines)) * 18 + padding * 2
+	w: f32 = max_w + padding * 2
+
+	x := mouse_x + 15
+	y := mouse_y + 15
+
+	window_w, window_h := fx.window_size()
+	if x + w > window_w do x = mouse_x - w - 10
+	if y + h > window_h do y = mouse_y - h - 10
+
+	fx.draw_rect_rounded(x, y, w, h, 6, brighten(UI_SECONDARY_COLOR, 10))
+
+	for line, i in lines {
+		fx.draw_text(line, x + padding, y + padding + f32(i) * 18, 14, fx.Color{255, 255, 255, 255})
+	}
 }

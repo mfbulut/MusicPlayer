@@ -59,10 +59,10 @@ UIState :: struct {
 	lyrics_scrollbar:          Scrollbar,
 	search_scrollbar:          Scrollbar,
 	queue_scrollbar:           Scrollbar,
+	tooltip:                   string,
 }
 
 ui_state := UIState {
-	current_view   = .SEARCH,
 	show_lyrics    = true,
 	follow_lyrics  = true,
 	sidebar_anim   = 1.0,
@@ -81,8 +81,6 @@ init_ui_state :: proc() {
 		return contents, true
 	}
 }
-
-
 
 frame :: proc() {
 	if loading_covers {
@@ -192,6 +190,11 @@ frame :: proc() {
 				ui_state.show_queue_sidebar = !ui_state.show_queue_sidebar
 			}
 		}
+	}
+
+	if ui_state.tooltip != "" {
+		draw_tooltip(ui_state.tooltip)
+		ui_state.tooltip = ""
 	}
 }
 

@@ -19,8 +19,8 @@ search_tracks :: proc(query: string) {
 	clear(&ui_state.search_results)
 	if len(query) == 0 {
 		for &playlist in playlists {
-			for &track in playlist.tracks {
-				append(&ui_state.search_results, &track)
+			for track in playlist.tracks {
+				append(&ui_state.search_results, track)
 			}
 		}
 		build_search_playlist()
@@ -34,7 +34,7 @@ search_tracks :: proc(query: string) {
 	defer delete(scored_results)
 
 	for &playlist in playlists {
-		for &track in playlist.tracks {
+		for track in playlist.tracks {
 			selected_title := track.tags.title if track.has_tags && len(track.tags.title) > 0 else track.name
 			playlist_name := track.playlist.name if track.playlist != nil else ""
 			selected_album := track.tags.album if track.has_tags && len(track.tags.album) > 0 else playlist_name
@@ -47,7 +47,7 @@ search_tracks :: proc(query: string) {
 			final_score    := track_score + playlist_score
 
 			if final_score > 0.1 {
-				append(&scored_results, SearchResult{track = &track, score = final_score})
+				append(&scored_results, SearchResult{track = track, score = final_score})
 			}
 		}
 	}
@@ -67,7 +67,7 @@ build_search_playlist :: proc() {
 	clear(&ui_state.search_playlist.tracks)
 	ui_state.search_playlist.name = "Search Results"
 	for track_ptr in ui_state.search_results {
-		append(&ui_state.search_playlist.tracks, track_ptr^)
+		append(&ui_state.search_playlist.tracks, track_ptr)
 	}
 }
 
@@ -431,7 +431,7 @@ draw_search_view :: proc(x, y, w, h: f32) {
 			scroll_delta := fx.get_mouse_scroll()
 			if scroll_delta != 0 {
 				mouse_x, mouse_y := fx.get_mouse()
-				if mouse_x > x && mouse_y < y + h {
+				if mouse_x > x && mouse_x < x + w && mouse_y > y && mouse_y < y + h {
 					search_sc.target -= scroll_delta * 80
 					search_sc.target = clamp(search_sc.target, 0, max_scroll)
 				}

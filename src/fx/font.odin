@@ -3,11 +3,11 @@ package fx
 import "core:strings"
 
 import D3D11 "vendor:directx/d3d11"
-import D3D "vendor:directx/d3d_compiler"
+import D3D_COMPILER "vendor:directx/d3d_compiler"
 
 font_hlsl := #load("font.hlsl")
-font_png : []u8 = #load("font.png")
-font_texture : Texture
+font_png  := #load("font.png")
+font_texture: Texture
 font_shader: ^D3D11.IPixelShader
 
 Character :: struct {
@@ -28,7 +28,7 @@ Character :: struct {
 }
 
 // See and of this file for more details
-default_font : [512]Character = {
+default_font := [512]Character{
     32 = Character{advance = 0.28125, left = 0, bottom = -0, right = 0, top = -0, left_uv = 0, bottom_uv = 1, right_uv = 0, top_uv = 1, width = 0, height = 0},
     33 = Character{advance = 0.28759766, left = 0.037548829, bottom = -0.77812499, right = 0.25004882, top = 0.059374999, left_uv = 0.79448533, bottom_uv = 0.17316176, right_uv = 0.81948525, top_uv = 0.27169117, width = 0.21249999, height = 0.83749998},
     34 = Character{advance = 0.4658203, left = 0.06416015, bottom = -0.77812499, right = 0.40166014, top = -0.409375, left_uv = 0.95257354, bottom_uv = 0.4194853, right_uv = 0.9922794, top_uv = 0.46286765, width = 0.33749998, height = 0.36874998},
@@ -139,11 +139,10 @@ default_font : [512]Character = {
 }
 
 init_font :: proc() {
-    // Takes 200 ms at startup maybe use qoi instead
     font_texture = load_texture_from_bytes(font_png)
 
 	ps_blob: ^D3D11.IBlob
-	D3D.Compile(raw_data(font_hlsl), len(font_hlsl), "font.hlsl", nil, nil, "ps_main", "ps_5_0", 0, 0, &ps_blob, nil)
+	D3D_COMPILER.Compile(raw_data(font_hlsl), len(font_hlsl), "font.hlsl", nil, nil, "ps_main", "ps_5_0", 0, 0, &ps_blob, nil)
 	assert(ps_blob != nil)
 
 	device->CreatePixelShader(ps_blob->GetBufferPointer(), ps_blob->GetBufferSize(), nil, &font_shader)

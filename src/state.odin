@@ -170,7 +170,7 @@ set_liked_song :: proc(name: string, playlist: string, liked: bool) {
 load_liked_songs :: proc() {
 	if len(liked_playlist.tracks) > 0 {
 		delete(liked_playlist.tracks)
-		liked_playlist.tracks = make([dynamic]Track)
+		liked_playlist.tracks = make([dynamic]^Track)
 	}
 
 	slice.sort_by(liked_songs[:], proc(a, b: LikedSong) -> bool {
@@ -180,7 +180,7 @@ load_liked_songs :: proc() {
 	for liked_song in liked_songs {
 		for &playlist in playlists {
 			if playlist.name == liked_song.playlist {
-				for &track in playlist.tracks {
+				for track in playlist.tracks {
 					if track.name == liked_song.name {
 						append(&liked_playlist.tracks, track)
 						break

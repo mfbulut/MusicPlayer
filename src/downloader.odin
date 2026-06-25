@@ -92,6 +92,8 @@ download_lyrics :: proc() {
 		return
 	}
 
+	show_loading_alert("Downloading Lyrics", "Please wait while lyrics are retrieved...")
+
 	thread.create_and_start(_download_lyrics)
 }
 
