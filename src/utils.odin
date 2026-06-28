@@ -531,9 +531,6 @@ search_icon_qoi   := #load("assets/search.qoi")
 liked_icon_qoi    := #load("assets/liked.qoi")
 empty_icon_qoi    := #load("assets/liked_empty.qoi")
 queue_icon_qoi    := #load("assets/queue.qoi")
-exit_icon_qoi     := #load("assets/exit.qoi")
-maximize_icon_qoi := #load("assets/maximize.qoi")
-minimize_icon_qoi := #load("assets/minimize.qoi")
 music_icon_qoi    := #load("assets/music.qoi")
 sidebar_icon_qoi  := #load("assets/sidebar.qoi")
 
@@ -547,9 +544,6 @@ liked_icon:    fx.Texture
 liked_empty:   fx.Texture
 search_icon:   fx.Texture
 queue_icon:    fx.Texture
-exit_icon:     fx.Texture
-maximize_icon: fx.Texture
-minimize_icon: fx.Texture
 music_icon:    fx.Texture
 sidebar_icon:  fx.Texture
 
@@ -563,9 +557,6 @@ load_icons :: proc() {
 	liked_icon    = fx.load_texture_from_bytes(liked_icon_qoi)
 	search_icon   = fx.load_texture_from_bytes(search_icon_qoi)
 	liked_empty   = fx.load_texture_from_bytes(empty_icon_qoi)
-	exit_icon     = fx.load_texture_from_bytes(exit_icon_qoi)
-	maximize_icon = fx.load_texture_from_bytes(maximize_icon_qoi)
-	minimize_icon = fx.load_texture_from_bytes(minimize_icon_qoi)
 	queue_icon    = fx.load_texture_from_bytes(queue_icon_qoi)
 	music_icon    = fx.load_texture_from_bytes(music_icon_qoi)
 	sidebar_icon  = fx.load_texture_from_bytes(sidebar_icon_qoi)

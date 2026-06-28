@@ -138,7 +138,6 @@ calculate_word_matches :: proc(text_words: []string, query_words: []string) -> f
 
 	if matched_words == 0 do return 0
 
-
 	match_ratio := f32(matched_words) / f32(len(query_words))
 	score *= (0.5 + match_ratio * 0.5)
 
