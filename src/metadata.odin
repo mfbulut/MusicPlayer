@@ -15,24 +15,22 @@ import "core:unicode/utf16"
 
 load_small_cover :: proc(track : ^Track, buffer : []u8) {
 	extension := os.ext(track.path)
+	track.thumbnail_loaded = true
 
 	if extension == ".mp3" {
 		cover, ok := load_album_art_mp3(buffer, true)
 		if ok {
 			track.small_cover = cover
-			track.thumbnail_loaded = true
 		}
 	} else if extension == ".flac" {
 		cover, ok := load_album_art_from_flac(buffer, true)
 		if ok {
 			track.small_cover = cover
-			track.thumbnail_loaded = true
 		}
 	} else if extension == ".opus" || extension == ".ogg" {
 		cover, ok := load_album_art_from_ogg(track.path, extension, true)
 		if ok {
 			track.small_cover = cover
-			track.thumbnail_loaded = true
 		}
 	}
 }
