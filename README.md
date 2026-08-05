@@ -1,3 +1,8 @@
+> [!WARNING]
+> **This repository is no longer maintained.**
+>
+> Successor: **https://github.com/mfbulut/GriPlayer**
+
 # mfbulut's Music Player
 
 A **minimalist**, **modern**, and **native** music player
